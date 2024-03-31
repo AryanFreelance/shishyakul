@@ -2,32 +2,148 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 0, 0%, 93%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 0, 0%, 6%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 0, 0%, 70%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* --border: 214.3 31.8% 91.4%; */
+    --border: 0 0% 80%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
   }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-primary text-foreground roboto-regular;
+  }
+
+  .heading {
+    @apply text-4xl md:text-6xl leading-[1.24] text-white md:leading-[1.1] barlow-bold;
+  }
+
+  .sticky-header {
+    @apply sticky top-0 z-50 bg-primary text-foreground duration-300 ease-in-out;
+  }
+
+  .header-pricing-button:hover span {
+    @apply bg-primary text-secondary;
+  }
+
+  .subheading {
+    @apply text-3xl md:text-5xl text-secondary md:leading-[1.1] barlow-bold;
+  }
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+.why-image-wrapper {
+  box-shadow: -20px 20px 0 0 #fdb42a;
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .why-image-wrapper {
+    box-shadow: -10px 10px 0 0 #fdb42a;
   }
+}
+
+.header-list-item {
+  box-shadow: 2px 2px 0 0 #fdb42a;
+  border-radius: 2px;
+}
+
+.filled-button:hover {
+  box-shadow: 4px 4px 0 0 #fdb32aac;
+}
+
+/* Fonts */
+.barlow-regular {
+  font-family: "Barlow", sans-serif;
+  font-weight: 400;
+}
+
+.barlow-medium {
+  font-family: "Barlow", sans-serif;
+  font-weight: 500;
+}
+
+.barlow-semibold {
+  font-family: "Barlow", sans-serif;
+  font-weight: 600;
+}
+
+.barlow-bold {
+  font-family: "Barlow", sans-serif;
+  font-weight: 700;
+}
+
+.roboto-regular {
+  font-family: "Roboto", sans-serif;
+  font-weight: 400;
+}
+
+.roboto-medium {
+  font-family: "Roboto", sans-serif;
+  font-weight: 500;
+}
+
+.roboto-bold {
+  font-family: "Roboto", sans-serif;
+  font-weight: 700;
 }

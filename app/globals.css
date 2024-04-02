@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* :root {
+  --main: #fdb42a;
+  --main-secondary: #fdb32aac;
+} */
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -15,6 +20,9 @@
 
     --primary: 0, 0%, 93%;
     --primary-foreground: 210 40% 98%;
+
+    --main: 39, 98%, 58%;
+    --main-secondary: #fdb32aac;
 
     --secondary: 0, 0%, 6%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -88,19 +96,37 @@
   }
 
   .subheading {
-    @apply text-3xl md:text-5xl text-secondary md:leading-[1.1] barlow-bold;
+    @apply text-3xl md:text-5xl text-secondary md:leading-[1.1] barlow-semibold;
+  }
+
+  .counter {
+    @apply text-5xl text-secondary md:leading-[1.1] barlow-semibold;
+  }
+
+  .service-card-wrapper {
+    @apply px-4 py-6 bg-primary border-2 border-main hover:bg-mainsecondary rounded-lg duration-300 ease-in-out;
+  }
+
+  .service-card-wrapper:hover img {
+    @apply w-12 h-12 bg-primary p-2 rounded;
+  }
+
+  .service-card-wrapper img {
+    @apply w-12 h-12 object-contain mb-2 duration-200 ease-in-out;
+  }
+
+  .service-card-wrapper h2 {
+    @apply text-[18px] barlow-semibold mb-2;
+  }
+
+  .service-card-wrapper p {
+    @apply text-[16px] barlow-regular;
   }
 }
 
-.why-image-wrapper {
+.global-image-wrapper {
   box-shadow: -20px 20px 0 0 #fdb42a;
   border-radius: 8px;
-}
-
-@media (max-width: 768px) {
-  .why-image-wrapper {
-    box-shadow: -10px 10px 0 0 #fdb42a;
-  }
 }
 
 .header-list-item {
@@ -110,6 +136,12 @@
 
 .filled-button:hover {
   box-shadow: 4px 4px 0 0 #fdb32aac;
+}
+
+@media (max-width: 768px) {
+  .global-image-wrapper {
+    box-shadow: -10px 10px 0 0 #fdb42a;
+  }
 }
 
 /* Fonts */

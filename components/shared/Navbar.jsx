@@ -94,7 +94,7 @@ const Navbar = () => {
         </div>
         <div>
           <Button
-            className="text-[16px]"
+            className="text-[16px] filled-button"
             variant="navBtn"
             onClick={goToSection("#contactus")}
           >

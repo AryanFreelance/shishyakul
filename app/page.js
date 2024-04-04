@@ -26,8 +26,9 @@ export default function Home() {
         <WhatCanWeProvide />
         <Statistics />
         <OurTeachers />
+        {/* <Separator className="my-[3rem] lg:my-[4rem]" /> */}
+        {/* <FeesForOurServices /> */}
         <Separator className="my-[3rem] lg:my-[4rem]" />
-        <FeesForOurServices />
         <Testimonials />
         <FAQ />
         <ContactUs />

@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { Button } from "../ui/button";
 import bannerImg from "@/assets/banners/whyshishyakul.jpg";
-import { Plus } from "lucide-react";
 import {
   certificate,
   communication,

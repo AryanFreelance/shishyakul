@@ -130,6 +130,10 @@
   .testimonial-card-wrapper:hover svg {
     @apply text-[#000];
   }
+
+  .contact-icon {
+    @apply w-10 h-10 p-2 rounded-lg duration-300 ease-in-out bg-main;
+  }
 }
 
 .global-image-wrapper {
@@ -144,6 +148,10 @@
 
 .filled-button:hover {
   box-shadow: 4px 4px 0 0 #fdb32aac;
+}
+
+.contact-icon {
+  box-shadow: 4px 4px 0 0 hsl(var(--secondary));
 }
 
 @media (max-width: 768px) {

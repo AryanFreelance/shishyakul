@@ -1,5 +1,5 @@
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
-import { cn } from "@/lib/utils";
 
 export const metadata = {
   title: "Shishyakul | Home",
@@ -22,7 +22,10 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         ></link>
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

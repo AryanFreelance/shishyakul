@@ -40,9 +40,9 @@ const Header = () => {
               </Button>
               <Button
                 className="flex gap-3 header-pricing-button text-[18px] justify-center barlow-semibold"
-                onClick={goToSection("teachers-wrapper")}
+                onClick={goToSection("contact-wrapper")}
               >
-                Our Teachers{" "}
+                Contact Us{" "}
                 <span className="p-[6px] border-2 border-primary rounded-full transition-all duration-300 ease-in-out">
                   <ArrowDown />
                 </span>

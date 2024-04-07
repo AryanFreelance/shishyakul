@@ -96,7 +96,7 @@ const Navbar = () => {
           <Button
             className="text-[16px] filled-button"
             variant="navBtn"
-            onClick={goToSection("#contactus")}
+            onClick={goToSection("#contact-wrapper")}
           >
             Contact
           </Button>

@@ -19,10 +19,6 @@ const FAQ = () => {
     false,
   ]);
 
-  useEffect(() => {
-    console.log(isOpen);
-  }, [isOpen]);
-
   return (
     <div id="faq-wrapper" className="px-[1.4rem] md:px-[4rem]">
       <div className="mb-8">

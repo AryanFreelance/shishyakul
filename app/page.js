@@ -16,8 +16,8 @@ import Container from "@/components/shared/Container";
 
 export default function Home() {
   return (
-    <Container>
-      <>
+    <>
+      <Container>
         <Navbar />
         <Header />
         <Separator className="my-[3rem] lg:my-[4rem]" />
@@ -32,8 +32,9 @@ export default function Home() {
         <FAQ />
         <Separator className="my-[3rem] lg:my-[4rem]" />
         <ContactUs />
-        <Footer />
-      </>
-    </Container>
+        <div className="my-[3rem] lg:my-[4rem]" />
+      </Container>
+      <Footer />
+    </>
   );
 }

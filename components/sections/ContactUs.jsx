@@ -63,16 +63,16 @@ const ContactUs = () => {
         id="contact-wrapper"
         style={{ marginTop: "-100px", paddingTop: "100px" }}
       />
-      <div>
-        <div className="mb-8">
+      <div className="px-[1.4rem] md:px-[4rem]">
+        <div className="mb-8 ">
           <h2 className="subheading mb-2">Contact Us</h2>
           <p className="barlow-regular text-lg">
             We are here to help you. If you have any questions or need
             assistance, please contact us.
           </p>
         </div>
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-10 border-2 border-main rounded-lg p-0">
-          <div className="lg:w-[50%] p-4">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-10 lg:border-2 lg:border-main lg:rounded-lg p-0">
+          <div className="lg:w-[50%] lg:p-4">
             <div className="flex gap-4 mb-4 items-center">
               <Phone className="contact-icon" />
               <h4 className="text-lg barlow-regular w-full">Phone</h4>

@@ -8,6 +8,7 @@ import {
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Separator } from "../ui/separator";
+import { Button } from "../ui/button";
 
 const FAQ = () => {
   const [isOpen, setIsOpen] = useState([
@@ -18,6 +19,11 @@ const FAQ = () => {
     false,
     false,
   ]);
+
+  const goToSection = (id) => () => {
+    const element = document.getElementById(id);
+    element.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
     <div id="faq-wrapper" className="px-[1.4rem] md:px-[4rem]">
@@ -165,6 +171,13 @@ const FAQ = () => {
           </Collapsible>
           <Separator className="my-[1.2rem]" />
         </div>
+      </div>
+      <div
+        onClick={goToSection("contact-wrapper")}
+        className="w-full mt-10 flex justify-between items-center py-4 px-2 md:px-4 bg-main text-secondary rounded-md barlow-semibold text-lg faq-button flex-wrap cursor-pointer"
+      >
+        <span>Question not listed? Contact us for more info.</span>
+        <ChevronDown className="hidden md:block" />
       </div>
     </div>
   );

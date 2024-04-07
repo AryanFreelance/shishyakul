@@ -17,16 +17,16 @@ const WhatCanWeProvide = () => {
   };
 
   return (
-    <div className="px-[1.4rem] md:px-[4rem] pb-[1rem]">
+    <div id="services-wrapper" className="px-[1.4rem] md:px-[4rem] pb-[1rem]">
       <div className="mb-10">
         <div className="flex justify-between">
           <h1 className="subheading mb-4">What Can We Provide?</h1>
           <Button
             className="text-[16px] filled-button"
             variant="fill"
-            onClick={goToSection("fees-wrapper")}
+            onClick={goToSection("testimonial-wrapper")}
           >
-            Fees
+            Testimonials
           </Button>
         </div>
         <div className="lg:w-[70%]">

@@ -21,7 +21,7 @@ const teachers = [
 
 const OurTeachers = () => {
   return (
-    <div className="px-[1.4rem] md:px-[4rem] pb-[1rem]">
+    <div id="teachers-wrapper" className="px-[1.4rem] md:px-[4rem] pb-[1rem]">
       <h2 className="subheading mb-8">Our Teachers</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10">
         {teachers.map((teacher, index) => (

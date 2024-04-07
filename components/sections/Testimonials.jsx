@@ -12,7 +12,10 @@ import { FaStar } from "react-icons/fa";
 
 const Testimonials = () => {
   return (
-    <div className="px-[1.4rem] md:px-[4rem] pb-[4rem]">
+    <div
+      id="testimonial-wrapper"
+      className="px-[1.4rem] md:px-[4rem] pb-[4rem]"
+    >
       <h2 className="subheading mb-8">What Others Think About Us?</h2>
       <div>
         <Carousel

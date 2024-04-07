@@ -69,14 +69,14 @@ const Navbar = () => {
               <SheetContent>
                 <SheetHeader className="mt-6">
                   <Image
-                    src="/logotext.png"
+                    src="/logo.png"
                     alt="Logo"
                     className="w-full h-[100px] object-contain"
                     width={1000}
                     height={1000}
                   />
                 </SheetHeader>
-                <div className="flex flex-col gap-2 mt-0">
+                <div className="flex flex-col gap-3 mt-8">
                   {navLinks.map((link) => (
                     <Button
                       key={link.title}

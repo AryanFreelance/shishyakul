@@ -24,7 +24,7 @@ const FAQ = () => {
   }, [isOpen]);
 
   return (
-    <div className="px-[1.4rem] md:px-[4rem]">
+    <div id="faq-wrapper" className="px-[1.4rem] md:px-[4rem]">
       <div className="mb-8">
         <h2 className="subheading mb-4">Frequently Asked Questions</h2>
         <p className="barlow-regular text-lg">

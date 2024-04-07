@@ -10,30 +10,26 @@
 export const navLinks = [
   {
     title: "Home",
-    href: "#",
+    href: "#header-wrapper",
   },
   {
     title: "About",
-    href: "#aboutus",
+    href: "#why-shishyakul-wrapper",
   },
   {
     title: "Services",
-    href: "#services",
+    href: "#services-wrapper",
   },
   {
     title: "Teachers",
-    href: "#teachers",
-  },
-  {
-    title: "Fees",
-    href: "#fees",
+    href: "#teachers-wrapper",
   },
   {
     title: "Testimonials",
-    href: "#testimonials",
+    href: "#testimonial-wrapper",
   },
   {
     title: "FAQ",
-    href: "#faq",
+    href: "#faq-wrapper",
   },
 ];

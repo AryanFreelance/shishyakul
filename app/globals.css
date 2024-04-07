@@ -87,16 +87,16 @@
     @apply text-4xl md:text-6xl leading-[1.24] text-white md:leading-[1.1] barlow-bold;
   }
 
+  .subheading {
+    @apply text-3xl md:text-5xl text-secondary md:leading-[1.1] barlow-semibold;
+  }
+
   .sticky-header {
-    @apply sticky top-0 z-50 bg-primary text-foreground duration-300 ease-in-out;
+    @apply sticky top-0 left-0 right-0 z-50 bg-primary text-foreground duration-300 ease-in-out;
   }
 
   .header-pricing-button:hover span {
     @apply bg-primary text-secondary;
-  }
-
-  .subheading {
-    @apply text-3xl md:text-5xl text-secondary md:leading-[1.1] barlow-semibold;
   }
 
   .counter {
@@ -121,6 +121,14 @@
 
   .service-card-wrapper p {
     @apply text-[16px] barlow-regular;
+  }
+
+  .testimonial-card-wrapper svg {
+    @apply text-main duration-300 ease-in-out;
+  }
+
+  .testimonial-card-wrapper:hover svg {
+    @apply text-[#000];
   }
 }
 

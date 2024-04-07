@@ -24,7 +24,7 @@ const Navbar = () => {
 
   if (typeof window !== "undefined") {
     window.onscroll = () => {
-      if (window.scrollY > 40) {
+      if (window.scrollY > 100) {
         setStickyTopClass(true);
       } else {
         setStickyTopClass(false);
@@ -39,7 +39,7 @@ const Navbar = () => {
       <div className={`flex justify-between items-center`}>
         <div>
           <Image
-            src="/logo.svg"
+            src="/logo.png"
             alt="Logo Image"
             className="h-[60px] w-full"
             width={1000}
@@ -69,14 +69,14 @@ const Navbar = () => {
               <SheetContent>
                 <SheetHeader className="mt-6">
                   <Image
-                    src="/logo.svg"
+                    src="/logotext.png"
                     alt="Logo"
-                    className=" w-full h-[60px]"
+                    className="w-full h-[100px] object-contain"
                     width={1000}
                     height={1000}
                   />
                 </SheetHeader>
-                <div className="flex flex-col gap-3 mt-8">
+                <div className="flex flex-col gap-2 mt-0">
                   {navLinks.map((link) => (
                     <Button
                       key={link.title}

@@ -28,7 +28,9 @@ export default function Home() {
         <OurTeachers />
         <Separator className="my-[3rem] lg:my-[4rem]" />
         <Testimonials />
+        <Separator className="my-[3rem] lg:my-[4rem]" />
         <FAQ />
+        <Separator className="my-[3rem] lg:my-[4rem]" />
         <ContactUs />
         <Footer />
       </>

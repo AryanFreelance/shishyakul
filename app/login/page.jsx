@@ -169,21 +169,25 @@ const page = () => {
                       </div>
                     </div>
                     <DialogFooter>
-                      <DialogClose asChild>
+                      {/* <DialogClose asChild>
                         <Button type="button" variant="secondary">
                           Cancel
                         </Button>
-                      </DialogClose>
-                      <Button type="submit" onClick={resetPassword}>
+                      </DialogClose> */}
+                      <Button
+                        type="submit"
+                        className="flex justify-center items-center"
+                        onClick={resetPassword}
+                      >
                         Reset Password
                       </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
               </div>
-              <div className="w-full mt-6">
+              <div className="flex justify-center items-center w-full mt-6">
                 <Button
-                  className="w-full barlow-semibold text-lg"
+                  className="lg:w-full w-[200px] flex justify-center items-center barlow-semibold text-lg"
                   onClick={loginHandler}
                 >
                   Login

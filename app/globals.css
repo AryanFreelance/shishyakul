@@ -95,6 +95,14 @@
     @apply text-2xl md:text-3xl text-primary md:leading-[1.1] barlow-semibold;
   }
 
+  .input-label {
+    @apply text-xl text-secondary barlow-medium mb-2;
+  }
+
+  .input-taking {
+    @apply w-full px-4 py-3 bg-card rounded-lg text-secondary barlow-regular border-2 border-secondary focus:border-main focus:outline-none;
+  }
+
   .sticky-header {
     @apply sticky top-0 left-0 right-0 z-50 bg-primary text-foreground duration-300 ease-in-out;
   }
@@ -150,6 +158,10 @@
 
 .footer-icon:hover {
   box-shadow: 6px 6px 0 0 hsl(var(--primary));
+}
+
+.login-banner {
+  box-shadow: 10px 10px 0 0 #fdb42a;
 }
 
 .global-image-wrapper {

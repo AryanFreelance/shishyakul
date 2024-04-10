@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { Button } from "../ui/button";
 import Container from "./Container";
-import { navLinks } from "@/constants";
 import { useState } from "react";
 import {
   Sheet,
@@ -12,19 +11,39 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { MenuIcon } from "lucide-react";
+import { signOut } from "firebase/auth";
+import { auth } from "@/firebase";
+import { useRouter } from "next/navigation";
 
-const Navbar = () => {
+const Navbar = ({ navLinks, isHome }) => {
   const [stickyTopClass, setStickyTopClass] = useState(false);
 
+  const router = useRouter();
+
   const goToSection = (href) => () => {
-    document.querySelector(href).scrollIntoView({
-      behavior: "smooth",
-    });
+    isHome &&
+      document.querySelector(href).scrollIntoView({
+        behavior: "smooth",
+      });
+
+    !isHome && router.push(href);
+  };
+
+  const signoutHandler = () => {
+    signOut(auth)
+      .then(() => {
+        // Sign-out successful.
+        router.push("/login");
+      })
+      .catch((error) => {
+        // An error happened.
+        console.log(error);
+      });
   };
 
   if (typeof window !== "undefined") {
     window.onscroll = () => {
-      if (window.scrollY > 100) {
+      if (window.scrollY > 0) {
         setStickyTopClass(true);
       } else {
         setStickyTopClass(false);
@@ -48,15 +67,16 @@ const Navbar = () => {
         </div>
         <div>
           <div className="hidden md:block">
-            {navLinks.map((link) => (
-              <Button
-                key={link.title}
-                variant="nav"
-                onClick={goToSection(link.href)}
-              >
-                {link.title}
-              </Button>
-            ))}
+            {navLinks.length > 0 &&
+              navLinks.map((link) => (
+                <Button
+                  key={link.title}
+                  variant="nav"
+                  onClick={goToSection(link.href)}
+                >
+                  {link.title}
+                </Button>
+              ))}
           </div>
           <div className="md:hidden">
             {/* Sheet */}
@@ -77,30 +97,44 @@ const Navbar = () => {
                   />
                 </SheetHeader>
                 <div className="flex flex-col gap-3 mt-8">
-                  {navLinks.map((link) => (
-                    <Button
-                      key={link.title}
-                      variant="nav"
-                      asChild
-                      onClick={goToSection(link.href)}
-                    >
-                      <span>{link.title}</span>
-                    </Button>
-                  ))}
+                  {navLinks.length > 0 &&
+                    navLinks.map((link) => (
+                      <Button
+                        key={link.title}
+                        variant="nav"
+                        asChild
+                        onClick={goToSection(link.href)}
+                      >
+                        <span>{link.title}</span>
+                      </Button>
+                    ))}
                 </div>
               </SheetContent>
             </Sheet>
           </div>
         </div>
-        <div>
-          <Button
-            className="text-[16px] filled-button"
-            variant="navBtn"
-            onClick={goToSection("#contact-wrapper")}
-          >
-            Contact
-          </Button>
-        </div>
+        {isHome && (
+          <div>
+            <Button
+              className="text-[16px] filled-button"
+              variant="navBtn"
+              onClick={goToSection("#contact-wrapper")}
+            >
+              Contact
+            </Button>
+          </div>
+        )}
+        {!isHome && (
+          <div>
+            <Button
+              className="text-[16px] filled-button"
+              variant="navBtn"
+              onClick={signoutHandler}
+            >
+              Logout
+            </Button>
+          </div>
+        )}
       </div>
     </Container>
   );

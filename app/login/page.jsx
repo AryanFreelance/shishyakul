@@ -24,7 +24,7 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { auth } from "@/firebase";
-import { successToast } from "@/utils/toast";
+import { errorToast, successToast } from "@/utils/toast";
 import { useRouter } from "next/navigation";
 
 const page = () => {
@@ -74,7 +74,16 @@ const page = () => {
         router.push("/dashboard");
       })
       .catch((error) => {
-        console.log(error);
+        console.log(error.code, error.message);
+        if (error.code === "auth/invalid-credential") {
+          errorToast("Invalid credentials. Please try again.");
+        } else if (error.code === "auth/user-not-found") {
+          errorToast("User not found. Please try again.");
+        } else if (error.code === "auth/wrong-password") {
+          errorToast("Wrong password. Please try again.");
+        } else {
+          errorToast("An error occurred. Please try again.");
+        }
       });
   };
 
@@ -196,7 +205,7 @@ const page = () => {
             </form>
           </div>
         </div>
-        <div className="hidden lg:block lg:w-[60%]">
+        <div className="hidden lg:block lg:w-[60%] lg:px-[6%]">
           <Image
             src={headerBanner}
             alt="Login Banner"

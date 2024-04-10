@@ -33,3 +33,22 @@ export const navLinks = [
     href: "#faq-wrapper",
   },
 ];
+
+export const dashboardNavLinks = [
+  {
+    title: "Manage Students",
+    href: "/dashboard",
+  },
+  {
+    title: "Attendance",
+    href: "/dashboard/attendance",
+  },
+  {
+    title: "Test Papers",
+    href: "/dashboard/tests",
+  },
+  {
+    title: "Fees",
+    href: "/dashboard/fees",
+  },
+];

@@ -95,6 +95,10 @@
     @apply text-2xl md:text-3xl text-primary md:leading-[1.1] barlow-semibold;
   }
 
+  .smallheading {
+    @apply text-xl text-primary barlow-semibold;
+  }
+
   .input-label {
     @apply text-xl text-secondary barlow-medium mb-2;
   }

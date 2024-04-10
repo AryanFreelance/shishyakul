@@ -13,12 +13,13 @@ import {
 } from "@/components/sections";
 import { Separator } from "@/components/ui/separator";
 import Container from "@/components/shared/Container";
+import { navLinks } from "@/constants";
 
 export default function Home() {
   return (
     <>
       <Container>
-        <Navbar />
+        <Navbar navLinks={navLinks} isHome={true} />
         <Header />
         <Separator className="my-[3rem] lg:my-[4rem]" />
         <WhyShishyakul />

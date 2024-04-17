@@ -4,6 +4,16 @@ import { dashboardNavLinks } from "@/constants";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const page = () => {
   return (
@@ -33,7 +43,30 @@ const page = () => {
                   <span>Created on - 20-04-2024</span>
                 </div>
                 <div className="flex w-full md:w-[16%] justify-end mt-4 md:mt-0 items-center gap-4">
-                  <Button variant="outline">View</Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger>
+                      <Button variant="outline">View</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Test Paper Name</AlertDialogTitle>
+
+                        <AlertDialogDescription>
+                          Created on - 12/04/2024
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <iframe
+                        src="/demopdf.pdf"
+                        className="w-full rounded"
+                        height="480"
+                        allowFullScreen
+                      ></iframe>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Close</AlertDialogCancel>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
                   <Link href="/dashboard/test/randomid">Manage</Link>
                 </div>
               </div>

@@ -45,7 +45,7 @@ const page = () => {
             <Calendar />
           </div>
           <div className="lg:w-[60%]">
-            <div className="flex justify-between items-center gap-6">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
               <h3 className="subsubheading text-secondary">
                 Attendance marking for{" "}
                 {date != "" ? dateSplit : todayDateString}
@@ -53,7 +53,7 @@ const page = () => {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button>
+                  <Button className="w-full md:w-auto">
                     Mark All <ChevronDown />
                   </Button>
                 </DropdownMenuTrigger>

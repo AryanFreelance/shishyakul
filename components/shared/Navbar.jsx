@@ -17,7 +17,6 @@ import { useRouter } from "next/navigation";
 
 const Navbar = ({ navLinks, isHome }) => {
   const [stickyTopClass, setStickyTopClass] = useState(false);
-
   const router = useRouter();
 
   const goToSection = (href) => () => {

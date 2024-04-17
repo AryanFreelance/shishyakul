@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import Link from "next/link";
 
 const page = () => {
   return (
@@ -110,7 +111,13 @@ const page = () => {
                   <TableCell className="barlow-regular">10th</TableCell>
                   <TableCell className="barlow-regular">90%</TableCell>
                   <TableCell className="barlow-regular flex items-center gap-4">
-                    <Dialog>
+                    <Link
+                      href="/dashboard/student/randomid"
+                      className="border-2 border-main rounded p-1"
+                    >
+                      <Eye />
+                    </Link>
+                    {/* <Dialog>
                       <DialogTrigger asChild>
                         <button className="border-2 border-main rounded p-1">
                           <Eye />
@@ -148,7 +155,7 @@ const page = () => {
                           <Button type="submit">Save changes</Button>
                         </DialogFooter>
                       </DialogContent>
-                    </Dialog>
+                    </Dialog> */}
 
                     <AlertDialog>
                       <AlertDialogTrigger asChild>

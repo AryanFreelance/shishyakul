@@ -4,6 +4,8 @@ import { dashboardNavLinks } from "@/constants";
 import React from "react";
 import Dropper from "@/components/Dropper";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 const page = () => {
   // Test Paper Form Fields - Test Name, Subject, Date, Total Marks, Question Paper (PDF)
@@ -16,9 +18,12 @@ const page = () => {
         <div className="mt-8 px-[4%] lg:px-[10%]">
           <form>
             <div className="flex flex-col w-full mb-4">
-              <label htmlFor="test-name" className="input-label text-secondary">
+              <Label
+                htmlFor="test-name"
+                className="text-xl text-secondary barlow-medium mb-2"
+              >
                 Test Name
-              </label>
+              </Label>
               <input
                 type="text"
                 id="test-name"
@@ -27,9 +32,12 @@ const page = () => {
               />
             </div>
             <div className="flex flex-col w-full mb-4">
-              <label htmlFor="subject" className="input-label text-secondary">
+              <Label
+                htmlFor="subject"
+                className="text-xl text-secondary barlow-medium mb-2"
+              >
                 Subject
-              </label>
+              </Label>
               <input
                 type="text"
                 id="subject"
@@ -39,25 +47,28 @@ const page = () => {
             </div>
             <div className="flex flex-col lg:flex-row lg:gap-4">
               <div className="flex flex-col w-full lg:w-[50%] mb-4">
-                <label htmlFor="date" className="input-label text-secondary">
+                <Label
+                  htmlFor="date"
+                  className="text-xl text-secondary barlow-medium mb-2"
+                >
                   Date
-                </label>
+                </Label>
                 <input
-                  type="text"
+                  type="date"
                   id="date"
                   className="input-taking"
                   placeholder="Enter Date of Test..."
                 />
               </div>
               <div className="flex flex-col w-full lg:w-[50%] mb-4">
-                <label
+                <Label
                   htmlFor="total-marks"
-                  className="input-label text-secondary"
+                  className="text-xl text-secondary barlow-medium mb-2"
                 >
                   Total Marks
-                </label>
+                </Label>
                 <input
-                  type="text"
+                  type="number"
                   id="total-marks"
                   className="input-taking"
                   placeholder="Enter Total Marks..."

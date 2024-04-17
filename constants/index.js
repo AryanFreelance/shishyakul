@@ -1,12 +1,3 @@
-// Sections in Homepage
-// 1. Home
-// 2. About
-// 3. Services
-// 4. Teachers
-// 5. Fees
-// 6. Testimonials
-// 7. FAQ
-
 export const navLinks = [
   {
     title: "Home",
@@ -46,9 +37,5 @@ export const dashboardNavLinks = [
   {
     title: "Test Papers",
     href: "/dashboard/tests",
-  },
-  {
-    title: "Fees",
-    href: "/dashboard/fees",
   },
 ];

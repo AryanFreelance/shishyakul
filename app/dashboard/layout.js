@@ -48,9 +48,16 @@
 // export default layout;
 
 import { auth } from "@/firebase";
+// import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
+
+// const client = new ApolloClient({
+//   uri: "https://localhost:4000",
+//   cache: new InMemoryCache(),
+//   // credentials: "include",
+// });
 
 const Layout = ({ children }) => {
   const [authStatus, setAuthStatus] = useState(null);
@@ -87,6 +94,7 @@ const Layout = ({ children }) => {
     );
   }
 
+  // return <ApolloProvider client={client}>{children}</ApolloProvider>;
   return <div>{children}</div>;
 };
 

@@ -1,5 +1,6 @@
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
+import { ApolloWrapper } from "@/components/shared/ApolloWrapper";
 
 export const metadata = {
   title: "Shishyakul | Home",
@@ -9,7 +10,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning={true}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com"></link>
         <link
@@ -22,8 +23,8 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         ></link>
       </head>
-      <body>
-        {children}
+      <body suppressHydrationWarning={true}>
+        <ApolloWrapper>{children}</ApolloWrapper>
         <Toaster />
       </body>
     </html>

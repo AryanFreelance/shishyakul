@@ -3,10 +3,11 @@
 import { auth } from "@/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
-const Layout = ({ children }) => {
+const layout = ({ children }) => {
   const [authStatus, setAuthStatus] = useState(null);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -14,11 +15,7 @@ const Layout = ({ children }) => {
       if (user) {
         const uid = user.uid;
         console.log(user);
-        if (user.email !== "shindearyan179@gmail.com") {
-          router.push(`/student/${uid}`);
-        } else {
-          setAuthStatus(true);
-        }
+        setAuthStatus(true);
       } else {
         setAuthStatus(false);
         router.push("/login");
@@ -44,8 +41,36 @@ const Layout = ({ children }) => {
     );
   }
 
-  // return <ApolloProvider client={client}>{children}</ApolloProvider>;
+  // onAuthStateChanged(auth, (user) => {
+  //   if (user) {
+  //     const uid = user.uid;
+  //     console.log(user);
+  //     setAuthStatus(true);
+  //     setEmail(user.email);
+  //     console.log("EMAIL", email);
+  //   } else {
+  //     router.push(`/login`);
+  //     setAuthStatus(false);
+  //   }
+  // });
+
+  // if (authStatus === null) {
+  //   return (
+  //     <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
+  //       Loading...
+  //     </div>
+  //   );
+  // }
+
+  // if (!authStatus) {
+  //   return (
+  //     <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
+  //       Redirecting...
+  //     </div>
+  //   );
+  // }
+
   return <div>{children}</div>;
 };
 
-export default Layout;
+export default layout;

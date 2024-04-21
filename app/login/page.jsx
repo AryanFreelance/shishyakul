@@ -32,6 +32,7 @@ const page = () => {
   const [resetEmail, setResetEmail] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [uid, setUid] = useState("");
 
   const [authStatus, setAuthStatus] = useState(null);
 
@@ -42,9 +43,14 @@ const page = () => {
       // User is signed in, see docs for a list of available properties
       // https://firebase.google.com/docs/reference/js/auth.user
       const uid = user.uid;
+      setUid(uid);
       console.log(user);
       setAuthStatus(true);
-      router.push("/dashboard");
+      if (email === "shindearyan179@gmail.com") {
+        router.push("/dashboard");
+      } else {
+        router.push(`/student/${uid}`);
+      }
       // ...
     } else {
       // User is signed out
@@ -70,8 +76,12 @@ const page = () => {
 
     signInWithEmailAndPassword(auth, email, password)
       .then(() => {
+        if (email === "shindearyan179@gmail.com") {
+          router.push("/dashboard");
+        } else {
+          router.push(`/student${uid}`);
+        }
         successToast("User logged in successfully");
-        router.push("/dashboard");
       })
       .catch((error) => {
         console.log(error.code, error.message);

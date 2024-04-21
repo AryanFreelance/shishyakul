@@ -17,7 +17,7 @@ const layout = ({ children }) => {
       const uid = user.uid;
       console.log(user);
       setAuthStatus(true);
-      router.push(`/dashboard/student/${uid}`);
+      router.push(`/student/${uid}`);
       // ...
     } else {
       // User is signed out

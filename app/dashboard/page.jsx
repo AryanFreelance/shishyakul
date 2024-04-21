@@ -119,6 +119,24 @@ const DELETE_FEES_USERS = gql`
   }
 `;
 
+const DELETE_TEMP_STUDENT = gql`
+  mutation DELETE_TEMP_STUDENT($email: ID!) {
+    deleteTempStudent(email: $email) {
+      message
+      success
+    }
+  }
+`;
+
+const DELETE_VERIFICATIONS = gql`
+  mutation DELETE_VERIFICATIONS($verificationCode: ID!) {
+    deleteVerification(verificationCode: $verificationCode) {
+      message
+      success
+    }
+  }
+`;
+
 const page = () => {
   const [studEmail, setStudEmail] = useState("");
   const [openAddStudentDialog, setOpenAddStudentDialog] = useState(false);
@@ -151,6 +169,14 @@ const page = () => {
 
   const [deleteFeeUsers, { loading: deleteFeeUserLoading }] =
     useMutation(DELETE_FEES_USERS);
+
+  const [deleteTempStudent, { loading: deleteTempStudentLoading }] =
+    useMutation(DELETE_TEMP_STUDENT, {
+      refetchQueries: [{ query: GET_TEMP_STUDENTS_QUERY }],
+    });
+
+  const [deleteVerification, { loading: deleteVerificationLoading }] =
+    useMutation(DELETE_VERIFICATIONS);
 
   if (data) console.log(data);
   // if (tempStudents) console.log("TEMPSTUDENTS", tempStudents);
@@ -225,6 +251,19 @@ const page = () => {
     const toastId = toast.loading("Deleting Student...");
     await deleteStudent({ variables: { userId: studentUserId } });
     await deleteFeeUsers({ variables: { userId: studentUserId } });
+    toast.success("Student Deleted Successfully!", {
+      id: toastId,
+    });
+  };
+
+  const deletePendingStudentHandler = async (email, verificationCode) => {
+    const toastId = toast.loading("Deleting Student...");
+
+    await deleteTempStudent({ variables: { email: email } });
+    await deleteVerification({
+      variables: { verificationCode: verificationCode },
+    });
+
     toast.success("Student Deleted Successfully!", {
       id: toastId,
     });
@@ -321,7 +360,7 @@ const page = () => {
                   </TableCell>
                   <TableCell className="barlow-regular flex items-center gap-4">
                     <Link
-                      href={`/dashboard/student/${student.userId}`}
+                      href={`/student/${student.userId}`}
                       className="border-2 border-main rounded p-1"
                     >
                       <Eye />
@@ -407,7 +446,12 @@ const page = () => {
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => console.log("DELETED")}
+                            onClick={() =>
+                              deletePendingStudentHandler(
+                                tmpstudent.email,
+                                tmpstudent.verificationCode
+                              )
+                            }
                           >
                             Delete
                           </AlertDialogAction>
@@ -422,7 +466,7 @@ const page = () => {
         </div>
       </div>
 
-      <div className="pb-10">
+      {/* <div className="pb-10">
         <div className="flex justify-between items-center">
           <h2 className="subheading">Verfication Codes</h2>
         </div>
@@ -484,7 +528,7 @@ const page = () => {
             </TableBody>
           </Table>
         </div>
-      </div>
+      </div> */}
     </Container>
   );
 };

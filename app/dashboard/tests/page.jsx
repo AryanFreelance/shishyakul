@@ -16,21 +16,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { gql, useQuery } from "@apollo/client";
 
 export const dynamic = "force-dynamic";
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
-
-const GET_TESTPAPERS = gql`
-  query {
-    testpapers {
-      id
-      createdAt
-      title
-      url
-    }
-  }
-`;
+import { GET_TESTPAPERS } from "@/graphql/queries/testPaper.query";
 
 const page = () => {
   // Queries

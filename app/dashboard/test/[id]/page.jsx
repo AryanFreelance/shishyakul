@@ -1,123 +1,311 @@
+"use client";
+
 import Container from "@/components/shared/Container";
 import Navbar from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { dashboardNavLinks } from "@/constants";
+import { useMutation } from "@apollo/client";
 import { X } from "lucide-react";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+export const dynamic = "force-dynamic";
+
+import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
+import { useParams, useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import {
+  GET_TESTPAPERS,
+  GET_TEST_PAPER,
+} from "@/graphql/queries/testPaper.query";
+import {
+  DELETE_TESTPAPER,
+  UPDATE_TESTPAPER,
+} from "@/graphql/mutations/testPaper.mutation";
 
 const page = () => {
   // Test Paper Fields - Test Name, Subject, Date, Total Marks, Question Paper (PDF)
+  const { id } = useParams();
+  const [testData, setTestData] = useState({
+    title: "",
+    subject: "",
+    date: "",
+    totalMarks: 0,
+    url: "",
+    sharedWith: [],
+  });
+  const [shareInput, setShareInput] = useState("");
+
+  const router = useRouter();
+
+  // Queries - Get Test Paper
+  const { data: testpaperData } = useSuspenseQuery(GET_TEST_PAPER, {
+    variables: { testpaperId: `${id}` },
+  });
+  useSuspenseQuery(GET_TESTPAPERS);
+
+  // Mutations - Update Test Paper, Share Test Paper
+  const [updateTestPaper] = useMutation(UPDATE_TESTPAPER, {
+    refetchQueries: [{ query: GET_TESTPAPERS }, { query: GET_TEST_PAPER }],
+  });
+  const [deleteTestPaper] = useMutation(DELETE_TESTPAPER, {
+    refetchQueries: [{ query: GET_TESTPAPERS }, { query: GET_TEST_PAPER }],
+  });
+
+  const updateTestPaperHandler = async (e) => {
+    e.preventDefault();
+    const toastId = toast.loading("Updating Test Paper...");
+    console.log(testData);
+    await updateTestPaper({
+      variables: {
+        id: id,
+        title: testData.title,
+        subject: testData.subject,
+        date: testData.date,
+        totalMarks: parseInt(testData.totalMarks),
+        sharedWith: testData.sharedWith,
+      },
+    });
+    toast.success("Test Paper Updated Successfully!", { id: toastId });
+  };
+
+  const deleteTestPaperHandler = async (e) => {
+    e.preventDefault();
+    const toastId = toast.loading("Deleting Test Paper...");
+    await deleteTestPaper({ variables: { id: id } });
+    router.push("/dashboard/tests");
+    toast.success("Test Paper Deleted Successfully!", { id: toastId });
+  };
+
+  useEffect(() => {
+    if (testpaperData) {
+      if (testpaperData?.testpaper === null) router.push("/dashboard/tests");
+
+      setTestData({
+        title: testpaperData?.testpaper?.title,
+        subject: testpaperData?.testpaper?.subject,
+        date: testpaperData?.testpaper?.date,
+        totalMarks: testpaperData?.testpaper?.totalMarks,
+        url: testpaperData?.testpaper?.url,
+        sharedWith: testpaperData?.testpaper?.sharedWith,
+      });
+      console.log(testpaperData);
+    }
+  }, [testpaperData]);
 
   return (
     <Container>
       <Navbar navLinks={dashboardNavLinks} isHome={false} />
 
-      <div className="pb-10">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center">
-          <h2 className="subheading">Manage TestName</h2>
-          <span>Created on - 12/04/2024</span>
-        </div>
-        <div className="mt-8 px-[4%] lg:px-[10%]">
-          <form>
-            <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 md:items-center">
-              <Label
-                htmlFor="test-name"
-                className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%]"
-              >
-                Test Name
-              </Label>
-              <input
-                type="text"
-                id="test-name"
-                className="input-taking w-full lg:w-[80%] md:w-[70%]"
-                placeholder="Update Test Name..."
-              />
+      {
+        // If testpaperData is not available, show a loading spinner
+        testpaperData ? (
+          <div className="pb-10">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center">
+              <h2 className="subheading">
+                Manage {testpaperData?.testpaper?.title}
+              </h2>
+              <span>
+                Created on - {testpaperData?.testpaper?.createdAt.split(",")[0]}
+              </span>
             </div>
-            <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 md:items-center mt-4">
-              <Label
-                htmlFor="subject"
-                className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%]"
-              >
-                Subject
-              </Label>
-              <input
-                type="text"
-                id="subject"
-                className="input-taking w-full lg:w-[80%] md:w-[70%]"
-                placeholder="Update Subject Name..."
-              />
-            </div>
-            <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 md:items-center mt-4">
-              <Label
-                htmlFor="date"
-                className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%]"
-              >
-                Date
-              </Label>
-              <input
-                type="date"
-                id="date"
-                className="input-taking w-full lg:w-[80%] md:w-[70%]"
-                placeholder="Update Date of Test..."
-              />
-            </div>
-            <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 md:items-center mt-4">
-              <Label
-                htmlFor="total-marks"
-                className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%]"
-              >
-                Total Marks
-              </Label>
-              <input
-                type="number"
-                id="total-marks"
-                className="input-taking w-full lg:w-[80%] md:w-[70%]"
-                placeholder="Update Total Marks..."
-              />
-            </div>
-
-            <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 mt-4">
-              <Label
-                htmlFor="share-to"
-                className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%] py-3"
-              >
-                Share To
-              </Label>
-              <div className="w-full lg:w-[80%] md:w-[70%] flex flex-col md:gap-6 gap-2">
-                <div className="flex gap-2 md:gap-6">
+            <div className="mt-8 px-[4%] lg:px-[10%]">
+              <form>
+                <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 md:items-center">
+                  <Label
+                    htmlFor="test-name"
+                    className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%]"
+                  >
+                    Test Name
+                  </Label>
                   <input
-                    type="email"
-                    id="share-to"
-                    className="input-taking w-[74%]"
-                    placeholder="Enter student's Email..."
+                    type="text"
+                    id="test-name"
+                    className="input-taking w-full lg:w-[80%] md:w-[70%]"
+                    placeholder="Update Test Name..."
+                    value={testData?.title}
+                    onChange={(e) =>
+                      setTestData({ ...testData, title: e.target.value })
+                    }
                   />
-                  <Button className="w-[26%] md:mt-0 py-6">Share</Button>
                 </div>
-                <div className="flex flex-wrap gap-x-6 gap-y-4">
-                  <div className="bg-secondary text-primary flex gap-4 rounded px-4 py-2">
-                    <span>shindearyan179@gmail.com</span>
-                    <button>
-                      <X />
-                    </button>
+                <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 md:items-center mt-4">
+                  <Label
+                    htmlFor="subject"
+                    className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%]"
+                  >
+                    Subject
+                  </Label>
+                  <input
+                    type="text"
+                    id="subject"
+                    className="input-taking w-full lg:w-[80%] md:w-[70%]"
+                    placeholder="Update Subject Name..."
+                    value={testData?.subject}
+                    onChange={(e) =>
+                      setTestData({ ...testData, subject: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 md:items-center mt-4">
+                  <Label
+                    htmlFor="date"
+                    className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%]"
+                  >
+                    Date
+                  </Label>
+                  <input
+                    type="date"
+                    id="date"
+                    className="input-taking w-full lg:w-[80%] md:w-[70%]"
+                    placeholder="Update Date of Test..."
+                    value={testData?.date}
+                    onChange={(e) =>
+                      setTestData({ ...testData, date: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 md:items-center mt-4">
+                  <Label
+                    htmlFor="total-marks"
+                    className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%]"
+                  >
+                    Total Marks
+                  </Label>
+                  <input
+                    type="number"
+                    id="total-marks"
+                    className="input-taking w-full lg:w-[80%] md:w-[70%]"
+                    placeholder="Update Total Marks..."
+                    value={testData?.totalMarks}
+                    onChange={(e) =>
+                      setTestData({ ...testData, totalMarks: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 mt-4">
+                  <Label
+                    htmlFor="share-to"
+                    className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%] py-3"
+                  >
+                    Share To
+                  </Label>
+                  <div className="w-full lg:w-[80%] md:w-[70%] flex flex-col md:gap-6 gap-2">
+                    <div className="flex gap-2 md:gap-6">
+                      <input
+                        type="email"
+                        id="share-to"
+                        className="input-taking w-[74%]"
+                        placeholder="Enter student's Email..."
+                        value={shareInput}
+                        onChange={(e) => setShareInput(e.target.value)}
+                      />
+                      <Button
+                        className="w-[26%] md:mt-0 py-6"
+                        disabled={
+                          testData?.sharedWith?.includes(shareInput) ||
+                          shareInput === ""
+                        }
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setTestData({
+                            ...testData,
+                            sharedWith: [...testData?.sharedWith, shareInput],
+                          });
+                        }}
+                      >
+                        Share
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-x-6 gap-y-4">
+                      {testData?.sharedWith?.map((email, index) => (
+                        <div
+                          key={index}
+                          className="bg-secondary text-primary flex gap-4 rounded px-4 py-2"
+                        >
+                          <span>{email}</span>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const updatedSharedWith =
+                                testData?.sharedWith.filter((e) => e !== email);
+                              setTestData({
+                                ...testData,
+                                sharedWith: updatedSharedWith,
+                              });
+                            }}
+                          >
+                            <X />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <iframe
-              src="/demopdf.pdf"
-              className="w-full rounded my-6"
-              height="480"
-              allowFullScreen
-            ></iframe>
+                <iframe
+                  src={testData?.url}
+                  className="w-full rounded my-6"
+                  height="480"
+                  allowFullScreen
+                ></iframe>
 
-            <div className="mt-10">
-              <Button className="w-full">Update</Button>
+                <div className="mt-10">
+                  <Button
+                    className="w-full"
+                    type="submit"
+                    onClick={updateTestPaperHandler}
+                  >
+                    Update Test
+                  </Button>
+                </div>
+
+                <div className="mt-6">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button className="w-full bg-red-500 hover:bg-red-600 text-primary">
+                        Delete Test
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Are you sure to delete?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently
+                          delete your the test paper and remove the data from
+                          servers.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={deleteTestPaperHandler}>
+                          Continue
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </form>
             </div>
-          </form>
-        </div>
-      </div>
+          </div>
+        ) : (
+          <div>Loading...</div>
+        )
+      }
     </Container>
   );
 };

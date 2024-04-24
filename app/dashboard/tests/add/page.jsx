@@ -11,37 +11,16 @@ import DropzoneComponent from "react-dropzone";
 import { errorToast, successToast } from "@/utils/toast";
 import { storage } from "@/firebase";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { gql, useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client";
 import toast from "react-hot-toast";
 import { Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { CREATE_TEST } from "@/graphql/mutations/testPaper.mutation";
+import { GET_TESTPAPERS } from "@/graphql/queries/testPaper.query";
 
-const CREATE_TEST = gql`
-  mutation CREATE_TEST(
-    $title: String!
-    $subject: String!
-    $date: String!
-    $totalMarks: Int!
-    $url: String!
-  ) {
-    createTest(
-      title: $title
-      subject: $subject
-      date: $date
-      totalMarks: $totalMarks
-      url: $url
-    ) {
-      id
-      createdAt
-      date
-      sharedWith
-      subject
-      title
-      totalMarks
-      url
-    }
-  }
-`;
+export const dynamic = "force-dynamic";
+
+import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 
 const page = () => {
   // Test Paper Form Fields - Test Name, Subject, Date, Total Marks, Question Paper (PDF)
@@ -60,8 +39,13 @@ const page = () => {
 
   const router = useRouter();
 
+  // Queries
+  useSuspenseQuery(GET_TESTPAPERS);
+
   // Mutations
-  const [createTest] = useMutation(CREATE_TEST);
+  const [createTest] = useMutation(CREATE_TEST, {
+    refetchQueries: [{ query: GET_TESTPAPERS }],
+  });
 
   useEffect(() => {
     console.log(isFormLoading);

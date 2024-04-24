@@ -40,143 +40,46 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
-import { gql, useMutation } from "@apollo/client";
-import { useEffect, useState } from "react";
+import { useMutation } from "@apollo/client";
+import { useState } from "react";
 import toast from "react-hot-toast";
 import emailjs from "@emailjs/browser";
-
-// Create a Students Query
-const GET_STUDENTS = gql`
-  query {
-    students {
-      userId
-      firstname
-      lastname
-      email
-      phone
-      grade
-      attendance {
-        present
-        absent
-      }
-    }
-  }
-`;
-
-const GET_TEMP_STUDENTS_QUERY = gql`
-  query {
-    tempStudents {
-      email
-      verificationCode
-    }
-  }
-`;
-
-const GET_VERIFICATIONS = gql`
-  query GET_VERIFICATIONS {
-    verifications {
-      verificationCode
-      studentEmail
-      expired
-    }
-  }
-`;
-
-const CreateVerification = gql`
-  mutation createVerification($studentEmail: String!) {
-    createVerification(studentEmail: $studentEmail) {
-      code
-      message
-      success
-    }
-  }
-`;
-
-const CreateTempStudent = gql`
-  mutation createTempStudent($email: ID!, $verificationCode: String!) {
-    createTempStudent(email: $email, verificationCode: $verificationCode) {
-      message
-      success
-    }
-  }
-`;
-
-const DELETE_STUDENT = gql`
-  mutation DeleteStudent($userId: ID!) {
-    deleteStudent(userId: $userId) {
-      message
-      success
-    }
-  }
-`;
-
-const DELETE_FEES_USERS = gql`
-  mutation DeleteFeeUsers($userId: ID!) {
-    deleteUserFees(userId: $userId) {
-      message
-      success
-    }
-  }
-`;
-
-const DELETE_TEMP_STUDENT = gql`
-  mutation DELETE_TEMP_STUDENT($email: ID!) {
-    deleteTempStudent(email: $email) {
-      message
-      success
-    }
-  }
-`;
-
-const DELETE_VERIFICATIONS = gql`
-  mutation DELETE_VERIFICATIONS($verificationCode: ID!) {
-    deleteVerification(verificationCode: $verificationCode) {
-      message
-      success
-    }
-  }
-`;
+import {
+  GET_STUDENTS,
+  GET_TEMP_STUDENTS_QUERY,
+} from "@/graphql/queries/students.query";
+import {
+  CreateVerification,
+  DELETE_VERIFICATIONS,
+} from "@/graphql/mutations/verifications.mutation";
+import {
+  CreateTempStudent,
+  DELETE_STUDENT,
+  DELETE_TEMP_STUDENT,
+} from "@/graphql/mutations/students.mutation";
+import { DELETE_FEES_USERS } from "@/graphql/mutations/fees.mutation";
 
 const page = () => {
   const [studEmail, setStudEmail] = useState("");
   const [openAddStudentDialog, setOpenAddStudentDialog] = useState(false);
+
+  // Queries
   const { data } = useSuspenseQuery(GET_STUDENTS);
   const { data: tempStudents } = useSuspenseQuery(GET_TEMP_STUDENTS_QUERY);
-  const { data: verifications } = useSuspenseQuery(GET_VERIFICATIONS);
 
-  const [
-    createVerification,
-    {
-      data: verificationData,
-      loading: verificationLoading,
-      error: verificationError,
-    },
-  ] = useMutation(CreateVerification);
-
-  const [createTempStudent, { data: mdata, loading, error }] = useMutation(
-    CreateTempStudent,
-    {
-      refetchQueries: [{ query: GET_TEMP_STUDENTS_QUERY }],
-    }
-  );
-
-  const [deleteStudent, { loading: deleteStudentLoading }] = useMutation(
-    DELETE_STUDENT,
-    {
-      refetchQueries: [{ query: GET_STUDENTS }],
-    }
-  );
-
-  const [deleteFeeUsers, { loading: deleteFeeUserLoading }] =
-    useMutation(DELETE_FEES_USERS);
-
-  const [deleteTempStudent, { loading: deleteTempStudentLoading }] =
-    useMutation(DELETE_TEMP_STUDENT, {
-      refetchQueries: [{ query: GET_TEMP_STUDENTS_QUERY }],
-    });
-
-  const [deleteVerification, { loading: deleteVerificationLoading }] =
-    useMutation(DELETE_VERIFICATIONS);
+  // Mutations
+  const [createVerification] = useMutation(CreateVerification);
+  const [createTempStudent] = useMutation(CreateTempStudent, {
+    refetchQueries: [{ query: GET_TEMP_STUDENTS_QUERY }],
+  });
+  const [deleteStudent] = useMutation(DELETE_STUDENT, {
+    refetchQueries: [{ query: GET_STUDENTS }],
+  });
+  const [deleteFeeUsers] = useMutation(DELETE_FEES_USERS);
+  const [deleteTempStudent] = useMutation(DELETE_TEMP_STUDENT, {
+    refetchQueries: [{ query: GET_TEMP_STUDENTS_QUERY }],
+  });
+  const [deleteVerification] = useMutation(DELETE_VERIFICATIONS);
 
   if (data) console.log(data);
   // if (tempStudents) console.log("TEMPSTUDENTS", tempStudents);
@@ -187,10 +90,6 @@ const page = () => {
 
   // if (!verificationLoading)
   //   console.log("VERIFICATION LOADING STOPS", verificationData);
-
-  useEffect(() => {
-    console.log("OPEN ADD STUDENT DIALOG", openAddStudentDialog);
-  }, [openAddStudentDialog]);
 
   const requestVerificationCode = async () => {
     const result = await createVerification({
@@ -417,6 +316,16 @@ const page = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {tempStudents.tempStudents?.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan="3"
+                    className="barlow-semibold text-center"
+                  >
+                    No pending students
+                  </TableCell>
+                </TableRow>
+              )}
               {tempStudents.tempStudents?.map((tmpstudent, index) => (
                 <TableRow key={index}>
                   <TableCell className="barlow-semibold">
@@ -465,70 +374,6 @@ const page = () => {
           </Table>
         </div>
       </div>
-
-      {/* <div className="pb-10">
-        <div className="flex justify-between items-center">
-          <h2 className="subheading">Verfication Codes</h2>
-        </div>
-        <div className="mt-8">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="barlow-semibold">Email</TableHead>
-                <TableHead className="barlow-semibold">
-                  Verification Code
-                </TableHead>
-                <TableHead className="barlow-semibold">Used</TableHead>
-                <TableHead className="barlow-semibold">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {verifications.verifications?.map((tmpstudent, index) => (
-                <TableRow key={index}>
-                  <TableCell className="barlow-semibold">
-                    {tmpstudent.studentEmail}
-                  </TableCell>
-                  <TableCell className="barlow-regular">
-                    {tmpstudent.verificationCode}
-                  </TableCell>
-                  <TableCell className="barlow-regular">
-                    {tmpstudent.expired ? "Yes" : "No"}
-                  </TableCell>
-                  <TableCell className="barlow-regular flex items-center gap-4">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <button className="border-2 border-main rounded p-1">
-                          <Trash />
-                        </button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Are you absolutely sure?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently
-                            delete your account and remove your data from our
-                            servers.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => console.log("DELETED")}
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div> */}
     </Container>
   );
 };

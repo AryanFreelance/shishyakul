@@ -1,13 +1,10 @@
 "use client";
-
-import Calendar from "@/components/sections/Calendar";
 import Container from "@/components/shared/Container";
 import Navbar from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
 import { dashboardNavLinks } from "@/constants";
-import { attendanceStore } from "@/store/attendance";
 import { ChevronDown } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,40 +12,183 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+
+import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+
+import { GET_ATTENDANCE, GET_STUDENTS } from "@/graphql/queries/attendance.query";
+
+export const dynamic = "force-dynamic";
+import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
+import { useLazyQuery, useMutation } from "@apollo/client";
+import { CREATE_ATTENDANCE, UPDATE_ATTENDANCE } from "@/graphql/mutations/attendance.mutation";
+import toast from "react-hot-toast";
+
 const page = () => {
-  const [attendance, setAttendance] = useState([]);
-
-  const date = attendanceStore((state) => state.date);
-  let dateSplit = date.split("-").reverse().join("/");
+  const [present, setPresent] = useState([]);
+  const [absent, setAbsent] = useState([]);
   const today = new Date();
-  const todayDateString = `${
-    today.getDate() < 10 ? "0" + today.getDate() : today.getDate()
-  }/${
-    today.getMonth() + 1 < 10
-      ? "0" + (today.getMonth() + 1)
-      : today.getMonth() + 1
-  }/${today.getFullYear()}`;
+  const [date, setDate] = useState(today);
+  const [formattedDate, setFormattedDate] = useState("");
+  let months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  let todayDate = `${today.getDate()}-${(today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : today.getMonth() + 1}-${today.getFullYear()}`;
 
-  const radioChangeHandler = (e) => {
-    console.log(e.target.value);
-    setAttendance((prev) => [...prev, e.target.value]);
-    console.log(attendance);
+  // Queries - Get Students, Get Attendance
+  const {
+    data: studentsData,
+    loading: studentsLoading,
+    error: studentsError,
+  } = useSuspenseQuery(GET_STUDENTS);
+
+  const [fetchAttendance, { data: attendanceData, loading: attendanceLoading, error: attendanceError }] = useLazyQuery(GET_ATTENDANCE, {
+    fetchPolicy: 'network-only',
+  });
+
+  // Mutations - Create Attendance, Update Attendance
+  const [createAttendance] = useMutation(CREATE_ATTENDANCE, {
+    onCompleted: (data) => {
+      console.log("Attendance Created: ", data);
+      toast.success("Attendance Saved Successfully!");
+    },
+    onError: (error) => {
+      console.log("Error creating attendance: ", error);
+      toast.error("Error saving attendance.");
+    },
+    refetchQueries: [{ query: GET_ATTENDANCE, variables: { timestamp: formattedDate.split("-").reverse().join("-") } }]
+  });
+
+  const [updateAttendance] = useMutation(UPDATE_ATTENDANCE, {
+    onCompleted: (data) => {
+      console.log("Attendance Updated: ", data);
+      toast.success("Attendance Updated Successfully!");
+    },
+    onError: (error) => {
+      console.log("Error updating attendance: ", error);
+      toast.error("Error updating attendance.");
+    },
+    refetchQueries: [{ query: GET_ATTENDANCE, variables: { timestamp: formattedDate.split("-").reverse().join("-") } }]
+  });
+
+  const radioInputChangeHandler = (e, userID) => {
+    const { value } = e.target;
+    if (value === "present") {
+      setPresent((prev) => [...prev, userID]);
+      setAbsent((prev) => prev.filter((item) => item !== userID));
+    } else {
+      setAbsent((prev) => [...prev, userID]);
+      setPresent((prev) => prev.filter((item) => item !== userID));
+    }
   };
+
+  useEffect(() => {
+    let sDate = date && date.toString().split(" ");
+    let formattedDate = date && `${sDate[2]}-${getMonthNumber(sDate[1])}-${sDate[3]}`;
+    setFormattedDate(date ? formattedDate : "(select a date)");
+    fetchAttendance({
+      variables: {
+        timestamp: formattedDate.split("-").reverse().join("-"),
+      },
+    });
+  }, [date]);
+
+  useEffect(() => {
+    if (attendanceData?.attendance) {
+      setPresent(attendanceData.attendance.present);
+      setAbsent(attendanceData.attendance.absent);
+    } else {
+      setPresent([]);
+      setAbsent([]);
+    }
+  }, [attendanceData]);
+
+  function getMonthNumber(monthName) {
+    const monthIndex = months.indexOf(monthName);
+    if (monthIndex === -1) {
+      return -1;
+    }
+    return monthIndex + 1 < 10 ? "0" + (monthIndex + 1) : monthIndex + 1;
+  }
+
+  const updateAttendanceHandler = async () => {
+    const toastId = toast.loading("Updating Attendance...");
+
+    if (attendanceData?.attendance === null) {
+      console.log("ID", formattedDate.split("-").reverse().join("-"));
+
+      await createAttendance({
+        variables: {
+          timestamp: formattedDate.split("-").reverse().join("-"),
+          present: present,
+          absent: absent,
+        },
+      });
+    } else {
+      await updateAttendance({
+        variables: {
+          present: present,
+          absent: absent,
+          timestamp: formattedDate.split("-").reverse().join("-"),
+        },
+      });
+    }
+    toast.dismiss(toastId);
+  }
 
   return (
     <Container>
       <Navbar navLinks={dashboardNavLinks} isHome={false} />
       <div className="pb-10">
         <h2 className="subheading">Attendance</h2>
+        <div className="flex justify-end items-center">
+          <Popover className="w-full">
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-[280px] justify-start text-left font-normal",
+                  !date && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {date ? format(date, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
         <div className="mt-8 flex flex-col lg:flex-row gap-10">
-          <div className="lg:w-[40%]">
-            <Calendar />
-          </div>
-          <div className="lg:w-[60%]">
+          <div className="w-full">
             <div className="flex flex-col md:flex-row justify-between items-center gap-6">
               <h3 className="subsubheading text-secondary">
-                Attendance marking for{" "}
-                {date != "" ? dateSplit : todayDateString}
+                Attendance marking for {formattedDate}
               </h3>
 
               <DropdownMenu>
@@ -58,51 +198,61 @@ const page = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  {/* <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator /> */}
-                  <DropdownMenuItem>Present</DropdownMenuItem>
-                  <DropdownMenuItem>Absent</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    setPresent(studentsData?.students.map((student) => student.userId));
+                    setAbsent([]);
+                  }}>Present</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    setAbsent(studentsData?.students.map((student) => student.userId));
+                    setPresent([]);
+                  }}>Absent</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
             <div className="mt-6">
-              {[1, 2, 3, 4, 5].map((item) => (
-                <div
-                  className="flex justify-between items-center rounded my-4"
-                  key={item}
-                >
-                  <div>Aryan Shinde</div>
-                  <div className="flex gap-4">
-                    <div className="flex gap-2">
-                      <input
-                        type="radio"
-                        name={item}
-                        value="present"
-                        onChange={radioChangeHandler}
-                        id={`present-${item}`}
-                      />
-                      <label htmlFor={`present-${item}`}>Present</label>
-                    </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="radio"
-                        id={`absent-${item}`}
-                        name={item}
-                        value="absent"
-                        onChange={radioChangeHandler}
-                      />
-                      <label htmlFor={`absent-${item}`}>Absent</label>
+              {studentsData?.students.map((item, index) => (
+                <div key={index}>
+                  <div className="flex justify-between items-center rounded my-4">
+                    <div>{item.firstname + " " + item.lastname}</div>
+                    <div className="flex gap-4">
+                      <div className="flex gap-2">
+                        <input
+                          type="radio"
+                          name={item.userId}
+                          value="present"
+                          id={`present-${item.userId}`}
+                          onChange={(e) => radioInputChangeHandler(e, item.userId)}
+                          checked={present.includes(item.userId)}
+                        />
+                        <label htmlFor={`present-${item.userId}`}>Present</label>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="radio"
+                          id={`absent-${item.userId}`}
+                          name={item.userId}
+                          value="absent"
+                          checked={absent.includes(item.userId)}
+                          onChange={(e) => radioInputChangeHandler(e, item.userId)}
+                        />
+                        <label htmlFor={`absent-${item.userId}`}>Absent</label>
+                      </div>
                     </div>
                   </div>
+                  <Separator />
                 </div>
               ))}
             </div>
-            <div className="flex justify-center items-center gap-6 mt-8">
+            <div className="flex justify-center items-center gap-6 mt-8 w-[50%]">
               <div className="w-[50%]">
-                <Button className="w-full">Save</Button>
+                <Button className="w-full" onClick={updateAttendanceHandler}>Save</Button>
               </div>
               <div className="w-[50%]">
-                <Button className="w-full">Send SMS/Email</Button>
+                {
+                  formattedDate === todayDate && (
+                    <Button className="w-full">Send SMS/Email</Button>
+                  )
+                }
               </div>
             </div>
           </div>

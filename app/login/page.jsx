@@ -3,18 +3,17 @@
 import Container from "@/components/shared/Container";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import React, { useState } from "react";
-import headerBanner from "@/assets/header/hero_banner.jpg";
+import React, { useState, useEffect } from "react";
+import headerBanner from "@/assets/banners/header/hero_banner.jpg";
 import { EyeIcon, EyeOff } from "lucide-react";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,77 +23,86 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { auth } from "@/firebase";
-import { errorToast, successToast } from "@/utils/toast";
+import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
-const page = () => {
+const Page = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [uid, setUid] = useState("");
-
+  const [isForgotDialogOpen, setIsForgotDialogOpen] = useState(false);
   const [authStatus, setAuthStatus] = useState(null);
-
   const router = useRouter();
 
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      // User is signed in, see docs for a list of available properties
-      // https://firebase.google.com/docs/reference/js/auth.user
-      const uid = user.uid;
-      setUid(uid);
-      console.log(user);
-      setAuthStatus(true);
-      if (email === "shindearyan179@gmail.com") {
-        router.push("/dashboard");
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const userid = user.uid;
+        setUid(userid);
+        setAuthStatus(true);
+        if (user.email === "shindearyan179@gmail.com") {
+          router.push("/dashboard");
+        } else {
+          router.push(`/student/${userid}`);
+        }
       } else {
-        router.push(`/student/${uid}`);
+        setAuthStatus(false);
       }
-      // ...
-    } else {
-      // User is signed out
-      // ...
-      setAuthStatus(false);
-    }
-  });
+    });
+    return () => unsubscribe();
+  }, []);
 
   const resetPassword = async (e) => {
     e.preventDefault();
-
-    sendPasswordResetEmail(auth, resetEmail)
-      .then(() => {
-        successToast("Password reset email sent successfully");
-      })
-      .catch((error) => {
-        console.log(error);
-      });
+    const toastId = toast.loading("Sending password reset email...");
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      toast.success("Password reset email sent successfully", { id: toastId });
+    } catch (error) {
+      console.log(error);
+      const errorMessage =
+        error.code === "auth/user-not-found"
+          ? "User not found. Please try again."
+          : error.code === "auth/invalid-email"
+            ? "Invalid email. Please try again."
+            : error.code === "auth/missing-email"
+              ? "Email is missing. Please try again."
+              : error.code === "auth/network-request-failed"
+                ? "Network error. Please try again."
+                : "An error occurred. Please try again.";
+      toast.error(errorMessage, { id: toastId });
+    }
+    setIsForgotDialogOpen(false);
+    setResetEmail("");
   };
 
   const loginHandler = async (e) => {
     e.preventDefault();
-
-    signInWithEmailAndPassword(auth, email, password)
-      .then(() => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password).then((res) => {
         if (email === "shindearyan179@gmail.com") {
           router.push("/dashboard");
         } else {
-          router.push(`/student${uid}`);
+          // router.push(`/student/${uid}`);
         }
-        successToast("User logged in successfully");
+        toast.success("User logged in successfully");
+        console.log("RES", res, email, uid);
       })
-      .catch((error) => {
-        console.log(error.code, error.message);
-        if (error.code === "auth/invalid-credential") {
-          errorToast("Invalid credentials. Please try again.");
-        } else if (error.code === "auth/user-not-found") {
-          errorToast("User not found. Please try again.");
-        } else if (error.code === "auth/wrong-password") {
-          errorToast("Wrong password. Please try again.");
-        } else {
-          errorToast("An error occurred. Please try again.");
-        }
-      });
+
+    } catch (error) {
+      console.log(error.code, error.message);
+      const errorMessage =
+        error.code === "auth/invalid-credential"
+          ? "Invalid credentials. Please try again."
+          : error.code === "auth/user-not-found"
+            ? "User not found. Please try again."
+            : error.code === "auth/wrong-password"
+              ? "Wrong password. Please try again."
+              : "An error occurred. Please try again.";
+      toast.error(errorMessage);
+    }
   };
 
   if (authStatus === null) {
@@ -159,7 +167,10 @@ const page = () => {
                 </div>
               </div>
               <div className="flex justify-end w-full">
-                <Dialog>
+                <Dialog
+                  open={isForgotDialogOpen}
+                  onOpenChange={setIsForgotDialogOpen}
+                >
                   <DialogTrigger asChild>
                     <button className="barlow-semibold text-lg">
                       Forgot Password?
@@ -188,11 +199,6 @@ const page = () => {
                       </div>
                     </div>
                     <DialogFooter>
-                      {/* <DialogClose asChild>
-                        <Button type="button" variant="secondary">
-                          Cancel
-                        </Button>
-                      </DialogClose> */}
                       <Button
                         type="submit"
                         className="flex justify-center items-center"
@@ -229,4 +235,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

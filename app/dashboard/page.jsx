@@ -45,86 +45,87 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import emailjs from "@emailjs/browser";
 import {
-  GET_STUDENTS,
-  GET_TEMP_STUDENTS_QUERY,
-} from "@/graphql/queries/students.query";
-import {
-  CreateVerification,
-  DELETE_VERIFICATIONS,
-} from "@/graphql/mutations/verifications.mutation";
-import {
-  CreateTempStudent,
   DELETE_STUDENT,
   DELETE_TEMP_STUDENT,
+  INITIALIZE_STUDENT,
 } from "@/graphql/mutations/students.mutation";
-import { DELETE_FEES_USERS } from "@/graphql/mutations/fees.mutation";
+import {
+  DASHBOARD_GET_STUDENT,
+  GET_TEMP_STUDENTS,
+} from "@/graphql/queries/students.query";
 
 const page = () => {
   const [studEmail, setStudEmail] = useState("");
   const [openAddStudentDialog, setOpenAddStudentDialog] = useState(false);
 
-  // Queries
-  const { data } = useSuspenseQuery(GET_STUDENTS);
-  const { data: tempStudents } = useSuspenseQuery(GET_TEMP_STUDENTS_QUERY);
+  // Queries - GET_TEMP_STUDENTS, DASHBOARD_GET_STUDENT
+  const {
+    data: tempStudents,
+    loading: tempStudentsLoading,
+    error: tempStudentsError,
+  } = useSuspenseQuery(GET_TEMP_STUDENTS);
+  const {
+    data: students,
+    loading: studentsLoading,
+    error: studentsError,
+  } = useSuspenseQuery(DASHBOARD_GET_STUDENT);
 
-  // Mutations
-  const [createVerification] = useMutation(CreateVerification);
-  const [createTempStudent] = useMutation(CreateTempStudent, {
-    refetchQueries: [{ query: GET_TEMP_STUDENTS_QUERY }],
+  // Mutations - INITIALIZE_STUDENT, DELETE_STUDENT, DELETE_TEMP_STUDENT
+  const [initializeStudent] = useMutation(INITIALIZE_STUDENT, {
+    refetchQueries: [{ query: GET_TEMP_STUDENTS }],
   });
   const [deleteStudent] = useMutation(DELETE_STUDENT, {
-    refetchQueries: [{ query: GET_STUDENTS }],
+    refetchQueries: [{ query: DASHBOARD_GET_STUDENT }],
   });
-  const [deleteFeeUsers] = useMutation(DELETE_FEES_USERS);
   const [deleteTempStudent] = useMutation(DELETE_TEMP_STUDENT, {
-    refetchQueries: [{ query: GET_TEMP_STUDENTS_QUERY }],
+    refetchQueries: [{ query: GET_TEMP_STUDENTS }],
   });
-  const [deleteVerification] = useMutation(DELETE_VERIFICATIONS);
 
-  if (data) console.log(data);
-  // if (tempStudents) console.log("TEMPSTUDENTS", tempStudents);
-  // if (verifications) console.log("VERIFICATIONS", verifications);
-  // if (loading) console.log("Submitting...");
-  // if (!loading) console.log("MDATA...", mdata);
-  // if (error) console.log(`Submission error! ${error.message}`);
+  if (tempStudents) console.log("tempStudents", tempStudents);
+  if (students) console.log("STUDENTS", students);
+  if (tempStudentsLoading) console.log("tempStudents LOADING...");
+  if (studentsLoading) console.log("STUDENTS LOADING...");
+  if (tempStudentsError)
+    console.log(`tempStudents ERROR! ${tempStudentsError}`);
+  if (studentsError) console.log(`STUDENTS ERROR! ${studentsError}`);
 
-  // if (!verificationLoading)
-  //   console.log("VERIFICATION LOADING STOPS", verificationData);
+  const deleteStudentHandler = async (userId) => {
+    const toastId = toast.loading("Deleting Student...");
+    const response = await deleteStudent({ variables: { userId } });
 
-  const requestVerificationCode = async () => {
-    const result = await createVerification({
-      variables: { studentEmail: studEmail },
-    });
-    const verificationData = result.data.createVerification;
-    const verificationDataCode = { code: verificationData.code };
-
-    console.log("VERIFICATION CODE", verificationDataCode);
-
-    return verificationDataCode;
-  };
-
-  const addTempStudent = async (verificationDataCode) => {
-    console.log("VERIFICATION DATA...", verificationDataCode);
-    await createTempStudent({
-      variables: {
-        email: studEmail,
-        verificationCode: verificationDataCode.code,
-      },
+    if (response === "ERROR" || response === null) {
+      toast.error("Failed to delete student!", {
+        id: toastId,
+      });
+      return;
+    }
+    toast.success("Student Deleted Successfully!", {
+      id: toastId,
     });
   };
 
-  const addStudent = async () => {
+  const addStudentHandler = async () => {
     const toastId = toast.loading("Adding Student...");
-    const verificationDataCode = await requestVerificationCode();
-    await addTempStudent(verificationDataCode);
+    const response = await initializeStudent({
+      variables: { email: studEmail },
+    });
+
+    if (response === "ERROR" || response === null) {
+      toast.error("Failed to add student!", {
+        id: toastId,
+      });
+      return;
+    }
+    console.log("MAINRESPONSE", response);
+    console.log("RESPONSE", response.initializeStudent);
 
     await emailjs
       .send(
         "service_ic02pwe",
         "template_v53ko4t",
         {
-          sign_up_link: `http://localhost:3000/register/${verificationDataCode.code}`,
-          sign_up_code: verificationDataCode.code,
+          sign_up_link: `http://localhost:3000/register/${response?.data.initializeStudent}`,
+          sign_up_code: response?.data.initializeStudent,
           to_email: studEmail,
         },
         "0VNUkTzXWUy3G49zl"
@@ -146,24 +147,12 @@ const page = () => {
     setOpenAddStudentDialog(false);
   };
 
-  const deleteStudentHandler = async (studentUserId) => {
-    const toastId = toast.loading("Deleting Student...");
-    await deleteStudent({ variables: { userId: studentUserId } });
-    await deleteFeeUsers({ variables: { userId: studentUserId } });
-    toast.success("Student Deleted Successfully!", {
-      id: toastId,
-    });
-  };
-
-  const deletePendingStudentHandler = async (email, verificationCode) => {
+  const deleteTempStudentHandler = async (email) => {
     const toastId = toast.loading("Deleting Student...");
 
     await deleteTempStudent({ variables: { email: email } });
-    await deleteVerification({
-      variables: { verificationCode: verificationCode },
-    });
 
-    toast.success("Student Deleted Successfully!", {
+    toast.success("Temporary Student Deleted Successfully!", {
       id: toastId,
     });
   };
@@ -171,7 +160,7 @@ const page = () => {
   return (
     <Container>
       <Navbar navLinks={dashboardNavLinks} isHome={false} />
-      <div v className="pb-10">
+      <div className="pb-10">
         <div className="flex justify-between items-center">
           <h2 className="subheading">Manage Students</h2>
           <Dialog
@@ -204,7 +193,7 @@ const page = () => {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" onClick={addStudent}>
+                <Button type="submit" onClick={addStudentHandler}>
                   Add
                 </Button>
               </DialogFooter>
@@ -227,7 +216,7 @@ const page = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.students?.map((student, index) => (
+              {students.students?.map((student, index) => (
                 <TableRow key={index}>
                   <TableCell className="barlow-semibold">
                     {student.userId}
@@ -245,17 +234,17 @@ const page = () => {
                     {student.grade}
                   </TableCell>
                   <TableCell className="barlow-regular">
-                    {}
+                    { }
 
                     {student.attendance.present + student.attendance.absent ===
-                    0
+                      0
                       ? "N/A"
                       : `${Math.round(
-                          (student.attendance.present /
-                            (student.attendance.present +
-                              student.attendance.absent)) *
-                            100
-                        )} %`}
+                        (student.attendance.present /
+                          (student.attendance.present +
+                            student.attendance.absent)) *
+                        100
+                      )} %`}
                   </TableCell>
                   <TableCell className="barlow-regular flex items-center gap-4">
                     <Link
@@ -326,13 +315,13 @@ const page = () => {
                   </TableCell>
                 </TableRow>
               )}
-              {tempStudents.tempStudents?.map((tmpstudent, index) => (
+              {tempStudents.tempStudents?.map((tempStudents, index) => (
                 <TableRow key={index}>
                   <TableCell className="barlow-semibold">
-                    {tmpstudent.email}
+                    {tempStudents.email}
                   </TableCell>
                   <TableCell className="barlow-regular">
-                    {tmpstudent.verificationCode}
+                    {tempStudents.verificationCode}
                   </TableCell>
                   <TableCell className="barlow-regular flex items-center gap-4">
                     <AlertDialog>
@@ -356,10 +345,7 @@ const page = () => {
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() =>
-                              deletePendingStudentHandler(
-                                tmpstudent.email,
-                                tmpstudent.verificationCode
-                              )
+                              deleteTempStudentHandler(tempStudents.email)
                             }
                           >
                             Delete

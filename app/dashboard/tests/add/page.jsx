@@ -105,12 +105,15 @@ const page = () => {
       setIsFormLoading(false);
     } else {
       const today = new Date();
-      const uploadedFileName = `${
-        formData.question_paper.name.replace(/\s/g, "").split(".")[0]
-      }.${today.getHours()}.${today.getMinutes()}.${today.getSeconds()}`;
-      // const uploadedFilename = formData.question_paper.name.split(".")[0];
-      console.log(uploadedFileName);
-      const storageRef = ref(storage, `test_papers/${formData.date}`);
+      let fileid = `${today.getFullYear()}${
+        today.getHours() < 10 ? "0" + today.getHours() : today.getHours()
+      }${
+        today.getMinutes() < 10 ? "0" + today.getMinutes() : today.getMinutes()
+      }${
+        today.getSeconds() < 10 ? "0" + today.getSeconds() : today.getSeconds()
+      }`;
+      console.log(fileid);
+      const storageRef = ref(storage, `test_papers/${fileid}`);
 
       // Upload the file
       await uploadBytes(storageRef, formData.question_paper)
@@ -121,11 +124,12 @@ const page = () => {
 
           await createTest({
             variables: {
+              id: fileid,
               title: formData.test_name,
-              subject: formData.subject,
               date: formData.date,
               totalMarks: parseInt(formData.total_marks),
               url: downloadUrl,
+              subject: formData.subject,
             },
           });
 

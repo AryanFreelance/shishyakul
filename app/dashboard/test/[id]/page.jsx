@@ -26,17 +26,19 @@ import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
+  GET_TESTPAPER,
   GET_TESTPAPERS,
-  GET_TEST_PAPER,
 } from "@/graphql/queries/testPaper.query";
 import {
   DELETE_TESTPAPER,
+  PUBLISH_TESTPAPER,
+  UPDATE_SHARED_WITH,
   UPDATE_TESTPAPER,
 } from "@/graphql/mutations/testPaper.mutation";
 
 const page = () => {
   // Test Paper Fields - Test Name, Subject, Date, Total Marks, Question Paper (PDF)
-  const { id } = useParams();
+  let { id } = useParams();
   const [testData, setTestData] = useState({
     title: "",
     subject: "",
@@ -46,46 +48,85 @@ const page = () => {
     sharedWith: [],
   });
   const [shareInput, setShareInput] = useState("");
+  const [shareInputEmail, setShareInputEmail] = useState("");
+  const [sharedWith, setSharedWith] = useState([]);
+
+  // Check if the last digit of the id is 0 or 1, if 0 then published, else draft;
+  const published = id[id.length - 1] === "0" ? true : false;
+  id = id.slice(0, -1);
 
   const router = useRouter();
 
   // Queries - Get Test Paper
-  const { data: testpaperData } = useSuspenseQuery(GET_TEST_PAPER, {
-    variables: { testpaperId: `${id}` },
+  const { data: testpaperData } = useSuspenseQuery(GET_TESTPAPER, {
+    variables: { id: `${id}`, published: published },
   });
-  useSuspenseQuery(GET_TESTPAPERS);
 
-  // Mutations - Update Test Paper, Share Test Paper
+  // Mutation - Update Test Paper (If Draft), Share Test Paper (If Published), Delete Test Paper, Publish Paper
   const [updateTestPaper] = useMutation(UPDATE_TESTPAPER, {
-    refetchQueries: [{ query: GET_TESTPAPERS }, { query: GET_TEST_PAPER }],
+    refetchQueries: [{ query: GET_TESTPAPERS }],
   });
   const [deleteTestPaper] = useMutation(DELETE_TESTPAPER, {
-    refetchQueries: [{ query: GET_TESTPAPERS }, { query: GET_TEST_PAPER }],
+    refetchQueries: [{ query: GET_TESTPAPERS }],
+  });
+  const [updateSharedWith] = useMutation(UPDATE_SHARED_WITH, {
+    refetchQueries: [{ query: GET_TESTPAPERS }],
+  });
+  const [publishTestPaper] = useMutation(PUBLISH_TESTPAPER, {
+    refetchQueries: [{ query: GET_TESTPAPERS }],
   });
 
   const updateTestPaperHandler = async (e) => {
     e.preventDefault();
     const toastId = toast.loading("Updating Test Paper...");
     console.log(testData);
-    await updateTestPaper({
-      variables: {
-        id: id,
-        title: testData.title,
-        subject: testData.subject,
-        date: testData.date,
-        totalMarks: parseInt(testData.totalMarks),
-        sharedWith: testData.sharedWith,
-      },
-    });
+
+    !published &&
+      (await updateTestPaper({
+        variables: {
+          id: id,
+          title: testData?.title,
+          subject: testData?.subject,
+          date: testData?.date,
+          totalMarks: parseInt(testData?.totalMarks),
+        },
+      }));
+
+    published &&
+      (await updateSharedWith({
+        variables: {
+          id: id,
+          sharedWith: sharedWith,
+        },
+      }));
+
     toast.success("Test Paper Updated Successfully!", { id: toastId });
   };
 
   const deleteTestPaperHandler = async (e) => {
     e.preventDefault();
     const toastId = toast.loading("Deleting Test Paper...");
-    await deleteTestPaper({ variables: { id: id } });
+
+    await deleteTestPaper({
+      variables: { id: id, published: published },
+    });
+
     router.push("/dashboard/tests");
+
     toast.success("Test Paper Deleted Successfully!", { id: toastId });
+  };
+
+  const publishTestPaperHandler = async (e) => {
+    e.preventDefault();
+    const toastId = toast.loading("Publishing Test Paper...");
+
+    await publishTestPaper({
+      variables: { id: id },
+    });
+
+    router.push(`/dashboard/test/${id}0`);
+
+    toast.success("Test Paper Published Successfully!", { id: toastId });
   };
 
   useEffect(() => {
@@ -95,12 +136,15 @@ const page = () => {
       setTestData({
         title: testpaperData?.testpaper?.title,
         subject: testpaperData?.testpaper?.subject,
+        // Convert the date format from 30-10-2027 to supported html date format
         date: testpaperData?.testpaper?.date,
         totalMarks: testpaperData?.testpaper?.totalMarks,
         url: testpaperData?.testpaper?.url,
         sharedWith: testpaperData?.testpaper?.sharedWith,
       });
       console.log(testpaperData);
+      console.log("Test Data", testpaperData?.testpaper.date);
+      setSharedWith(testpaperData?.testpaper?.sharedWith);
     }
   }, [testpaperData]);
 
@@ -135,7 +179,9 @@ const page = () => {
                     className="input-taking w-full lg:w-[80%] md:w-[70%]"
                     placeholder="Update Test Name..."
                     value={testData?.title}
+                    disabled={published}
                     onChange={(e) =>
+                      !published &&
                       setTestData({ ...testData, title: e.target.value })
                     }
                   />
@@ -152,8 +198,10 @@ const page = () => {
                     id="subject"
                     className="input-taking w-full lg:w-[80%] md:w-[70%]"
                     placeholder="Update Subject Name..."
+                    disabled={published}
                     value={testData?.subject}
                     onChange={(e) =>
+                      !published &&
                       setTestData({ ...testData, subject: e.target.value })
                     }
                   />
@@ -170,8 +218,11 @@ const page = () => {
                     id="date"
                     className="input-taking w-full lg:w-[80%] md:w-[70%]"
                     placeholder="Update Date of Test..."
+                    disabled={published}
+                    // value={testData?.date}
                     value={testData?.date}
                     onChange={(e) =>
+                      !published &&
                       setTestData({ ...testData, date: e.target.value })
                     }
                   />
@@ -188,72 +239,142 @@ const page = () => {
                     id="total-marks"
                     className="input-taking w-full lg:w-[80%] md:w-[70%]"
                     placeholder="Update Total Marks..."
+                    disabled={published}
                     value={testData?.totalMarks}
                     onChange={(e) =>
+                      !published &&
                       setTestData({ ...testData, totalMarks: e.target.value })
                     }
                   />
                 </div>
 
-                <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 mt-4">
-                  <Label
-                    htmlFor="share-to"
-                    className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%] py-3"
-                  >
-                    Share To
-                  </Label>
-                  <div className="w-full lg:w-[80%] md:w-[70%] flex flex-col md:gap-6 gap-2">
-                    <div className="flex gap-2 md:gap-6">
-                      <input
-                        type="email"
-                        id="share-to"
-                        className="input-taking w-[74%]"
-                        placeholder="Enter student's Email..."
-                        value={shareInput}
-                        onChange={(e) => setShareInput(e.target.value)}
-                      />
-                      <Button
-                        className="w-[26%] md:mt-0 py-6"
-                        disabled={
-                          testData?.sharedWith?.includes(shareInput) ||
-                          shareInput === ""
-                        }
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setTestData({
-                            ...testData,
-                            sharedWith: [...testData?.sharedWith, shareInput],
-                          });
-                        }}
+                {published && (
+                  <>
+                    <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 mt-4">
+                      <Label
+                        htmlFor="share-to"
+                        className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%] py-3"
                       >
-                        Share
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-x-6 gap-y-4">
-                      {testData?.sharedWith?.map((email, index) => (
-                        <div
-                          key={index}
-                          className="bg-secondary text-primary flex gap-4 rounded px-4 py-2"
-                        >
-                          <span>{email}</span>
-                          <button
+                        Share To
+                      </Label>
+                      <div className="w-full lg:w-[80%] md:w-[70%] flex flex-col md:gap-6 gap-2">
+                        <div className="flex gap-2 md:gap-6">
+                          <input
+                            type="number"
+                            id="share-to"
+                            className="input-taking w-[74%]"
+                            placeholder="Enter Grade..."
+                            value={shareInput}
+                            min={8}
+                            max={12}
+                            onChange={(e) => setShareInput(e.target.value)}
+                          />
+                          <Button
+                            className="w-[26%] md:mt-0 py-6"
+                            disabled={
+                              shareInput === "" ||
+                              shareInput.includes(".") ||
+                              shareInput.includes(" ") ||
+                              shareInput.includes(",") ||
+                              shareInput.includes(";") ||
+                              sharedWith.includes(shareInput)
+                            }
                             onClick={(e) => {
                               e.preventDefault();
-                              const updatedSharedWith =
-                                testData?.sharedWith.filter((e) => e !== email);
-                              setTestData({
-                                ...testData,
-                                sharedWith: updatedSharedWith,
-                              });
+                              setSharedWith([...sharedWith, shareInput]);
+                              setShareInput("");
                             }}
                           >
-                            <X />
-                          </button>
+                            Share
+                          </Button>
                         </div>
-                      ))}
+                        {/* <div className="flex flex-wrap gap-x-6 gap-y-4">
+                          {sharedWith?.map((email, index) => (
+                            <div
+                              key={index}
+                              className="bg-secondary text-primary flex gap-4 rounded px-4 py-2"
+                            >
+                              <span>{email}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  const updatedSharedWith =
+                                    sharedWith?.sharedWith.filter(
+                                      (e) => e !== email
+                                    );
+                                  setSharedWith(updatedSharedWith);
+                                }}
+                              >
+                                <X />
+                              </button>
+                            </div>
+                          ))}
+                        </div> */}
+                      </div>
                     </div>
-                  </div>
-                </div>
+
+                    <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 mt-4">
+                      <Label
+                        htmlFor="share-to"
+                        className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%] py-3"
+                      >
+                        Share To Email
+                      </Label>
+                      <div className="w-full lg:w-[80%] md:w-[70%] flex flex-col md:gap-6 gap-2">
+                        <div className="flex gap-2 md:gap-6">
+                          <input
+                            type="email"
+                            id="share-to"
+                            className="input-taking w-[74%]"
+                            placeholder="Enter Email..."
+                            value={shareInputEmail}
+                            onChange={(e) => setShareInputEmail(e.target.value)}
+                          />
+                          <Button
+                            className="w-[26%] md:mt-0 py-6"
+                            disabled={
+                              shareInputEmail === "" ||
+                              !shareInputEmail.includes("@") ||
+                              !shareInputEmail.includes(".") ||
+                              shareInputEmail.includes(" ") ||
+                              shareInputEmail.includes(",") ||
+                              shareInputEmail.includes(";") ||
+                              sharedWith.includes(shareInputEmail)
+                            }
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setSharedWith([...sharedWith, shareInputEmail]);
+                              setShareInputEmail("");
+                            }}
+                          >
+                            Share
+                          </Button>
+                        </div>
+                        <div className="flex flex-wrap gap-x-6 gap-y-4">
+                          {sharedWith?.map((email, index) => (
+                            <div
+                              key={index}
+                              className="bg-secondary text-primary flex gap-4 rounded px-4 py-2"
+                            >
+                              <span>{email}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  const updatedSharedWith = sharedWith.filter(
+                                    (e) => e !== email
+                                  );
+                                  setSharedWith(updatedSharedWith);
+                                }}
+                              >
+                                <X />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <iframe
                   src={testData?.url}
@@ -261,7 +382,6 @@ const page = () => {
                   height="480"
                   allowFullScreen
                 ></iframe>
-
                 <div className="mt-10">
                   <Button
                     className="w-full"
@@ -271,6 +391,20 @@ const page = () => {
                     Update Test
                   </Button>
                 </div>
+
+                {!published && (
+                  <>
+                    <div className="mt-6">
+                      <Button
+                        className="w-full bg-green-700 hover:bg-green-800 text-primary"
+                        type="submit"
+                        onClick={publishTestPaperHandler}
+                      >
+                        Publish Test
+                      </Button>
+                    </div>
+                  </>
+                )}
 
                 <div className="mt-6">
                   <AlertDialog>

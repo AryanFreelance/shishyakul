@@ -13,7 +13,6 @@ const layout = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        const uid = user.uid;
         console.log(user);
         setAuthStatus(true);
       } else {
@@ -40,35 +39,6 @@ const layout = ({ children }) => {
       </div>
     );
   }
-
-  // onAuthStateChanged(auth, (user) => {
-  //   if (user) {
-  //     const uid = user.uid;
-  //     console.log(user);
-  //     setAuthStatus(true);
-  //     setEmail(user.email);
-  //     console.log("EMAIL", email);
-  //   } else {
-  //     router.push(`/login`);
-  //     setAuthStatus(false);
-  //   }
-  // });
-
-  // if (authStatus === null) {
-  //   return (
-  //     <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
-  //       Loading...
-  //     </div>
-  //   );
-  // }
-
-  // if (!authStatus) {
-  //   return (
-  //     <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
-  //       Redirecting...
-  //     </div>
-  //   );
-  // }
 
   return <div>{children}</div>;
 };

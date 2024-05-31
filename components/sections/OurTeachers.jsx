@@ -1,4 +1,4 @@
-import mentorsImg from "@/assets/banners/mentors.jpg";
+import mentorsImg from "@/assets/banners/mentor.png";
 import Image from "next/image";
 
 const teachers = [
@@ -37,7 +37,7 @@ const OurTeachers = () => {
               <Image
                 src={teacher.profileImg}
                 alt={teacher.name}
-                className="rounded-lg mb-4"
+                className="rounded-lg mb-4 border-2 border-main"
                 width={1000}
                 height={1000}
               />

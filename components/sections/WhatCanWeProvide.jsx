@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Button } from "../ui/button";
-import bannerImg from "@/assets/banners/whyshishyakul.jpg";
+import bannerImg from "@/assets/banners/services.png";
 import {
   certificate,
   communication,
@@ -51,7 +51,7 @@ const WhatCanWeProvide = () => {
                 alt="Why Shishyakul"
                 width={1000}
                 height={1000}
-                className="w-full h-full rounded-[8px]"
+                className="w-full h-full rounded-[8px] border-2 border-main"
               />
             </div>
           </div>

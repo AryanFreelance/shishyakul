@@ -3,7 +3,8 @@
 import { ArrowDown } from "lucide-react";
 import { Button } from "../ui/button";
 import Image from "next/image";
-import headerBanner from "@/assets/header/hero_banner.jpg";
+// import headerBanner from "@/assets/header/hero_banner.jpg";
+import headerBanner from "@/assets/banners/header/HeaderBanner.png";
 
 const Header = () => {
   const goToSection = (id) => () => {

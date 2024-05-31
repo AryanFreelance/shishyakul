@@ -1,25 +1,94 @@
 import { gql } from "@apollo/client";
 
+// Get Test Papers
 export const GET_TESTPAPERS = gql`
-  query GET_TESTPAPERS {
+  query Testpapers {
     testpapers {
-      id
-      createdAt
-      title
-      url
+      draft {
+        id
+        title
+        subject
+        totalMarks
+        date
+        sharedWith
+        url
+        createdAt
+        published
+      }
+      published {
+        id
+        title
+        subject
+        totalMarks
+        date
+        sharedWith
+        url
+        createdAt
+        published
+      }
     }
   }
 `;
 
-export const GET_TEST_PAPER = gql`
-  query GET_TEST_PAPER($testpaperId: ID!) {
-    testpaper(id: $testpaperId) {
+// Get a Test Paper
+export const GET_TESTPAPER = gql`
+  query Testpaper($id: ID!, $published: Boolean!) {
+    testpaper(id: $id, published: $published) {
+      id
+      title
+      subject
+      totalMarks
+      date
+      sharedWith
+      url
+      createdAt
+      published
+    }
+  }
+`;
+
+// Get Published Test Papers
+export const GET_PUBLISHED_TESTPAPERS = gql`
+  query Testpapers {
+    testpapers {
+      published {
+        id
+        title
+        subject
+        totalMarks
+        date
+        sharedWith
+        url
+        createdAt
+        published
+      }
+    }
+  }
+`;
+
+// Get Published Test Papers SharedWith (Secure)
+export const GET_PUBLISHED_TESTPAPERS_SECURE = gql`
+  query Testpapers {
+    testpapers {
+      published {
+        id
+        title
+        createdAt
+        sharedWith
+      }
+    }
+  }
+`;
+
+// Get Test Papers for the User
+export const GET_PUBLISHED_TESTPAPERS_USERS = gql`
+  query TestpaperUsers($id: ID!) {
+    testpaperUsers(id: $id) {
+      id
+      title
+      subject
       createdAt
       date
-      id
-      sharedWith
-      subject
-      title
       totalMarks
       url
     }

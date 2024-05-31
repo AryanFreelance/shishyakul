@@ -1,7 +1,8 @@
 import { gql } from "@apollo/client";
 
+// Create a fee
 export const CREATE_FEE = gql`
-  mutation CREATE_FEE(
+  mutation CreateFee(
     $userId: ID!
     $email: String!
     $feesPaid: Int!
@@ -16,24 +17,13 @@ export const CREATE_FEE = gql`
       paidOn: $paidOn
       month: $month
       year: $year
-    ) {
-      userId
-      createdAt
-      email
-      feesPaid
-      month
-      paidOn
-      year
-      id
-    }
+    )
   }
 `;
 
-export const DELETE_FEES_USERS = gql`
-  mutation DeleteFeeUsers($userId: ID!) {
-    deleteUserFees(userId: $userId) {
-      message
-      success
-    }
+// Delete a Fee
+export const DELETE_FEE = gql`
+  mutation DELETE_FEE($userId: ID!, $deleteFeeId: ID!) {
+    deleteFee(userId: $userId, id: $deleteFeeId)
   }
 `;

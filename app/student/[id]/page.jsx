@@ -2,7 +2,7 @@
 
 import Container from "@/components/shared/Container";
 import React, { useEffect, useState } from "react";
-import { Doughnut, Pie } from "react-chartjs-2";
+import { Pie } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import Link from "next/link";
 import {
@@ -28,7 +28,6 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import toast from "react-hot-toast";
 import { useParams, useRouter } from "next/navigation";
 import { auth } from "@/firebase";
-import { GET_STUDENT } from "@/graphql/queries/students.query";
 import { InfoIcon } from "lucide-react";
 import {
   Dialog,
@@ -45,7 +44,9 @@ import { Label } from "@/components/ui/label";
 export const dynamic = "force-dynamic";
 
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
-import { CREATE_FEE } from "@/graphql/mutations/fees.mutation";
+import { GET_STUDENT_DETAILS } from "@/graphql/queries/students.query";
+import { GET_PUBLISHED_TESTPAPERS_USERS } from "@/graphql/queries/testPaper.query";
+import { CREATE_FEE, DELETE_FEE } from "@/graphql/mutations/fees.mutation";
 import { useMutation } from "@apollo/client";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -73,23 +74,54 @@ const page = () => {
     month: undefined,
     year: undefined,
   });
+  const [feeDialogHandlerState, setFeeDialogHandlerState] = useState(false);
 
-  // Queries
-  const { data: studData } = useSuspenseQuery(GET_STUDENT, {
-    variables: { userId: `${id}` },
+  // Queries - Get Student, Get Published Papers
+  const { data: studData } = useSuspenseQuery(GET_STUDENT_DETAILS, {
+    variables: { userId: id },
   });
 
-  // Mutations
-  const [createFee] = useMutation(CREATE_FEE);
+  const { data: testPaperUsers } = useSuspenseQuery(
+    GET_PUBLISHED_TESTPAPERS_USERS,
+    {
+      variables: {
+        id: id,
+      },
+    }
+  );
 
   if (!studData)
     return (
       <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
-        Loading...
+        Loading... <br />
+        <small>If you are waiting for so long then please contact the admin!</small>
       </div>
     );
 
   console.log(studData);
+  console.log("TEST", testPaperUsers?.testpaperUsers);
+
+  // Mutations - Create Fee, Delete Fee
+  const [createFee] = useMutation(CREATE_FEE, {
+    refetchQueries: [
+      {
+        query: GET_STUDENT_DETAILS,
+        variables: {
+          userId: id,
+        },
+      },
+    ],
+  });
+  const [deleteFee] = useMutation(DELETE_FEE, {
+    refetchQueries: [
+      {
+        query: GET_STUDENT_DETAILS,
+        variables: {
+          userId: id,
+        },
+      },
+    ],
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -107,6 +139,7 @@ const page = () => {
               data: [
                 studData?.student.attendance.present,
                 studData?.student.attendance.absent,
+                // 20, 40,
               ],
               backgroundColor: ["#159a3a", "#d92e39"],
               borderColor: ["#159a3a", "#d92e39"],
@@ -141,7 +174,7 @@ const page = () => {
     );
   }
 
-  const addFeeHandler = (e) => {
+  const addFeeHandler = async (e) => {
     e.preventDefault();
     const toastId = toast.loading("Adding Fee...");
     if (
@@ -156,7 +189,8 @@ const page = () => {
       return;
     }
     console.log(feeData);
-    createFee({
+
+    await createFee({
       variables: {
         userId: id,
         email: studData?.student.email,
@@ -179,7 +213,7 @@ const page = () => {
         });
       });
 
-    window.location.reload();
+    setFeeDialogHandlerState(false);
   };
 
   const logoutHandler = () => {
@@ -194,6 +228,33 @@ const page = () => {
       .catch((error) => {
         console.log(error);
         toast.error("There was an error logging out!", {
+          id: toastId,
+        });
+      });
+  };
+
+  const deleteFeeHandler = async (e, feeid) => {
+    e.preventDefault();
+
+    console.log("Fee Deleted");
+
+    const toastId = toast.loading("Deleting Fee...");
+
+    await deleteFee({
+      variables: {
+        userId: id,
+        deleteFeeId: feeid,
+      },
+    })
+      .then((data) => {
+        console.log(data);
+        toast.success("Fee deleted successfully!", {
+          id: toastId,
+        });
+      })
+      .catch((error) => {
+        console.log(error);
+        toast.error("There was an error deleting fee!", {
           id: toastId,
         });
       });
@@ -223,10 +284,10 @@ const page = () => {
             </div>
             <div className="flex justify-between items-center">
               <h2 className="subheading">
-                {studData?.student.firstname} {studData?.student.lastname}
+                Welcome {studData?.student.firstname}
               </h2>
               <Link
-                href="/student/randomid/profile"
+                href={`/student/${id}/profile`}
                 className="barlow-medium border-2 border-main rounded px-4 py-2"
               >
                 Profile
@@ -239,11 +300,11 @@ const page = () => {
               <div className="flex flex-col gap-4 ml-6">
                 <span>
                   Student Name - {studData?.student.firstname}{" "}
-                  {studData?.student.middlename}
-                  {studData?.student.lastname}
+                  {studData?.student.middlename} {studData?.student.lastname}
                 </span>
                 <span>Student Email - {studData?.student.email}</span>
                 <span>Student Phone - {studData?.student.phone}</span>
+                <span>Student Grade - {studData?.student.grade}</span>
               </div>
             </div>
             <div>
@@ -252,9 +313,13 @@ const page = () => {
                   Fees Information
                 </h3>
                 {isAdmin && (
-                  <Dialog>
+                  <Dialog open={feeDialogHandlerState}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="border-2">
+                      <Button
+                        variant="outline"
+                        className="border-2"
+                        onClick={() => setFeeDialogHandlerState(true)}
+                      >
                         Add Fee
                       </Button>
                     </DialogTrigger>
@@ -353,6 +418,9 @@ const page = () => {
                     </TableHead>
                     <TableHead className="barlow-semibold">Paid On</TableHead>
                     <TableHead className="barlow-semibold">Month</TableHead>
+                    {isAdmin && (
+                      <TableHead className="barlow-semibold">Actions</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -364,8 +432,6 @@ const page = () => {
                       >
                         No Fees Paid
                       </TableCell>
-                      {/* <TableCell className="barlow-regular">-</TableCell>
-                      <TableCell className="barlow-regular">-</TableCell> */}
                     </TableRow>
                   )}
                   {studData?.student.fees.length !== 0 &&
@@ -380,20 +446,42 @@ const page = () => {
                         <TableCell className="barlow-regular">
                           {fee.month}, {fee.year}
                         </TableCell>
+                        {isAdmin && (
+                          <TableCell>
+                            <AlertDialog>
+                              <AlertDialogTrigger>
+                                <Button variant="outline">Delete</Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    Delete Fee
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete this fee?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <Button
+                                    onClick={(e) => deleteFeeHandler(e, fee.id)}
+                                  >
+                                    Delete
+                                  </Button>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
-                  {/* <TableRow>
-                    <TableCell className="barlow-medium">₹6000</TableCell>
-                    <TableCell className="barlow-regular">12/04/2024</TableCell>
-                    <TableCell className="barlow-regular">January</TableCell>
-                  </TableRow> */}
                 </TableBody>
               </Table>
             </div>
           </div>
           <div className="lg:w-[50%]">
             {studData?.student.attendance.present === 0 &&
-            studData?.student.attendance.absent === 0 ? (
+              studData?.student.attendance.absent === 0 ? (
               <div className="flex items-center justify-center text-secondary gap-6 px-6 py-4 rounded">
                 <div>
                   <h4 className="smallheading text-secondary flex gap-2 items-center">
@@ -412,15 +500,17 @@ const page = () => {
             Shared Test Papers
           </h3>
           <div className="flex flex-col gap-4">
-            {studData?.student.testPaper.length === 0 && (
-              <div className="flex items-center justify-between gap-6 bg-secondary text-primary px-6 py-4 rounded">
+            {testPaperUsers?.testpaperUsers.length === 0 && (
+              <div className="flex items-center justify-between gap-6 rounded">
                 <div>
-                  <h4 className="smallheading">No Test Papers Available</h4>
+                  <h4 className="smallheading text-secondary">
+                    No Test Papers Available
+                  </h4>
                 </div>
               </div>
             )}
 
-            {studData?.student.testPaperData.map((test) => (
+            {testPaperUsers?.testpaperUsers.map((test) => (
               <div className="flex items-center justify-between gap-6 bg-secondary text-primary px-6 py-4 rounded">
                 <div>
                   <h4 className="smallheading">{test.title}</h4>
@@ -456,71 +546,6 @@ const page = () => {
                 </div>
               </div>
             ))}
-
-            {/* <div className="flex items-center justify-between gap-6 bg-secondary text-primary px-6 py-4 rounded">
-              <div>
-                <h4 className="smallheading">Test Name</h4>
-                <span className="barlow-regular">Created on - 12/04/2024</span>
-              </div>
-              <div>
-                <AlertDialog>
-                  <AlertDialogTrigger>
-                    <Button variant="outline">Upcoming</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Test Paper Name</AlertDialogTitle>
-
-                      <AlertDialogDescription>
-                        Created on - 12/04/2024
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <div className="flex flex-col gap-2">
-                      <span>Test will be available from 12/04/2024!</span>
-                      <span>
-                        Test Paper will be visible once the test is started!
-                      </span>
-                    </div>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Close</AlertDialogCancel>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-6 bg-secondary text-primary px-6 py-4 rounded">
-              <div>
-                <h4 className="smallheading">Test Name</h4>
-                <span className="barlow-regular">Created on - 12/04/2024</span>
-              </div>
-              <div>
-                <Button variant="outline">View</Button>
-
-                <AlertDialog>
-                  <AlertDialogTrigger>
-                    <Button variant="outline">View</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Test Paper Name</AlertDialogTitle>
-
-                      <AlertDialogDescription>
-                        Created on - 12/04/2024
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <iframe
-                      src="https://shishyakul.vercel.app/demopdf.pdf"
-                      className="w-full rounded"
-                      height="500"
-                      allowFullScreen
-                    ></iframe>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Close</AlertDialogCancel>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div> */}
           </div>
         </div>
       </div>

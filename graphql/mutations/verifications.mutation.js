@@ -1,20 +1,8 @@
 import { gql } from "@apollo/client";
 
-export const CreateVerification = gql`
-  mutation CreateVerification($studentEmail: String!) {
-    createVerification(studentEmail: $studentEmail) {
-      code
-      message
-      success
-    }
-  }
-`;
-
-export const DELETE_VERIFICATIONS = gql`
-  mutation DELETE_VERIFICATIONS($verificationCode: ID!) {
-    deleteVerification(verificationCode: $verificationCode) {
-      message
-      success
-    }
+// Verify Verification Code
+export const VERIFY_CODE = gql`
+  query VerifyStudentCode($verificationCode: ID!) {
+    verifyStudentCode(verificationCode: $verificationCode)
   }
 `;

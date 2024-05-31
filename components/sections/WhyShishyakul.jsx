@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import React from "react";
-import bannerImg from "@/assets/banners/whyshishyakul.jpg";
+import bannerImg from "@/assets/banners/whyShishyakul.png";
 import { Square } from "lucide-react";
 import { Button } from "../ui/button";
 
@@ -24,7 +24,7 @@ const WhyShishyakul = () => {
             <Image
               src={bannerImg}
               alt="Why Shishyakul"
-              className="w-full h-full rounded-[8px]"
+              className="w-full h-full rounded-[8px] border-2 border-main"
               width={1000}
               height={1000}
             />

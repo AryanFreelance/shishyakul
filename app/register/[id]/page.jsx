@@ -2,69 +2,19 @@
 
 import { Button } from "@/components/ui/button";
 import { EyeIcon, EyeOff, Home } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import Container from "@/components/shared/Container";
-import { gql, useMutation, useQuery } from "@apollo/client";
+import { useMutation } from "@apollo/client";
 import Link from "next/link";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/firebase";
 import toast from "react-hot-toast";
+import { VERIFY_CODE } from "@/graphql/mutations/verifications.mutation";
 
-const GET_VERIFICATION_CODE = gql`
-  query GET_VERIFICATION_CODE($verificationCode: ID!) {
-    verification(verificationCode: $verificationCode) {
-      expired
-      studentEmail
-      verificationCode
-    }
-  }
-`;
+export const dynamic = "force-dynamic";
+import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
+import { CREATE_STUDENT } from "@/graphql/mutations/students.mutation";
 
-const DELETE_TEMP_STUDENT = gql`
-  mutation DELETE_TEMP_STUDENT($email: ID!) {
-    deleteTempStudent(email: $email) {
-      message
-      success
-    }
-  }
-`;
-
-const DELETE_VERIFICATION = gql`
-  mutation DELETE_VERIFICATION($verificationCode: ID!) {
-    deleteVerification(verificationCode: $verificationCode) {
-      message
-      success
-    }
-  }
-`;
-
-const CREATE_STUDENT = gql`
-  mutation CreateStudent(
-    $userId: ID!
-    $firstname: String!
-    $middlename: String!
-    $lastname: String!
-    $email: String!
-    $phone: String!
-    $grade: String!
-  ) {
-    createStudent(
-      userId: $userId
-      firstname: $firstname
-      middlename: $middlename
-      lastname: $lastname
-      email: $email
-      phone: $phone
-      grade: $grade
-    ) {
-      message
-      success
-    }
-  }
-`;
-
-function page() {
+function Page() {
   const { id } = useParams();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [firstname, setFirstname] = useState("");
@@ -75,41 +25,43 @@ function page() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
 
-  const { data, loading, error } = useQuery(GET_VERIFICATION_CODE, {
+  const { data, loading, error } = useSuspenseQuery(VERIFY_CODE, {
     variables: { verificationCode: id },
   });
 
-  const [deleteTempStudent] = useMutation(DELETE_TEMP_STUDENT);
-  const [deleteVerification] = useMutation(DELETE_VERIFICATION);
   const [createStudent] = useMutation(CREATE_STUDENT);
 
-  console.log("DATA", data);
+  const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
-      setEmail(data?.verification?.studentEmail);
-      console.log(data);
+    if (data?.verifyStudentCode) {
+      setEmail(data.verifyStudentCode);
     }
-  }, [data, loading]);
+  }, [data]);
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex justify-center items-center h-[100svh] text-xl barlow-semibold animate-pulse">
         Loading...
       </div>
     );
+  }
 
-  // if (!loading) setEmail(data?.verification?.studentEmail);
+  if (error) {
+    console.error(error);
+    return (
+      <div className="flex justify-center items-center h-[100svh] text-xl barlow-semibold">
+        Error loading verification code.
+      </div>
+    );
+  }
 
-  if (error) console.log(error);
-
-  if (!data?.verification)
+  if (data?.verifyStudentCode === "") {
     return (
       <div className="flex justify-center items-center flex-col h-[100svh]">
         <h1 className="subheading">Invalid Verification Code</h1>
         <p className="barlow-regular mt-4">
-          The verification code you entered is invalid or expired. Please try
-          again.
+          The verification code you entered is invalid or expired. Please try again.
         </p>
         <Link
           href="/"
@@ -119,58 +71,31 @@ function page() {
         </Link>
       </div>
     );
+  }
 
   const studentRegisterHandler = async (e) => {
     e.preventDefault();
 
     const registeringToast = toast.loading("Registering...");
 
-    console.log("Registering...");
-
-    createUserWithEmailAndPassword(auth, email, password)
-      .then(async (userCredential) => {
-        // Signed up
-        const user = userCredential.user;
-
-        console.log(user);
-
-        await createStudent({
-          variables: {
-            userId: user.uid,
-            firstname,
-            middlename,
-            lastname,
-            email,
-            phone,
-            grade,
-          },
-        });
-
-        await deleteTempStudent({
-          variables: {
-            email,
-          },
-        });
-
-        await deleteVerification({
-          variables: {
-            verificationCode: id,
-          },
-        });
-
-        toast.success("You're Successfully Registered!", {
-          id: registeringToast,
-        });
-      })
-      .catch((error) => {
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        // ..
-        console.log(error);
-        toast.error("Oops! An error occured! Please try again.", {
-          id: registeringToast,
-        });
-      });
+    await createStudent({
+      variables: {
+        firstname,
+        middlename,
+        lastname,
+        email,
+        password,
+        phone,
+        grade,
+        verificationCode: id,
+      },
+    }).then(() => {
+      toast.success("Student registered successfully!", { id: registeringToast });
+      router.push("/login");
+    }).catch((err) => {
+      console.log("ERROR REGISTERING STUDENT", err);
+      toast.error("Error registering student. Please try again.", { id: registeringToast });
+    });
   };
 
   return (
@@ -181,12 +106,7 @@ function page() {
           <div>
             <form className="flex flex-col" onSubmit={studentRegisterHandler}>
               <div className="flex flex-col w-full mb-4">
-                <label
-                  htmlFor="firstname"
-                  className="input-label text-secondary"
-                >
-                  First Name
-                </label>
+                <label htmlFor="firstname" className="input-label text-secondary">First Name</label>
                 <input
                   type="text"
                   id="firstname"
@@ -197,12 +117,7 @@ function page() {
                 />
               </div>
               <div className="flex flex-col w-full mb-4">
-                <label
-                  htmlFor="middlename"
-                  className="input-label text-secondary"
-                >
-                  Middle Name
-                </label>
+                <label htmlFor="middlename" className="input-label text-secondary">Middle Name</label>
                 <input
                   type="text"
                   id="middlename"
@@ -213,12 +128,7 @@ function page() {
                 />
               </div>
               <div className="flex flex-col w-full mb-4">
-                <label
-                  htmlFor="lastname"
-                  className="input-label text-secondary"
-                >
-                  Last Name
-                </label>
+                <label htmlFor="lastname" className="input-label text-secondary">Last Name</label>
                 <input
                   type="text"
                   id="lastname"
@@ -229,9 +139,7 @@ function page() {
                 />
               </div>
               <div className="flex flex-col w-full mb-4">
-                <label htmlFor="grade" className="input-label text-secondary">
-                  Grade
-                </label>
+                <label htmlFor="grade" className="input-label text-secondary">Grade</label>
                 <input
                   type="number"
                   min={6}
@@ -244,23 +152,18 @@ function page() {
                 />
               </div>
               <div className="flex flex-col w-full mb-4">
-                <label htmlFor="email" className="input-label text-secondary">
-                  Email (Cannot be changed)
-                </label>
+                <label htmlFor="email" className="input-label text-secondary">Email (Cannot be changed)</label>
                 <input
-                  type="tel"
+                  type="email"
                   id="email"
                   className="input-taking"
                   placeholder="Enter your email..."
                   value={email}
                   disabled
-                  // onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div className="flex flex-col w-full mb-4">
-                <label htmlFor="phone" className="input-label text-secondary">
-                  Phone
-                </label>
+                <label htmlFor="phone" className="input-label text-secondary">Phone</label>
                 <input
                   type="tel"
                   id="phone"
@@ -271,12 +174,7 @@ function page() {
                 />
               </div>
               <div className="flex flex-col w-full mb-4">
-                <label
-                  htmlFor="password"
-                  className="input-label text-secondary"
-                >
-                  Password
-                </label>
+                <label htmlFor="password" className="input-label text-secondary">Password</label>
                 <div className="relative">
                   <input
                     type={passwordVisible ? "text" : "password"}
@@ -298,7 +196,6 @@ function page() {
               <div className="flex justify-center items-center w-full mt-6">
                 <Button
                   className="lg:w-full w-[200px] flex justify-center items-center barlow-semibold text-lg"
-                  // onClick={studentRegisterHandler}
                   type="submit"
                 >
                   Create Account
@@ -307,18 +204,9 @@ function page() {
             </form>
           </div>
         </div>
-        {/* <div className="hidden lg:block lg:w-[60%] lg:px-[6%]">
-          <Image
-            src={headerBanner}
-            alt="Login Banner"
-            width={1000}
-            height={1000}
-            className="login-banner rounded-xl"
-          />
-        </div> */}
       </div>
     </Container>
   );
 }
 
-export default page;
+export default Page;

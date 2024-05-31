@@ -111,9 +111,9 @@ const page = () => {
                 <span className="barlow-regular">Created on - 12/04/2024</span>
               </div>
               <div>
-                {/* <Button variant="outline">Upcoming</Button> */}
+                <Button variant="outline">Upcoming</Button>
 
-                <AlertDialog>
+                {/* <AlertDialog>
                   <AlertDialogTrigger>
                     <Button variant="outline">Upcoming</Button>
                   </AlertDialogTrigger>
@@ -135,7 +135,7 @@ const page = () => {
                       <AlertDialogCancel>Close</AlertDialogCancel>
                     </AlertDialogFooter>
                   </AlertDialogContent>
-                </AlertDialog>
+                </AlertDialog> */}
               </div>
             </div>
             <div className="flex items-center justify-between gap-6 bg-secondary text-primary px-6 py-4 rounded">
@@ -144,9 +144,9 @@ const page = () => {
                 <span className="barlow-regular">Created on - 12/04/2024</span>
               </div>
               <div>
-                {/* <Button variant="outline">View</Button> */}
+                <Button variant="outline">View</Button>
 
-                <AlertDialog>
+                {/* <AlertDialog>
                   <AlertDialogTrigger>
                     <Button variant="outline">View</Button>
                   </AlertDialogTrigger>
@@ -168,7 +168,7 @@ const page = () => {
                       <AlertDialogCancel>Close</AlertDialogCancel>
                     </AlertDialogFooter>
                   </AlertDialogContent>
-                </AlertDialog>
+                </AlertDialog> */}
               </div>
             </div>
           </div>

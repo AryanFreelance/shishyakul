@@ -1,64 +1,62 @@
 import { gql } from "@apollo/client";
 
+// Create a Test Paper
 export const CREATE_TEST = gql`
-  mutation CREATE_TEST(
+  mutation CreateTest(
+    $id: ID!
     $title: String!
-    $subject: String!
     $date: String!
     $totalMarks: Int!
     $url: String!
+    $subject: String!
   ) {
     createTest(
+      id: $id
       title: $title
-      subject: $subject
       date: $date
       totalMarks: $totalMarks
       url: $url
-    ) {
-      id
-      createdAt
-      date
-      sharedWith
-      subject
-      title
-      totalMarks
-      url
-    }
+      subject: $subject
+    )
   }
 `;
 
+// Update Draft Test Papers
 export const UPDATE_TESTPAPER = gql`
-  mutation UPDATE_TESTPAPER(
+  mutation UpdateDraftTest(
     $id: ID!
     $title: String
     $subject: String
     $date: String
     $totalMarks: Int
-    $sharedWith: [String]
   ) {
-    updateTest(
+    updateDraftTest(
       id: $id
       title: $title
       subject: $subject
       date: $date
       totalMarks: $totalMarks
-      sharedWith: $sharedWith
-    ) {
-      id
-      date
-      createdAt
-      title
-    }
+    )
   }
 `;
 
+// Publish a Test Paper
+export const PUBLISH_TESTPAPER = gql`
+  mutation PublishTestPaper($id: ID!) {
+    publishTestPaper(id: $id)
+  }
+`;
+
+// Update Shared With for Published Tests
+export const UPDATE_SHARED_WITH = gql`
+  mutation UpdateSharedTest($id: ID!, $sharedWith: [String]) {
+    updateSharedTest(id: $id, sharedWith: $sharedWith)
+  }
+`;
+
+// Delete a Test Paper
 export const DELETE_TESTPAPER = gql`
-  mutation DELETE_TESTPAPER($id: ID!) {
-    deleteTest(id: $id) {
-      id
-      createdAt
-      date
-      title
-    }
+  mutation DeleteTest($id: ID!, $published: Boolean!) {
+    deleteTest(id: $id, published: $published)
   }
 `;

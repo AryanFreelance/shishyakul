@@ -31,11 +31,9 @@ const Navbar = ({ navLinks, isHome }) => {
   const signoutHandler = () => {
     signOut(auth)
       .then(() => {
-        // Sign-out successful.
         router.push("/login");
       })
       .catch((error) => {
-        // An error happened.
         console.log(error);
       });
   };

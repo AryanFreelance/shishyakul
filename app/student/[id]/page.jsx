@@ -139,7 +139,6 @@ const page = () => {
               data: [
                 studData?.student.attendance.present,
                 studData?.student.attendance.absent,
-                // 20, 40,
               ],
               backgroundColor: ["#159a3a", "#d92e39"],
               borderColor: ["#159a3a", "#d92e39"],

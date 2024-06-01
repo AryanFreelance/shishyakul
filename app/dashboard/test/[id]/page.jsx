@@ -219,7 +219,6 @@ const page = () => {
                     className="input-taking w-full lg:w-[80%] md:w-[70%]"
                     placeholder="Update Date of Test..."
                     disabled={published}
-                    // value={testData?.date}
                     value={testData?.date}
                     onChange={(e) =>
                       !published &&

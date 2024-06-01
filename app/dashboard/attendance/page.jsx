@@ -32,13 +32,13 @@ import { useLazyQuery, useMutation } from "@apollo/client";
 import { CREATE_ATTENDANCE, UPDATE_ATTENDANCE } from "@/graphql/mutations/attendance.mutation";
 import toast from "react-hot-toast";
 
-const page = () => {
+const Page = () => {
   const [present, setPresent] = useState([]);
   const [absent, setAbsent] = useState([]);
   const today = new Date();
   const [date, setDate] = useState(today);
   const [formattedDate, setFormattedDate] = useState("");
-  let months = [
+  const months = [
     "Jan",
     "Feb",
     "Mar",
@@ -52,16 +52,14 @@ const page = () => {
     "Nov",
     "Dec",
   ];
-  let todayDate = `${today.getDate() < 10 ? "0" + today.getDate() : today.getDate()}-${(today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : today.getMonth() + 1}-${today.getFullYear()}`;
+  const todayDate = `${today.getDate() < 10 ? "0" + today.getDate() : today.getDate()}-${(today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : today.getMonth() + 1}-${today.getFullYear()}`;
 
   // Queries - Get Students, Get Attendance
   const {
     data: studentsData,
-    loading: studentsLoading,
-    error: studentsError,
   } = useSuspenseQuery(GET_STUDENTS);
 
-  const [fetchAttendance, { data: attendanceData, loading: attendanceLoading, error: attendanceError }] = useLazyQuery(GET_ATTENDANCE, {
+  const [fetchAttendance, { data: attendanceData }] = useLazyQuery(GET_ATTENDANCE, {
     fetchPolicy: 'network-only',
   });
 
@@ -102,17 +100,16 @@ const page = () => {
   };
 
   useEffect(() => {
-    let sDate = date && date.toString().split(" ");
-    let formattedDate = date && `${sDate[2]}-${getMonthNumber(sDate[1])}-${sDate[3]}`;
+    const sDate = date && date.toString().split(" ");
+    const formattedDate = date && `${sDate[2]}-${getMonthNumber(sDate[1])}-${sDate[3]}`;
     setFormattedDate(date ? formattedDate : "(select a date)");
-    console.log("FORMATTED", formattedDate);
-    fetchAttendance({
-      variables: {
-        timestamp: formattedDate.split("-").reverse().join("-"),
-      },
-    });
-
-    console.log("TODAYDATE", todayDate);
+    if (formattedDate) {
+      fetchAttendance({
+        variables: {
+          timestamp: formattedDate.split("-").reverse().join("-"),
+        },
+      });
+    }
   }, [date]);
 
   useEffect(() => {
@@ -136,9 +133,7 @@ const page = () => {
   const updateAttendanceHandler = async () => {
     const toastId = toast.loading("Updating Attendance...");
 
-    if (attendanceData?.attendance === null) {
-      console.log("ID", formattedDate.split("-").reverse().join("-"));
-
+    if (!attendanceData?.attendance) {
       await createAttendance({
         variables: {
           timestamp: formattedDate.split("-").reverse().join("-"),
@@ -265,4 +260,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

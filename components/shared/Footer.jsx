@@ -100,7 +100,6 @@ const Footer = () => {
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d943.0106602135608!2d73.09621837711212!3d19.01784260825824!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7e97c2161ace5%3A0x9561d52a4caf72cd!2sShishyakul!5e0!3m2!1sen!2sin!4v1712476579207!5m2!1sen!2sin"
               className="w-[100%] h-[200px] lg:h-[300px] mt-6 border-2 border-main rounded-md"
-              // style={{ border: "0" }}
               allowFullScreen=""
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"

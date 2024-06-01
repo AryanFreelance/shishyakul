@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import DropzoneComponent from "react-dropzone";
-import { errorToast, successToast } from "@/utils/toast";
+import { errorToast } from "@/utils/toast";
 import { storage } from "@/firebase";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { useMutation } from "@apollo/client";
@@ -66,9 +66,12 @@ const page = () => {
 
   const uploadPost = async (selectedFile) => {
     if (loading) return;
+    const toastId = toast.loading("Uploading Test Paper...");
     setLoading(true);
     if (selectedFile.type !== "application/pdf") {
-      errorToast("Please upload a PDF file!");
+      toast.error("Please upload a PDF file!", {
+        id: toastId,
+      });
       setLoading(false);
       return;
     }
@@ -76,9 +79,13 @@ const page = () => {
       console.log(selectedFile);
       setFormData({ ...formData, question_paper: selectedFile });
       setUploaded(true);
-      successToast("File Uploaded Successfully!");
+      toast.success("File Uploaded Successfully!", {
+        id: toastId,
+      });
     } catch (error) {
-      errorToast("Something went wrong!");
+      toast.error("Something went wrong!", {
+        id: toastId,
+      });
     }
 
     setLoading(false);
@@ -105,13 +112,10 @@ const page = () => {
       setIsFormLoading(false);
     } else {
       const today = new Date();
-      let fileid = `${today.getFullYear()}${
-        today.getHours() < 10 ? "0" + today.getHours() : today.getHours()
-      }${
-        today.getMinutes() < 10 ? "0" + today.getMinutes() : today.getMinutes()
-      }${
-        today.getSeconds() < 10 ? "0" + today.getSeconds() : today.getSeconds()
-      }`;
+      let fileid = `${today.getFullYear()}${today.getHours() < 10 ? "0" + today.getHours() : today.getHours()
+        }${today.getMinutes() < 10 ? "0" + today.getMinutes() : today.getMinutes()
+        }${today.getSeconds() < 10 ? "0" + today.getSeconds() : today.getSeconds()
+        }`;
       console.log(fileid);
       const storageRef = ref(storage, `test_papers/${fileid}`);
 
@@ -133,7 +137,6 @@ const page = () => {
             },
           });
 
-          // successToast("Test Paper Added Successfully!");
           toast.success("Test Paper Added Successfully!", {
             id: toastId,
           });

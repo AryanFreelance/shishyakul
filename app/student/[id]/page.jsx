@@ -48,6 +48,7 @@ import { GET_STUDENT_DETAILS } from "@/graphql/queries/students.query";
 import { GET_PUBLISHED_TESTPAPERS_USERS } from "@/graphql/queries/testPaper.query";
 import { CREATE_FEE, DELETE_FEE } from "@/graphql/mutations/fees.mutation";
 import { useMutation } from "@apollo/client";
+import { Separator } from "@/components/ui/separator";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -314,7 +315,6 @@ const page = () => {
                       <Button
                         variant="outline"
                         className="border-2"
-                        onClick={() => setFeeDialogHandlerState(true)}
                       >
                         Add Fee
                       </Button>
@@ -475,6 +475,9 @@ const page = () => {
               </Table>
             </div>
           </div>
+
+          <Separator className="my-4 lg:hidden" />
+
           <div className="lg:w-[50%]">
             {studData?.student.attendance.present === 0 &&
               studData?.student.attendance.absent === 0 ? (

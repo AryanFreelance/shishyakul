@@ -74,7 +74,6 @@ const page = () => {
     month: undefined,
     year: undefined,
   });
-  const [feeDialogHandlerState, setFeeDialogHandlerState] = useState(false);
 
   // Queries - Get Student, Get Published Papers
   const { data: studData } = useSuspenseQuery(GET_STUDENT_DETAILS, {
@@ -211,8 +210,6 @@ const page = () => {
           id: toastId,
         });
       });
-
-    setFeeDialogHandlerState(false);
   };
 
   const logoutHandler = () => {
@@ -312,7 +309,7 @@ const page = () => {
                   Fees Information
                 </h3>
                 {isAdmin && (
-                  <Dialog open={feeDialogHandlerState}>
+                  <Dialog>
                     <DialogTrigger asChild>
                       <Button
                         variant="outline"
@@ -403,9 +400,6 @@ const page = () => {
                       <DialogFooter>
                         <Button type="submit" onClick={addFeeHandler}>
                           Save changes
-                        </Button>
-                        <Button onClick={() => setFeeDialogHandlerState(false)}>
-                          Cancel
                         </Button>
                       </DialogFooter>
                     </DialogContent>

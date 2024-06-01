@@ -404,6 +404,9 @@ const page = () => {
                         <Button type="submit" onClick={addFeeHandler}>
                           Save changes
                         </Button>
+                        <Button onClick={() => setFeeDialogHandlerState(false)}>
+                          Cancel
+                        </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>

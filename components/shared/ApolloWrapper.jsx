@@ -10,8 +10,8 @@ import {
 
 function makeClient() {
   const httpLink = new HttpLink({
-    uri: "http://localhost:4000/",
-    // uri: "https://shishyakul-api.onrender.com",
+    // uri: "http://localhost:4000/",
+    uri: "https://shishyakul-api.onrender.com",
     fetchOptions: { cache: "no-store" },
   });
 

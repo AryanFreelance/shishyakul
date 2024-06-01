@@ -119,12 +119,14 @@ const page = () => {
     console.log("MAINRESPONSE", response);
     console.log("RESPONSE", response.initializeStudent);
 
+    const domain = window.location.origin;
+
     await emailjs
       .send(
         "service_ic02pwe",
         "template_v53ko4t",
         {
-          sign_up_link: `http://localhost:3000/register/${response?.data.initializeStudent}`,
+          sign_up_link: `${domain}/register/${response?.data.initializeStudent}`,
           sign_up_code: response?.data.initializeStudent,
           to_email: studEmail,
         },

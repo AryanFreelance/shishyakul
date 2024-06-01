@@ -1,5 +1,6 @@
 "use client";
 
+import Container from "@/components/shared/Container";
 import { auth } from "@/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -42,7 +43,7 @@ const layout = ({ children }) => {
     );
   }
 
-  return <div>{children}</div>;
+  return <Container>{children}</Container>;
 };
 
 export default layout;

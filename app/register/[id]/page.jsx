@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { EyeIcon, EyeOff, Home } from "lucide-react";
+import { ArrowLeft, EyeIcon, EyeOff, Home } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import Container from "@/components/shared/Container";
@@ -58,17 +58,25 @@ function Page() {
 
   if (data?.verifyStudentCode === "") {
     return (
-      <div className="flex justify-center items-center flex-col h-[100svh]">
+      <div className="flex justify-center items-center flex-col h-[100svh] text-center">
         <h1 className="subheading">Invalid Verification Code</h1>
         <p className="barlow-regular mt-4">
           The verification code you entered is invalid or expired. Please try again.
         </p>
-        <Link
-          href="/"
-          className="bg-secondary text-primary px-4 py-2 rounded barlow-medium flex gap-2 items-center mt-6"
-        >
-          Go Home <Home />
-        </Link>
+        <div className="flex justify-center items-center gap-6">
+          <Link
+            href="/register"
+            className="bg-secondary text-primary px-4 py-2 rounded barlow-medium flex gap-2 items-center mt-6"
+          >
+            Try Again <ArrowLeft />
+          </Link>
+          <Link
+            href="/"
+            className="bg-secondary text-primary px-4 py-2 rounded barlow-medium flex gap-2 items-center mt-6"
+          >
+            Go Home <Home />
+          </Link>
+        </div>
       </div>
     );
   }

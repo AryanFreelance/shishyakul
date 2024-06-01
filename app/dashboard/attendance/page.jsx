@@ -52,7 +52,7 @@ const page = () => {
     "Nov",
     "Dec",
   ];
-  let todayDate = `${today.getDate()}-${(today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : today.getMonth() + 1}-${today.getFullYear()}`;
+  let todayDate = `${today.getDate() < 10 ? "0" + today.getDate() : today.getDate()}-${(today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : today.getMonth() + 1}-${today.getFullYear()}`;
 
   // Queries - Get Students, Get Attendance
   const {
@@ -105,11 +105,14 @@ const page = () => {
     let sDate = date && date.toString().split(" ");
     let formattedDate = date && `${sDate[2]}-${getMonthNumber(sDate[1])}-${sDate[3]}`;
     setFormattedDate(date ? formattedDate : "(select a date)");
+    console.log("FORMATTED", formattedDate);
     fetchAttendance({
       variables: {
         timestamp: formattedDate.split("-").reverse().join("-"),
       },
     });
+
+    console.log("TODAYDATE", todayDate);
   }, [date]);
 
   useEffect(() => {

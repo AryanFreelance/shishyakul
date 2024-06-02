@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import React, { useState, useEffect } from "react";
 import headerBanner from "@/assets/banners/header/hero_banner.jpg";
-import { EyeIcon, EyeOff } from "lucide-react";
+import { ChevronLeft, EyeIcon, EyeOff } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -210,12 +210,21 @@ const Page = () => {
                   </DialogContent>
                 </Dialog>
               </div>
-              <div className="flex justify-center items-center w-full mt-6">
+              <div className="flex justify-center items-center flex-col md:flex-row-reverse w-full mt-6 gap-4">
                 <Button
                   className="lg:w-full w-[200px] flex justify-center items-center barlow-semibold text-lg"
                   onClick={loginHandler}
                 >
                   Login
+                </Button>
+                <Button
+                  className="lg:w-full w-[200px] flex justify-center items-center barlow-semibold text-lg gap-2"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    router.push("/")
+                  }}
+                >
+                  <ChevronLeft /> Go Home
                 </Button>
               </div>
             </form>

@@ -76,7 +76,6 @@ const Navbar = ({ navLinks, isHome }) => {
               ))}
           </div>
           <div className="md:hidden">
-            {/* Sheet */}
             <Sheet>
               <SheetTrigger>
                 <span>
@@ -105,19 +104,40 @@ const Navbar = ({ navLinks, isHome }) => {
                         <span>{link.title}</span>
                       </Button>
                     ))}
+                  <Button
+                    variant="nav"
+                    asChild
+                    onClick={(e) => {
+                      e.preventDefault()
+                      router.push("/login")
+                    }}
+                    className="md:hidden"
+                  >
+                    <span>Login</span>
+                  </Button>
                 </div>
               </SheetContent>
             </Sheet>
           </div>
         </div>
         {isHome && (
-          <div>
+          <div className="flex justify-center items-center gap-4">
             <Button
               className="text-[16px] filled-button"
               variant="navBtn"
               onClick={goToSection("#contact-wrapper")}
             >
               Contact
+            </Button>
+            <Button
+              className="text-[16px] filled-button hidden md:block"
+              variant="navBtn"
+              onClick={(e) => {
+                e.preventDefault()
+                router.push("/login")
+              }}
+            >
+              Login
             </Button>
           </div>
         )}

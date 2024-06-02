@@ -230,7 +230,7 @@ const page = () => {
       </Link>
 
       <div className="py-4">
-        <h2 className="subheading mb-8">Student Name</h2>
+        <h2 className="subheading mb-8">Welcome {firstName}</h2>
         <div>
           <h3 className="subsubheading text-secondary">Student Information</h3>
           <div className="mt-6">

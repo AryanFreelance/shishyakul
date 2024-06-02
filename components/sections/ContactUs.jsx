@@ -28,8 +28,8 @@ const ContactUs = () => {
 
     await emailjs
       .send(
-        "service_ji7yjwy",
-        "template_0td209e",
+        "service_ic02pwe",
+        "template_jg51ptr",
         {
           name,
           email,
@@ -37,7 +37,7 @@ const ContactUs = () => {
           message,
         },
         {
-          publicKey: "L6tt5i1OBi2QrCoW0",
+          publicKey: "0VNUkTzXWUy3G49zl",
         }
       )
       .then(

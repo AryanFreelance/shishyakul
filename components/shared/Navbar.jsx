@@ -14,6 +14,7 @@ import { MenuIcon } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebase";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const Navbar = ({ navLinks, isHome }) => {
   const [stickyTopClass, setStickyTopClass] = useState(false);
@@ -54,13 +55,15 @@ const Navbar = ({ navLinks, isHome }) => {
     >
       <div className={`flex justify-between items-center`}>
         <div>
-          <Image
-            src="/logo.png"
-            alt="Logo Image"
-            className="h-[60px] w-full"
-            width={1000}
-            height={1000}
-          />
+          <Link href="/">
+            <Image
+              src="/logo.png"
+              alt="Logo Image"
+              className="h-[60px] w-full"
+              width={1000}
+              height={1000}
+            />
+          </Link>
         </div>
         <div>
           <div className="hidden md:block">

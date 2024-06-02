@@ -32,7 +32,7 @@ const page = () => {
       <Navbar navLinks={dashboardNavLinks} isHome={false} />
       <div className="pb-10">
         <div className="flex justify-between items-center">
-          <h2 className="subheading">Test Papers</h2>
+          <h2 className="subheading text-center">Test Papers</h2>
         </div>
         <div className="mt-8">
           {data?.testpapers?.published.length === 0 && (

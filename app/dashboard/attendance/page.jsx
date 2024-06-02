@@ -157,14 +157,14 @@ const Page = () => {
     <Container>
       <Navbar navLinks={dashboardNavLinks} isHome={false} />
       <div className="pb-10">
-        <h2 className="subheading">Attendance</h2>
-        <div className="flex justify-end items-center">
+        <h2 className="subheading mb-4 text-center md:text-left">Attendance</h2>
+        <div className="flex justify-center md:justify-end items-center">
           <Popover className="w-full">
-            <PopoverTrigger asChild>
+            <PopoverTrigger asChild className="flex justify-center items-center">
               <Button
                 variant={"outline"}
                 className={cn(
-                  "w-[280px] justify-start text-left font-normal",
+                  "w-[280px] justify-center font-normal",
                   !date && "text-muted-foreground"
                 )}
               >
@@ -241,11 +241,11 @@ const Page = () => {
                 </div>
               ))}
             </div>
-            <div className="flex justify-center items-center gap-6 mt-8 w-[50%]">
-              <div className="w-[50%]">
+            <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-6 mt-8 w-full">
+              <div className="w-full md:w-[50%]">
                 <Button className="w-full" onClick={updateAttendanceHandler}>Save</Button>
               </div>
-              <div className="w-[50%]">
+              <div className="w-full md:w-[50%]">
                 {
                   formattedDate === todayDate && (
                     <Button className="w-full">Send SMS/Email</Button>

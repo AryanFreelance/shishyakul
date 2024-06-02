@@ -104,17 +104,21 @@ const Navbar = ({ navLinks, isHome }) => {
                         <span>{link.title}</span>
                       </Button>
                     ))}
-                  <Button
-                    variant="nav"
-                    asChild
-                    onClick={(e) => {
-                      e.preventDefault()
-                      router.push("/login")
-                    }}
-                    className="md:hidden"
-                  >
-                    <span>Login</span>
-                  </Button>
+                  {
+                    isHome && (
+                      <Button
+                        variant="nav"
+                        asChild
+                        onClick={(e) => {
+                          e.preventDefault()
+                          router.push("/login")
+                        }}
+                        className="md:hidden"
+                      >
+                        <span>Login</span>
+                      </Button>
+                    )
+                  }
                 </div>
               </SheetContent>
             </Sheet>

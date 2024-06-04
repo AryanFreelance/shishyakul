@@ -50,6 +50,12 @@ const page = () => {
   const [shareInput, setShareInput] = useState("");
   const [shareInputEmail, setShareInputEmail] = useState("");
   const [sharedWith, setSharedWith] = useState([]);
+  const today = new Date();
+  const todayDate = `${today.getFullYear()}-${
+    today.getMonth() + 1 < 10
+      ? "0" + (today.getMonth() + 1)
+      : today.getMonth() + 1
+  }-${today.getDate() < 10 ? "0" + today.getDate() : today.getDate()}`;
 
   // Check if the last digit of the id is 0 or 1, if 0 then published, else draft;
   const published = id[id.length - 1] === "0" ? true : false;
@@ -146,12 +152,15 @@ const page = () => {
       console.log("Test Data", testpaperData?.testpaper.date);
       setSharedWith(testpaperData?.testpaper?.sharedWith);
     }
+
+    console.log("DATE", testData?.date >= todayDate);
   }, [testpaperData]);
+
+  const isPastDate = testData?.date < todayDate;
 
   return (
     <Container>
       <Navbar navLinks={dashboardNavLinks} isHome={false} />
-
       {
         // If testpaperData is not available, show a loading spinner
         testpaperData ? (
@@ -220,6 +229,7 @@ const page = () => {
                     placeholder="Update Date of Test..."
                     disabled={published}
                     value={testData?.date}
+                    min={todayDate}
                     onChange={(e) =>
                       !published &&
                       setTestData({ ...testData, date: e.target.value })
@@ -247,7 +257,7 @@ const page = () => {
                   />
                 </div>
 
-                {published && (
+                {published && !isPastDate && (
                   <>
                     <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 mt-4">
                       <Label
@@ -287,28 +297,6 @@ const page = () => {
                             Share
                           </Button>
                         </div>
-                        {/* <div className="flex flex-wrap gap-x-6 gap-y-4">
-                          {sharedWith?.map((email, index) => (
-                            <div
-                              key={index}
-                              className="bg-secondary text-primary flex gap-4 rounded px-4 py-2"
-                            >
-                              <span>{email}</span>
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  const updatedSharedWith =
-                                    sharedWith?.sharedWith.filter(
-                                      (e) => e !== email
-                                    );
-                                  setSharedWith(updatedSharedWith);
-                                }}
-                              >
-                                <X />
-                              </button>
-                            </div>
-                          ))}
-                        </div> */}
                       </div>
                     </div>
 
@@ -381,28 +369,44 @@ const page = () => {
                   height="480"
                   allowFullScreen
                 ></iframe>
-                <div className="mt-10">
-                  <Button
-                    className="w-full"
-                    type="submit"
-                    onClick={updateTestPaperHandler}
-                  >
-                    Update Test
-                  </Button>
-                </div>
 
-                {!published && (
-                  <>
-                    <div className="mt-6">
-                      <Button
-                        className="w-full bg-green-700 hover:bg-green-800 text-primary"
-                        type="submit"
-                        onClick={publishTestPaperHandler}
-                      >
-                        Publish Test
-                      </Button>
-                    </div>
-                  </>
+                {!isPastDate && (
+                  <div className="mt-10">
+                    <Button
+                      className="w-full"
+                      type="submit"
+                      onClick={updateTestPaperHandler}
+                    >
+                      Update Test
+                    </Button>
+                  </div>
+                )}
+
+                {published && isPastDate && (
+                  <div className="mt-6">
+                    <Button
+                      className="w-full bg-yellow-600 hover:bg-yellow-700 text-primary"
+                      type="submit"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        router.push(`/dashboard/test/${id}/marks`);
+                      }}
+                    >
+                      Add/Update Marks
+                    </Button>
+                  </div>
+                )}
+
+                {!published && !isPastDate && (
+                  <div className="mt-6">
+                    <Button
+                      className="w-full bg-green-700 hover:bg-green-800 text-primary"
+                      type="submit"
+                      onClick={publishTestPaperHandler}
+                    >
+                      Publish Test
+                    </Button>
+                  </div>
                 )}
 
                 <div className="mt-6">

@@ -34,6 +34,8 @@ const page = () => {
   });
   const [loading, setLoading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
+  const today = new Date();
+  const todayDate = `${today.getFullYear()}-${(today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : today.getMonth() + 1}-${today.getDate() < 10 ? "0" + today.getDate() : today.getDate()}`;
 
   const maxSize = 20971520;
 
@@ -208,6 +210,8 @@ const page = () => {
                 <input
                   type="date"
                   id="date"
+                  // min={new Date().toISOString().split("T")[0]}
+                  min={todayDate}
                   className="input-taking"
                   placeholder="Enter Date of Test..."
                   value={formData.date}

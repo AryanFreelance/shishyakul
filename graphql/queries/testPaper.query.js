@@ -94,3 +94,31 @@ export const GET_PUBLISHED_TESTPAPERS_USERS = gql`
     }
   }
 `;
+
+// Get the marks for a test paper
+export const GET_TESTPAPER_MARKS = gql`
+  query TestpaperMarks($id: ID!) {
+    testpaperMarks(id: $id) {
+      id
+      name
+      email
+      marks
+      grade
+    }
+  }
+`;
+
+// Get Test Paper Shared Users for a Test Paper
+export const GET_TESTPAPER_SHARED_USERS = gql`
+  query TestAccessedUsers($id: ID!) {
+    testAccessedUsers(id: $id) {
+      userId
+      firstname
+      middlename
+      lastname
+      email
+      phone
+      grade
+    }
+  }
+`;

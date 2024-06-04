@@ -60,3 +60,10 @@ export const DELETE_TESTPAPER = gql`
     deleteTest(id: $id, published: $published)
   }
 `;
+
+// Save Test Marks
+export const SAVE_TEST_MARKS = gql`
+  mutation AddMarks($testId: ID!, $data: [MarksInput]) {
+    addMarks(testId: $testId, data: $data)
+  }
+`;

@@ -41,7 +41,7 @@ export const dynamic = "force-dynamic";
 
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 import { useMutation } from "@apollo/client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import emailjs from "@emailjs/browser";
 import {
@@ -57,6 +57,8 @@ import {
 const page = () => {
   const [studEmail, setStudEmail] = useState("");
   const [openAddStudentDialog, setOpenAddStudentDialog] = useState(false);
+  const [grades, setGrades] = useState(new Set());
+  const [selectedGrades, setSelectedGrades] = useState(new Set());
 
   // Queries - GET_TEMP_STUDENTS, DASHBOARD_GET_STUDENT
   const {
@@ -159,6 +161,33 @@ const page = () => {
     });
   };
 
+  // Extract unique grades from students data
+  useEffect(() => {
+    if (students) {
+      const uniqueGrades = new Set(
+        students?.students.map((student) => student.grade)
+      );
+      setGrades(uniqueGrades);
+      setSelectedGrades(uniqueGrades); // Initially, all grades are selected
+    }
+  }, [students]);
+
+  const handleGradeChange = (grade) => {
+    setSelectedGrades((prev) => {
+      const newSelectedGrades = new Set(prev);
+      if (newSelectedGrades.has(grade)) {
+        newSelectedGrades.delete(grade);
+      } else {
+        newSelectedGrades.add(grade);
+      }
+      return newSelectedGrades;
+    });
+  };
+
+  const filteredStudents = students?.students?.filter((student) =>
+    selectedGrades.has(student.grade)
+  );
+
   return (
     <Container>
       <Navbar navLinks={dashboardNavLinks} isHome={false} />
@@ -203,91 +232,123 @@ const page = () => {
           </Dialog>
         </div>
         <div className="mt-8">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="barlow-semibold w-[100px]">
-                  User ID.
-                </TableHead>
-                <TableHead className="barlow-semibold">Name</TableHead>
-                <TableHead className="barlow-semibold">Email</TableHead>
-                <TableHead className="barlow-semibold">Phone</TableHead>
-                <TableHead className="barlow-semibold">Grade</TableHead>
-                <TableHead className="barlow-semibold">Attendance</TableHead>
-                <TableHead className="barlow-semibold">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {students.students?.map((student, index) => (
-                <TableRow key={index}>
-                  <TableCell className="barlow-semibold">
-                    {student.userId}
-                  </TableCell>
-                  <TableCell className="barlow-regular">
-                    {student.firstname} {student.lastname}
-                  </TableCell>
-                  <TableCell className="barlow-regular">
-                    {student.email}
-                  </TableCell>
-                  <TableCell className="barlow-regular">
-                    {student.phone}
-                  </TableCell>
-                  <TableCell className="barlow-regular">
-                    {student.grade}
-                  </TableCell>
-                  <TableCell className="barlow-regular">
-                    { }
-
-                    {student.attendance.present + student.attendance.absent ===
-                      0
-                      ? "N/A"
-                      : `${Math.round(
-                        (student.attendance.present /
-                          (student.attendance.present +
-                            student.attendance.absent)) *
-                        100
-                      )} %`}
-                  </TableCell>
-                  <TableCell className="barlow-regular flex items-center gap-4">
-                    <Link
-                      href={`/student/${student.userId}`}
-                      className="border-2 border-main rounded p-1"
-                    >
-                      <Eye />
-                    </Link>
-
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <button className="border-2 border-main rounded p-1">
-                          <Trash />
-                        </button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Are you absolutely sure?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently
-                            delete your account and remove your data from our
-                            servers.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteStudentHandler(student.userId)}
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
-                </TableRow>
+          <div>
+            <div>
+              <h2 className="subsubheading text-secondary">Grades</h2>
+            </div>
+            <div className="flex gap-4 max-w-full flex-wrap mt-2 ml-2">
+              {Array.from(grades).map((grade, index) => (
+                <div
+                  key={grade}
+                  className="flex gap-1 justify-center items-center"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedGrades.has(grade)}
+                    onChange={() => handleGradeChange(grade)}
+                    id={`grade${index}`}
+                  />
+                  <label htmlFor={`grade${index}`} className="font-semibold">
+                    {grade}
+                  </label>
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+          </div>
+          {filteredStudents?.length === 0 ? (
+            <div className="mt-8">
+              <h3 className="barlow-semibold text-center">
+                No students found for selected grades
+              </h3>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="barlow-semibold w-[100px]">
+                    User ID.
+                  </TableHead>
+                  <TableHead className="barlow-semibold">Name</TableHead>
+                  <TableHead className="barlow-semibold">Email</TableHead>
+                  <TableHead className="barlow-semibold">Phone</TableHead>
+                  <TableHead className="barlow-semibold">Grade</TableHead>
+                  <TableHead className="barlow-semibold">Attendance</TableHead>
+                  <TableHead className="barlow-semibold">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredStudents?.map((student, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="barlow-semibold">
+                      {student.userId}
+                    </TableCell>
+                    <TableCell className="barlow-regular">
+                      {student.firstname} {student.lastname}
+                    </TableCell>
+                    <TableCell className="barlow-regular">
+                      {student.email}
+                    </TableCell>
+                    <TableCell className="barlow-regular">
+                      {student.phone}
+                    </TableCell>
+                    <TableCell className="barlow-regular">
+                      {student.grade}
+                    </TableCell>
+                    <TableCell className="barlow-regular">
+                      {student.attendance.present +
+                        student.attendance.absent ===
+                      0
+                        ? "N/A"
+                        : `${Math.round(
+                            (student.attendance.present /
+                              (student.attendance.present +
+                                student.attendance.absent)) *
+                              100
+                          )} %`}
+                    </TableCell>
+                    <TableCell className="barlow-regular flex items-center gap-4">
+                      <Link
+                        href={`/student/${student.userId}`}
+                        className="border-2 border-main rounded p-1"
+                      >
+                        <Eye />
+                      </Link>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button className="border-2 border-main rounded p-1">
+                            <Trash />
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Are you absolutely sure?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will
+                              permanently delete your account and remove your
+                              data from our servers.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() =>
+                                deleteStudentHandler(student.userId)
+                              }
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
 

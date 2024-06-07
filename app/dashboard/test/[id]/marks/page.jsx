@@ -34,12 +34,14 @@ import { SAVE_TEST_MARKS } from "@/graphql/mutations/testPaper.mutation";
 import { useMutation } from "@apollo/client";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { Medal } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 const Page = () => {
   const { id } = useParams();
   const [studMarks, setStudMarks] = useState([]);
+  const [marksSaveDialogHandler, setMarksSaveDialogHandler] = useState(false);
 
   const { data: testpaperData } = useSuspenseQuery(GET_TESTPAPER, {
     variables: { id, published: true },
@@ -67,19 +69,19 @@ const Page = () => {
   const todayDate = today.toISOString().split("T")[0];
 
   // Assign ranks to the already sorted testpaperMarks
-  let currentRank = 1;
-  let ranks = [];
+  // let currentRank = 1;
+  // let ranks = [];
 
-  testpaperMarks?.testpaperMarks.forEach((user, index) => {
-    if (
-      index > 0 &&
-      user.marks !== testpaperMarks.testpaperMarks[index - 1].marks
-    ) {
-      currentRank += 1;
-    }
-    ranks.push({ ...user, rank: currentRank });
-    console.log("RANKS", ranks);
-  });
+  // testpaperMarks?.testpaperMarks.forEach((user, index) => {
+  //   if (
+  //     index > 0 &&
+  //     user.marks !== testpaperMarks.testpaperMarks[index - 1].marks
+  //   ) {
+  //     currentRank += 1;
+  //   }
+  //   ranks.push({ ...user, rank: currentRank });
+  //   console.log("RANKS", ranks);
+  // });
 
   useEffect(() => {
     if (testpaperMarks?.testpaperMarks) {
@@ -120,6 +122,8 @@ const Page = () => {
       },
     });
 
+    setMarksSaveDialogHandler(false);
+
     if (saveTestResponse === "ERROR") {
       toast.error("Error saving marks!", { id: toastId });
       return;
@@ -151,6 +155,8 @@ const Page = () => {
       </Container>
     );
   }
+
+  console.log("TESTPAPER MARKS", testpaperMarks);
 
   return (
     <Container>
@@ -208,8 +214,10 @@ const Page = () => {
             </Table>
           </div>
           <div className="flex justify-center md:justify-end items-center">
-            <AlertDialog>
-              <AlertDialogTrigger>
+            <AlertDialog open={marksSaveDialogHandler}>
+              <AlertDialogTrigger
+                onClick={() => setMarksSaveDialogHandler(true)}
+              >
                 <Button className="mt-4 w-[80%] md:w-[200px]">Save</Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -223,7 +231,11 @@ const Page = () => {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel
+                    onClick={() => setMarksSaveDialogHandler(false)}
+                  >
+                    Cancel
+                  </AlertDialogCancel>
                   <AlertDialogAction onClick={saveTestMarksHandler}>
                     Continue
                   </AlertDialogAction>
@@ -245,16 +257,23 @@ const Page = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Rank</TableHead>
+                    <TableHead className="flex justify-center items-center">
+                      Rank
+                    </TableHead>
                     <TableHead>Student Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Marks</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {ranks.map((user) => (
+                  {testpaperMarks?.testpaperMarks.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell>{user.rank}</TableCell>
+                      <TableCell className="flex justify-center items-center">
+                        {user.rank == 1 && <Medal className="text-[#D8981F]" />}
+                        {user.rank == 2 && <Medal className="text-[#858585]" />}
+                        {user.rank == 3 && <Medal className="text-[#892C00]" />}
+                        {user.rank > 3 && user.rank}
+                      </TableCell>
                       <TableCell>{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>{user.marks}</TableCell>

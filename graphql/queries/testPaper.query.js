@@ -91,6 +91,9 @@ export const GET_PUBLISHED_TESTPAPERS_USERS = gql`
       date
       totalMarks
       url
+      marks {
+        rank
+      }
     }
   }
 `;
@@ -104,6 +107,7 @@ export const GET_TESTPAPER_MARKS = gql`
       email
       marks
       grade
+      rank
     }
   }
 `;

@@ -5,7 +5,7 @@ import Navbar from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { dashboardNavLinks } from "@/constants";
-import { useMutation } from "@apollo/client";
+import { useLazyQuery, useMutation } from "@apollo/client";
 import { X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import {
@@ -50,6 +50,7 @@ const page = () => {
   const [shareInput, setShareInput] = useState("");
   const [shareInputEmail, setShareInputEmail] = useState("");
   const [sharedWith, setSharedWith] = useState([]);
+  const [testDate, setTestDate] = useState("");
   const today = new Date();
   const todayDate = `${today.getFullYear()}-${
     today.getMonth() + 1 < 10
@@ -126,6 +127,14 @@ const page = () => {
     e.preventDefault();
     const toastId = toast.loading("Publishing Test Paper...");
 
+    // console.log("TESTDATA", testpaperData);
+    if (testDate < todayDate) {
+      toast.error("Please update the test with a future date.", {
+        id: toastId,
+      });
+      return;
+    }
+
     await publishTestPaper({
       variables: { id: id },
     });
@@ -138,6 +147,7 @@ const page = () => {
   useEffect(() => {
     if (testpaperData) {
       if (testpaperData?.testpaper === null) router.push("/dashboard/tests");
+      setTestDate(testpaperData?.testpaper?.date);
 
       setTestData({
         title: testpaperData?.testpaper?.title,
@@ -361,6 +371,32 @@ const page = () => {
                       </div>
                     </div>
                   </>
+                )}
+
+                {published && isPastDate && (
+                  <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 mt-4">
+                    <Label
+                      htmlFor="share-to"
+                      className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%] py-3"
+                    >
+                      Shared With
+                    </Label>
+                    <div className="flex flex-wrap gap-x-6 gap-y-4 mt-4 w-full lg:w-[80%] md:w-[70%]">
+                      {sharedWith?.length === 0 && (
+                        <span className="text-secondary">
+                          No one has been shared with this test paper yet.
+                        </span>
+                      )}
+                      {sharedWith?.map((email, index) => (
+                        <div
+                          key={index}
+                          className="bg-secondary text-primary flex gap-4 rounded px-4 py-2"
+                        >
+                          <span>{email}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
 
                 <iframe

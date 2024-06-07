@@ -28,7 +28,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import toast from "react-hot-toast";
 import { useParams, useRouter } from "next/navigation";
 import { auth } from "@/firebase";
-import { InfoIcon } from "lucide-react";
+import { Circle, CircleCheck, InfoIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -76,6 +76,15 @@ const page = () => {
     year: undefined,
   });
 
+  const today = new Date();
+  const todayDate = `${
+    today.getDate() < 10 ? "0" + today.getDate() : today.getDate()
+  }-${
+    today.getMonth() + 1 < 10
+      ? "0" + (today.getMonth() + 1)
+      : today.getMonth() + 1
+  }-${today.getFullYear()}`;
+
   // Queries - Get Student, Get Published Papers
   const { data: studData } = useSuspenseQuery(GET_STUDENT_DETAILS, {
     variables: { userId: id },
@@ -94,7 +103,9 @@ const page = () => {
     return (
       <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
         Loading... <br />
-        <small>If you are waiting for so long then please contact the admin!</small>
+        <small>
+          If you are waiting for so long then please contact the admin!
+        </small>
       </div>
     );
 
@@ -312,10 +323,7 @@ const page = () => {
                 {isAdmin && (
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="border-2"
-                      >
+                      <Button variant="outline" className="border-2">
                         Add Fee
                       </Button>
                     </DialogTrigger>
@@ -480,7 +488,7 @@ const page = () => {
 
           <div className="lg:w-[50%]">
             {studData?.student.attendance.present === 0 &&
-              studData?.student.attendance.absent === 0 ? (
+            studData?.student.attendance.absent === 0 ? (
               <div className="flex items-center justify-center text-secondary gap-6 px-6 py-4 rounded">
                 <div>
                   <h4 className="smallheading text-secondary flex gap-2 items-center">
@@ -510,12 +518,27 @@ const page = () => {
             )}
 
             {testPaperUsers?.testpaperUsers.map((test) => (
-              <div className="flex items-center justify-between gap-6 bg-secondary text-primary px-6 py-4 rounded">
-                <div>
-                  <h4 className="smallheading">{test.title}</h4>
-                  <span className="barlow-regular">
-                    Created on - {test.createdAt.split(",")[0]}
-                  </span>
+              <div
+                key={test.id}
+                className="flex items-center justify-between gap-6 bg-secondary text-primary px-6 py-4 rounded"
+              >
+                <div className="flex items-center gap-4">
+                  {test?.marks !== null ? (
+                    <CircleCheck className="text-green-300" />
+                  ) : (
+                    <Circle className="text-red-300" />
+                  )}
+                  <div className="flex flex-col">
+                    <h4 className="smallheading">{test.title}</h4>
+                    <span className="barlow-regular">
+                      Created on - {test.createdAt.split(",")[0]}
+                    </span>
+                    {test?.marks !== null && (
+                      <span className="barlow-regular">
+                        Rank - {test?.marks[0].rank}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div>
@@ -528,7 +551,8 @@ const page = () => {
                         <AlertDialogTitle>{test.title}</AlertDialogTitle>
 
                         <AlertDialogDescription>
-                          Created on - {test.createdAt.split(",")[0]}
+                          {/* Created on - {test.createdAt.split(",")[0]} */}
+                          Test On - {test.date.split("-").reverse().join("/")}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <iframe
@@ -545,6 +569,75 @@ const page = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+        <div>
+          <h3 className="subsubheading text-secondary mb-6">
+            Completed Test Papers
+          </h3>
+          <div className="flex flex-col gap-4">
+            {testPaperUsers?.testpaperUsers.length === 0 && (
+              <div className="flex items-center justify-between gap-6 rounded">
+                <div>
+                  <h4 className="smallheading text-secondary">
+                    No Test Papers have been Completed
+                  </h4>
+                </div>
+              </div>
+            )}
+
+            {testPaperUsers?.testpaperUsers.map((test) => {
+              if (test?.marks !== null) {
+                return (
+                  <div
+                    key={test.id}
+                    className="flex items-center justify-between gap-6 bg-secondary text-primary px-6 py-4 rounded"
+                  >
+                    <div className="flex items-center gap-4">
+                      <CircleCheck className="text-green-300" />
+                      <div className="flex flex-col">
+                        <h4 className="smallheading">{test.title}</h4>
+                        <span className="barlow-regular">
+                          {/* Created on - {test.createdAt.split(",")[0]} */}
+                          Test On - {test.date.split("-").reverse().join("/")}
+                        </span>
+                        {test?.marks !== null && (
+                          <span className="barlow-regular">
+                            Rank - {test?.marks[0].rank}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <AlertDialog>
+                        <AlertDialogTrigger>
+                          <Button variant="outline">View</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>{test.title}</AlertDialogTitle>
+
+                            <AlertDialogDescription>
+                              Created on - {test.createdAt.split(",")[0]}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <iframe
+                            src={test.url}
+                            className="w-full rounded"
+                            height="500"
+                            allowFullScreen
+                          ></iframe>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Close</AlertDialogCancel>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                );
+              }
+            })}
           </div>
         </div>
       </div>

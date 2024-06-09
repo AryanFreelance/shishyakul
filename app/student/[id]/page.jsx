@@ -27,8 +27,8 @@ import {
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import toast from "react-hot-toast";
 import { useParams, useRouter } from "next/navigation";
-import { auth } from "@/firebase";
-import { Circle, CircleCheck, InfoIcon } from "lucide-react";
+import { auth, storage } from "@/firebase";
+import { Circle, CircleCheck, CloudUpload, InfoIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -49,6 +49,9 @@ import { GET_PUBLISHED_TESTPAPERS_USERS } from "@/graphql/queries/testPaper.quer
 import { CREATE_FEE, DELETE_FEE } from "@/graphql/mutations/fees.mutation";
 import { useMutation } from "@apollo/client";
 import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import Image from "next/image";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -70,11 +73,28 @@ const page = () => {
     ],
   });
   const [feeData, setFeeData] = useState({
-    feesPaid: undefined,
-    paidOn: undefined,
-    month: undefined,
-    year: undefined,
+    feesPaid: "",
+    paidOn: "",
+    month: "",
+    year: "",
+    mode: "",
+    chequeRefNo: "",
+    chequeImgUrl: "",
+    upiId: "",
+    upiImgUrl: "",
   });
+
+  // Details needed for Student Fees:
+  // Fees Paid
+  // Paid On
+  // Paid For (Month & Year)
+  // Paid Via [Cash | Cheque | UPI)
+  //   If (Cheque)
+  //     Cheque Reference Number
+  //     Cheque Image
+  //   If (UPI)
+  //     UPI ID
+  //     Payment Screenshot
 
   const today = new Date();
   const todayDate = `${
@@ -191,7 +211,8 @@ const page = () => {
       !feeData.feesPaid ||
       !feeData.paidOn ||
       !feeData.month ||
-      !feeData.year
+      !feeData.year ||
+      !feeData.mode
     ) {
       toast.error("Please fill all the fields!", {
         id: toastId,
@@ -200,14 +221,98 @@ const page = () => {
     }
     console.log(feeData);
 
+    if (
+      feeData.mode === "cheque" &&
+      (!feeData.chequeRefNo || !feeData.chequeImgUrl)
+    ) {
+      toast.error("Please fill all the fields!", {
+        id: toastId,
+      });
+      return;
+    }
+    if (feeData.mode === "upi" && (!feeData.upiId || !feeData.upiImgUrl)) {
+      toast.error("Please fill all the fields!", {
+        id: toastId,
+      });
+      return;
+    }
+    let today = new Date();
+    let feeid = `${today.getFullYear()}${
+      today.getHours() < 10 ? "0" + today.getHours() : today.getHours()
+    }${
+      today.getMinutes() < 10 ? "0" + today.getMinutes() : today.getMinutes()
+    }${
+      today.getSeconds() < 10 ? "0" + today.getSeconds() : today.getSeconds()
+    }`;
+
+    const storageRef = ref(storage, `fee/${feeid}`);
+
+    if (feeData.mode === "cheque" || feeData.mode === "upi") {
+      await uploadBytes(
+        storageRef,
+        feeData.mode === "cheque" ? feeData.chequeImgUrl : feeData.upiImgUrl
+      )
+        .then(async (snapshot) => {
+          const downloadUrl = await getDownloadURL(storageRef);
+          console.log("SNAPSHOT", snapshot);
+          console.log("DOWNLOAD", downloadUrl);
+          // feeData.mode === "cheque"
+          //   ? setFeeData({ ...feeData, chequeImgUrl: downloadUrl })
+          //   : setFeeData({ ...feeData, upiImgUrl: downloadUrl });
+          if (feeData.mode === "cheque") {
+            // setFeeData({ ...feeData, chequeImgUrl: downloadUrl });
+            feeData.chequeImgUrl = downloadUrl;
+          } else {
+            // setFeeData({ ...feeData, upiImgUrl: downloadUrl });
+            feeData.upiImgUrl = downloadUrl;
+          }
+
+          console.log("FEE DATA", feeData);
+
+          toast.success("Test Paper Added Successfully!", {
+            id: toastId,
+          });
+        })
+        .catch((error) => {
+          toast.error("Something went wrong!", {
+            id: toastId,
+          });
+          console.error(error);
+          return;
+        });
+    }
+
+    console.log("FEE DATA", feeData);
+    // toast.success("Fee added successfully!", { id: toastId });
+    console.log("FEEINGDATA", {
+      id: feeid,
+      userId: id,
+      email: studData?.student.email,
+      feesPaid: parseInt(feeData.feesPaid),
+      paidOn: feeData.paidOn,
+      month: feeData.month,
+      year: feeData.year,
+      mode: feeData.mode,
+      chequeRefNo: feeData.chequeRefNo || "",
+      chequeImgUrl: feeData.chequeImgUrl || "",
+      upiId: feeData.upiId || "",
+      upiImgUrl: feeData.upiImgUrl || "",
+    });
+
     await createFee({
       variables: {
+        id: feeid,
         userId: id,
         email: studData?.student.email,
         feesPaid: parseInt(feeData.feesPaid),
         paidOn: feeData.paidOn,
         month: feeData.month,
         year: feeData.year,
+        mode: feeData.mode,
+        chequeRefNo: feeData.chequeRefNo || "",
+        chequeImgUrl: feeData.chequeImgUrl || "",
+        upiId: feeData.upiId || "",
+        upiImgUrl: feeData.upiImgUrl || "",
       },
     })
       .then((data) => {
@@ -404,6 +509,171 @@ const page = () => {
                             }}
                           />
                         </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="year" className="text-right">
+                            Paid Via
+                          </Label>
+                          <RadioGroup
+                            value={feeData.mode}
+                            onValueChange={(e) =>
+                              setFeeData({ ...feeData, mode: e })
+                            }
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="cash" id="cash" />
+                              <Label htmlFor="cash">Cash</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="cheque" id="cheque" />
+                              <Label htmlFor="cheque">Cheque</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="upi" id="upi" />
+                              <Label htmlFor="upi">UPI</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+                        {
+                          // Cheque Details
+                          feeData.mode === "cheque" && (
+                            <>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label
+                                  htmlFor="chequeRefNo"
+                                  className="text-right"
+                                >
+                                  Ref No.
+                                </Label>
+                                <Input
+                                  id="chequeRefNo"
+                                  className="col-span-3"
+                                  value={feeData.chequeRefNo}
+                                  onChange={(e) => {
+                                    setFeeData({
+                                      ...feeData,
+                                      chequeRefNo: e.target.value,
+                                    });
+                                  }}
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right">Image</Label>
+                                {feeData.chequeImgUrl === "" ? (
+                                  <>
+                                    <Label
+                                      htmlFor="chequeImage"
+                                      className="flex justify-center items-center col-span-3 bg-secondary text-primary rounded px-4 py-2 cursor-pointer"
+                                    >
+                                      <CloudUpload /> Upload Image
+                                    </Label>
+                                    <input
+                                      id="chequeImage"
+                                      type="file"
+                                      accept="image/*"
+                                      className="col-span-3 hidden"
+                                      onChange={(e) => {
+                                        setFeeData({
+                                          ...feeData,
+                                          chequeImgUrl: e.target.files[0],
+                                        });
+                                        console.log("FILE", e.target.files[0]);
+                                      }}
+                                    />
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="col-span-3">
+                                      {feeData.chequeImgUrl.name}
+                                    </span>
+                                    <div className="col-span-1"></div>
+                                    <Button
+                                      variant="nav"
+                                      className="col-span-3 test-secondary"
+                                      onClick={() =>
+                                        setFeeData({
+                                          ...feeData,
+                                          chequeImgUrl: "",
+                                        })
+                                      }
+                                    >
+                                      Remove
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </>
+                          )
+                        }
+                        {
+                          // UPI Details
+                          feeData.mode === "upi" && (
+                            <>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="year" className="text-right">
+                                  UPI ID
+                                </Label>
+                                <Input
+                                  id="upiId"
+                                  className="col-span-3"
+                                  value={feeData.upiId}
+                                  onChange={(e) => {
+                                    setFeeData({
+                                      ...feeData,
+                                      upiId: e.target.value,
+                                    });
+                                  }}
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right">Image</Label>
+                                {feeData.upiImgUrl === "" ? (
+                                  <>
+                                    <Label
+                                      htmlFor="upiImage"
+                                      className="flex justify-center items-center col-span-3 bg-secondary text-primary rounded px-4 py-2 cursor-pointer"
+                                    >
+                                      <CloudUpload /> Upload Image
+                                    </Label>
+                                    <input
+                                      id="upiImage"
+                                      type="file"
+                                      accept="image/*"
+                                      className="col-span-3 hidden"
+                                      onChange={(e) => {
+                                        setFeeData({
+                                          ...feeData,
+                                          upiImgUrl: e.target.files[0],
+                                        });
+                                        console.log("FILE", e.target.files[0]);
+                                      }}
+                                    />
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="col-span-3">
+                                      {feeData.upiImgUrl.name}
+                                    </span>
+                                    <div className="col-span-1"></div>
+                                    <Button
+                                      variant="nav"
+                                      className="col-span-3 test-secondary"
+                                      onClick={() =>
+                                        setFeeData({
+                                          ...feeData,
+                                          upiImgUrl: "",
+                                        })
+                                      }
+                                    >
+                                      Remove
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </>
+                          )
+                        }
                       </div>
                       <DialogFooter>
                         <Button type="submit" onClick={addFeeHandler}>
@@ -442,7 +712,75 @@ const page = () => {
                     studData?.student.fees.map((fee) => (
                       <TableRow key={fee.id}>
                         <TableCell className="barlow-medium">
-                          ₹{fee.feesPaid}
+                          <AlertDialog>
+                            <AlertDialogTrigger>
+                              ₹{fee.feesPaid}
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Fee Information
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Details of the studen fee.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <div className="flex flex-col justify-start gap-4">
+                                <span className="barlow-regular">
+                                  Fees Paid - ₹{fee.feesPaid}
+                                </span>
+
+                                <span className="barlow-regular">
+                                  Paid On - {fee.paidOn}
+                                </span>
+
+                                <span className="barlow-regular">
+                                  Month - {fee.month}, {fee.year}
+                                </span>
+
+                                <span className="barlow-regular">
+                                  Created At - {fee.createdAt.split(",")[0]}
+                                </span>
+
+                                <span className="barlow-regular">
+                                  Mode - {fee.mode}
+                                </span>
+
+                                {fee.mode === "cheque" && (
+                                  <>
+                                    <span className="barlow-regular">
+                                      Cheque Ref No - {fee.chequeRefNo}
+                                    </span>
+                                    <Image
+                                      src={fee.chequeImgUrl}
+                                      alt="Cheque Image"
+                                      width={1000}
+                                      height={1000}
+                                      className="w-full rounded"
+                                    />
+                                  </>
+                                )}
+
+                                {fee.mode === "upi" && (
+                                  <>
+                                    <span className="barlow-regular">
+                                      UPI ID - {fee.upiId}
+                                    </span>
+                                    <Image
+                                      src={fee.upiImgUrl}
+                                      alt="UPI Image"
+                                      width={1000}
+                                      height={1000}
+                                      className="w-full rounded"
+                                    />
+                                  </>
+                                )}
+                              </div>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </TableCell>
                         <TableCell className="barlow-regular">
                           {fee.paidOn}

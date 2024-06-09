@@ -24,12 +24,18 @@ import {
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 
-import { GET_ATTENDANCE, GET_STUDENTS } from "@/graphql/queries/attendance.query";
+import {
+  GET_ATTENDANCE,
+  GET_STUDENTS,
+} from "@/graphql/queries/attendance.query";
 
 export const dynamic = "force-dynamic";
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 import { useLazyQuery, useMutation } from "@apollo/client";
-import { CREATE_ATTENDANCE, UPDATE_ATTENDANCE } from "@/graphql/mutations/attendance.mutation";
+import {
+  CREATE_ATTENDANCE,
+  UPDATE_ATTENDANCE,
+} from "@/graphql/mutations/attendance.mutation";
 import toast from "react-hot-toast";
 
 const Page = () => {
@@ -52,16 +58,23 @@ const Page = () => {
     "Nov",
     "Dec",
   ];
-  const todayDate = `${today.getDate() < 10 ? "0" + today.getDate() : today.getDate()}-${(today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : today.getMonth() + 1}-${today.getFullYear()}`;
+  const todayDate = `${
+    today.getDate() < 10 ? "0" + today.getDate() : today.getDate()
+  }-${
+    today.getMonth() + 1 < 10
+      ? "0" + (today.getMonth() + 1)
+      : today.getMonth() + 1
+  }-${today.getFullYear()}`;
 
   // Queries - Get Students, Get Attendance
-  const {
-    data: studentsData,
-  } = useSuspenseQuery(GET_STUDENTS);
+  const { data: studentsData } = useSuspenseQuery(GET_STUDENTS);
 
-  const [fetchAttendance, { data: attendanceData }] = useLazyQuery(GET_ATTENDANCE, {
-    fetchPolicy: 'network-only',
-  });
+  const [fetchAttendance, { data: attendanceData }] = useLazyQuery(
+    GET_ATTENDANCE,
+    {
+      fetchPolicy: "network-only",
+    }
+  );
 
   // Mutations - Create Attendance, Update Attendance
   const [createAttendance] = useMutation(CREATE_ATTENDANCE, {
@@ -73,7 +86,12 @@ const Page = () => {
       console.log("Error creating attendance: ", error);
       toast.error("Error saving attendance.");
     },
-    refetchQueries: [{ query: GET_ATTENDANCE, variables: { timestamp: formattedDate.split("-").reverse().join("-") } }]
+    refetchQueries: [
+      {
+        query: GET_ATTENDANCE,
+        variables: { timestamp: formattedDate.split("-").reverse().join("-") },
+      },
+    ],
   });
 
   const [updateAttendance] = useMutation(UPDATE_ATTENDANCE, {
@@ -85,7 +103,12 @@ const Page = () => {
       console.log("Error updating attendance: ", error);
       toast.error("Error updating attendance.");
     },
-    refetchQueries: [{ query: GET_ATTENDANCE, variables: { timestamp: formattedDate.split("-").reverse().join("-") } }]
+    refetchQueries: [
+      {
+        query: GET_ATTENDANCE,
+        variables: { timestamp: formattedDate.split("-").reverse().join("-") },
+      },
+    ],
   });
 
   const radioInputChangeHandler = (e, userID) => {
@@ -101,7 +124,8 @@ const Page = () => {
 
   useEffect(() => {
     const sDate = date && date.toString().split(" ");
-    const formattedDate = date && `${sDate[2]}-${getMonthNumber(sDate[1])}-${sDate[3]}`;
+    const formattedDate =
+      date && `${sDate[2]}-${getMonthNumber(sDate[1])}-${sDate[3]}`;
     setFormattedDate(date ? formattedDate : "(select a date)");
     if (formattedDate) {
       fetchAttendance({
@@ -151,7 +175,7 @@ const Page = () => {
       });
     }
     toast.dismiss(toastId);
-  }
+  };
 
   return (
     <Container>
@@ -160,7 +184,10 @@ const Page = () => {
         <h2 className="subheading mb-4 text-center md:text-left">Attendance</h2>
         <div className="flex justify-center md:justify-end items-center">
           <Popover className="w-full">
-            <PopoverTrigger asChild className="flex justify-center items-center">
+            <PopoverTrigger
+              asChild
+              className="flex justify-center items-center"
+            >
               <Button
                 variant={"outline"}
                 className={cn(
@@ -196,14 +223,26 @@ const Page = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => {
-                    setPresent(studentsData?.students.map((student) => student.userId));
-                    setAbsent([]);
-                  }}>Present</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    setAbsent(studentsData?.students.map((student) => student.userId));
-                    setPresent([]);
-                  }}>Absent</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setPresent(
+                        studentsData?.students.map((student) => student.userId)
+                      );
+                      setAbsent([]);
+                    }}
+                  >
+                    Present
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setAbsent(
+                        studentsData?.students.map((student) => student.userId)
+                      );
+                      setPresent([]);
+                    }}
+                  >
+                    Absent
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -219,10 +258,14 @@ const Page = () => {
                           name={item.userId}
                           value="present"
                           id={`present-${item.userId}`}
-                          onChange={(e) => radioInputChangeHandler(e, item.userId)}
+                          onChange={(e) =>
+                            radioInputChangeHandler(e, item.userId)
+                          }
                           checked={present.includes(item.userId)}
                         />
-                        <label htmlFor={`present-${item.userId}`}>Present</label>
+                        <label htmlFor={`present-${item.userId}`}>
+                          Present
+                        </label>
                       </div>
                       <div className="flex gap-2">
                         <input
@@ -231,7 +274,9 @@ const Page = () => {
                           name={item.userId}
                           value="absent"
                           checked={absent.includes(item.userId)}
-                          onChange={(e) => radioInputChangeHandler(e, item.userId)}
+                          onChange={(e) =>
+                            radioInputChangeHandler(e, item.userId)
+                          }
                         />
                         <label htmlFor={`absent-${item.userId}`}>Absent</label>
                       </div>
@@ -243,14 +288,15 @@ const Page = () => {
             </div>
             <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-6 mt-8 w-full">
               <div className="w-full md:w-[50%]">
-                <Button className="w-full" onClick={updateAttendanceHandler}>Save</Button>
+                <Button className="w-full" onClick={updateAttendanceHandler}>
+                  Save
+                </Button>
               </div>
               <div className="w-full md:w-[50%]">
-                {
-                  formattedDate === todayDate && (
-                    <Button className="w-full">Send SMS/Email</Button>
-                  )
-                }
+                {formattedDate === todayDate && (
+                  // TODO: Add Sending Email/SMS functionality using Render
+                  <Button className="w-full">Send SMS/Email</Button>
+                )}
               </div>
             </div>
           </div>

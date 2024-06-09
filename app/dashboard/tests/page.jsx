@@ -28,7 +28,13 @@ const page = () => {
   if (data) console.log(data);
   // Check if the minumum date is less than less than today's date in the data
   const today = new Date();
-  const todayDate = `${today.getDate() < 10 ? "0" + today.getDate() : today.getDate()}-${today.getMonth() + 1 < 10 ? "0" + (today.getMonth() + 1) : today.getMonth() + 1}-${today.getFullYear()}`
+  const todayDate = `${
+    today.getDate() < 10 ? "0" + today.getDate() : today.getDate()
+  }-${
+    today.getMonth() + 1 < 10
+      ? "0" + (today.getMonth() + 1)
+      : today.getMonth() + 1
+  }-${today.getFullYear()}`;
 
   return (
     <Container>
@@ -56,16 +62,27 @@ const page = () => {
               >
                 <div className="md:w-[84%]">
                   <div className="flex items-center gap-4">
-                    {
-                      item.date < todayDate.split("-").reverse().join("-") ? <CircleCheck className="text-green-300" /> : <Circle className="text-red-300" />
-                    }
-                    <div>
+                    {item.date < todayDate.split("-").reverse().join("-") ? (
+                      <CircleCheck className="text-green-300" />
+                    ) : (
+                      <Circle className="text-red-300" />
+                    )}
+                    <div className="flex flex-col gap-1">
                       <h3 className="smallheading">{item.title}</h3>
                       {/* Date Format - "21/4/2024, 4:45:02 pm" convert it to "21/04/2024*/}
                       <span>
                         Created on -{" "}
                         {item.createdAt
                           .split(",")[0]
+                          .split("/")
+                          .map((item) => {
+                            return item.length === 1 ? `0${item}` : item;
+                          })
+                          .join("/")}
+                      </span>
+                      <span>
+                        Test On -{" "}
+                        {item.date
                           .split("/")
                           .map((item) => {
                             return item.length === 1 ? `0${item}` : item;
@@ -139,9 +156,11 @@ const page = () => {
               >
                 <div className="md:w-[84%]">
                   <div className="flex items-center gap-4">
-                    {
-                      item.date < todayDate.split("-").reverse().join("-") ? <CircleX className="text-gray-400" /> : <CircleDashed className="text-gray-300" />
-                    }
+                    {item.date < todayDate.split("-").reverse().join("-") ? (
+                      <CircleX className="text-gray-400" />
+                    ) : (
+                      <CircleDashed className="text-gray-300" />
+                    )}
                     <div>
                       <h3 className="smallheading">{item.title}</h3>
                       <span>
@@ -198,7 +217,9 @@ const page = () => {
           {data?.testpapers?.published.length === 0 && (
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="font-semibold">No Completed Test Papers Found</h3>
+                <h3 className="font-semibold">
+                  No Completed Test Papers Found
+                </h3>
                 <p className="text-sm text-gray-500">
                   Create a test paper to get started
                 </p>
@@ -206,59 +227,69 @@ const page = () => {
             </div>
           )}
           <div className="flex flex-col gap-6">
-            {data?.testpapers?.published.map((item, index) =>
-              item.date < todayDate.split("-").reverse().join("-") && (
-                <div
-                  key={index}
-                  className="flex flex-col md:flex-row w-full md:justify-between md:items-center bg-secondary text-primary p-4 rounded"
-                >
-                  <div className="md:w-[84%]">
-                    <div className="flex items-center gap-4">
-                      <CircleCheck className="text-green-300" />
-                      <div>
-                        <h3 className="smallheading">{item.title}</h3>
-                        <span>
-                          Created on -{" "}
-                          {item.createdAt
-                            .split(",")[0]
-                            .split("/")
-                            .map((item) => {
-                              return item.length === 1 ? `0${item}` : item;
-                            })
-                            .join("/")}
-                        </span>
+            {data?.testpapers?.published.map(
+              (item, index) =>
+                item.date < todayDate.split("-").reverse().join("-") && (
+                  <div
+                    key={index}
+                    className="flex flex-col md:flex-row w-full md:justify-between md:items-center bg-secondary text-primary p-4 rounded"
+                  >
+                    <div className="md:w-[84%]">
+                      <div className="flex items-center gap-4">
+                        <CircleCheck className="text-green-300" />
+                        <div className="flex flex-col gap-1">
+                          <h3 className="smallheading">{item.title}</h3>
+                          <span>
+                            Created on -{" "}
+                            {item.createdAt
+                              .split(",")[0]
+                              .split("/")
+                              .map((item) => {
+                                return item.length === 1 ? `0${item}` : item;
+                              })
+                              .join("/")}
+                          </span>
+                          <span>
+                            Test On -{" "}
+                            {item.date
+                              .split("/")
+                              .map((item) => {
+                                return item.length === 1 ? `0${item}` : item;
+                              })
+                              .join("/")}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex w-full md:w-[16%] justify-end mt-4 md:mt-0 items-center gap-4">
-                    <AlertDialog>
-                      <AlertDialogTrigger>
-                        <Button variant="outline">View</Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Test Paper Name</AlertDialogTitle>
+                    <div className="flex w-full md:w-[16%] justify-end mt-4 md:mt-0 items-center gap-4">
+                      <AlertDialog>
+                        <AlertDialogTrigger>
+                          <Button variant="outline">View</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Test Paper Name</AlertDialogTitle>
 
-                          <AlertDialogDescription>
-                            Created on - 12/04/2024
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <iframe
-                          src={item.url}
-                          className="w-full rounded"
-                          height="480"
-                          allowFullScreen
-                        ></iframe>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Close</AlertDialogCancel>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                            <AlertDialogDescription>
+                              Created on - 12/04/2024
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <iframe
+                            src={item.url}
+                            className="w-full rounded"
+                            height="480"
+                            allowFullScreen
+                          ></iframe>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Close</AlertDialogCancel>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
 
-                    <Link href={`/dashboard/test/${item.id}0`}>Manage</Link>
+                      <Link href={`/dashboard/test/${item.id}0`}>Manage</Link>
+                    </div>
                   </div>
-                </div>
-              )
+                )
             )}
           </div>
         </div>

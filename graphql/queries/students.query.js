@@ -53,6 +53,11 @@ export const GET_STUDENT_DETAILS = gql`
         month
         year
         createdAt
+        mode
+        upiId
+        upiImgUrl
+        chequeRefNo
+        chequeImgUrl
       }
     }
   }

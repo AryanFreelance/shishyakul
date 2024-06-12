@@ -255,29 +255,38 @@ const page = () => {
               ))}
             </div>
           </div>
-          {filteredStudents?.length === 0 ? (
+          {/* {filteredStudents?.length === 0 ? (
             <div className="mt-8">
-              <h3 className="barlow-semibold text-center">
-                No students found for selected grades
-              </h3>
+              <h3 className="barlow-semibold text-center">No students found</h3>
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
+          ) : ( */}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="barlow-semibold w-[100px]">
+                  User ID.
+                </TableHead>
+                <TableHead className="barlow-semibold">Name</TableHead>
+                <TableHead className="barlow-semibold">Email</TableHead>
+                <TableHead className="barlow-semibold">Phone</TableHead>
+                <TableHead className="barlow-semibold">Grade</TableHead>
+                <TableHead className="barlow-semibold">Attendance</TableHead>
+                <TableHead className="barlow-semibold">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredStudents?.length === 0 && (
                 <TableRow>
-                  <TableHead className="barlow-semibold w-[100px]">
-                    User ID.
-                  </TableHead>
-                  <TableHead className="barlow-semibold">Name</TableHead>
-                  <TableHead className="barlow-semibold">Email</TableHead>
-                  <TableHead className="barlow-semibold">Phone</TableHead>
-                  <TableHead className="barlow-semibold">Grade</TableHead>
-                  <TableHead className="barlow-semibold">Attendance</TableHead>
-                  <TableHead className="barlow-semibold">Actions</TableHead>
+                  <TableCell
+                    colSpan="7"
+                    className="barlow-semibold text-center"
+                  >
+                    No students found
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredStudents?.map((student, index) => (
+              )}
+              {filteredStudents.length > 0 &&
+                filteredStudents?.map((student, index) => (
                   <TableRow key={index}>
                     <TableCell className="barlow-semibold">
                       {student.userId}
@@ -346,9 +355,9 @@ const page = () => {
                     </TableCell>
                   </TableRow>
                 ))}
-              </TableBody>
-            </Table>
-          )}
+            </TableBody>
+          </Table>
+          {/* )} */}
         </div>
       </div>
 

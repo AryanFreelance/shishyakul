@@ -269,9 +269,9 @@ const page = () => {
 
           console.log("FEE DATA", feeData);
 
-          toast.success("Test Paper Added Successfully!", {
-            id: toastId,
-          });
+          // toast.success("Test Paper Added Successfully!", {
+          //   id: toastId,
+          // });
         })
         .catch((error) => {
           toast.error("Something went wrong!", {
@@ -327,6 +327,18 @@ const page = () => {
           id: toastId,
         });
       });
+
+    setFeeData({
+      feesPaid: "",
+      paidOn: "",
+      month: "",
+      year: "",
+      mode: "",
+      chequeRefNo: "",
+      chequeImgUrl: "",
+      upiId: "",
+      upiImgUrl: "",
+    });
   };
 
   const logoutHandler = () => {
@@ -722,10 +734,14 @@ const page = () => {
                                   Fee Information
                                 </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Details of the studen fee.
+                                  Details of the student fee.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <div className="flex flex-col justify-start gap-4">
+                                <span className="barlow-regular">
+                                  Created At - {fee.createdAt.split(",")[0]}
+                                </span>
+
                                 <span className="barlow-regular">
                                   Fees Paid - ₹{fee.feesPaid}
                                 </span>
@@ -736,10 +752,6 @@ const page = () => {
 
                                 <span className="barlow-regular">
                                   Month - {fee.month}, {fee.year}
-                                </span>
-
-                                <span className="barlow-regular">
-                                  Created At - {fee.createdAt.split(",")[0]}
                                 </span>
 
                                 <span className="barlow-regular">

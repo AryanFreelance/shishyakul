@@ -182,33 +182,35 @@ const Page = () => {
       <Navbar navLinks={dashboardNavLinks} isHome={false} />
       <div className="pb-10">
         <h2 className="subheading mb-4 text-center md:text-left">Attendance</h2>
-        <div className="flex justify-center md:justify-end items-center">
-          <Popover className="w-full">
-            <PopoverTrigger
-              asChild
-              className="flex justify-center items-center"
-            >
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-[280px] justify-center font-normal",
-                  !date && "text-muted-foreground"
-                )}
+        {studentsData !== null && studentsData?.students.length > 0 && (
+          <div className="flex justify-center md:justify-end items-center">
+            <Popover className="w-full">
+              <PopoverTrigger
+                asChild
+                className="flex justify-center items-center"
               >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {date ? format(date, "PPP") : <span>Pick a date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-[280px] justify-center font-normal",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
         <div className="mt-8 flex flex-col lg:flex-row gap-10">
           <div className="w-full">
             <div className="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -216,35 +218,41 @@ const Page = () => {
                 Attendance marking for {formattedDate}
               </h3>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button className="w-full md:w-auto">
-                    Mark All <ChevronDown />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setPresent(
-                        studentsData?.students.map((student) => student.userId)
-                      );
-                      setAbsent([]);
-                    }}
-                  >
-                    Present
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setAbsent(
-                        studentsData?.students.map((student) => student.userId)
-                      );
-                      setPresent([]);
-                    }}
-                  >
-                    Absent
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {studentsData !== null && studentsData?.students.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="w-full md:w-auto">
+                      Mark All <ChevronDown />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setPresent(
+                          studentsData?.students.map(
+                            (student) => student.userId
+                          )
+                        );
+                        setAbsent([]);
+                      }}
+                    >
+                      Present
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setAbsent(
+                          studentsData?.students.map(
+                            (student) => student.userId
+                          )
+                        );
+                        setPresent([]);
+                      }}
+                    >
+                      Absent
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
             <div className="mt-6">
               {studentsData?.students.map((item, index) => (
@@ -287,17 +295,30 @@ const Page = () => {
               ))}
             </div>
             <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-6 mt-8 w-full">
-              <div className="w-full md:w-[50%]">
-                <Button className="w-full" onClick={updateAttendanceHandler}>
-                  Save
-                </Button>
-              </div>
-              <div className="w-full md:w-[50%]">
-                {formattedDate === todayDate && (
-                  // TODO: Add Sending Email/SMS functionality using Render
-                  <Button className="w-full">Send SMS/Email</Button>
-                )}
-              </div>
+              {(studentsData === null ||
+                studentsData?.students.length == 0) && (
+                <span className="text-lg text-secondary">
+                  No Students Found! Please add students to create attendance!!
+                </span>
+              )}
+              {studentsData !== null && studentsData?.students.length > 0 && (
+                <>
+                  <div className="w-full md:w-[50%]">
+                    <Button
+                      className="w-full"
+                      onClick={updateAttendanceHandler}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                  <div className="w-full md:w-[50%]">
+                    {formattedDate === todayDate && (
+                      // TODO: Add Sending Email/SMS functionality using Render
+                      <Button className="w-full">Send SMS/Email</Button>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

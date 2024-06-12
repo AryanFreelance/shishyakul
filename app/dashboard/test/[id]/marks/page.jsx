@@ -115,6 +115,19 @@ const Page = () => {
       return;
     }
 
+    // Check if the marks are greater than the total marks
+
+    const invalidMarks = studMarks.find(
+      (mark) => mark.marks > testpaperData.testpaper.totalMarks
+    );
+
+    console.log("INVALID", invalidMarks);
+
+    if (invalidMarks) {
+      toast.error("Marks cannot be greater than total marks!", { id: toastId });
+      return;
+    }
+
     const saveTestResponse = await saveTestMarks({
       variables: {
         testId: id,
@@ -192,6 +205,8 @@ const Page = () => {
                         className="input-taking w-full"
                         type="number"
                         value={studMarks[index]?.marks || ""}
+                        min={0}
+                        max={testpaperData?.testpaper.totalMarks}
                         onChange={(e) => {
                           e.preventDefault();
                           setStudMarks((prev) => {

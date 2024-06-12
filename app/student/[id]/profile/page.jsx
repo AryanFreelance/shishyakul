@@ -75,8 +75,6 @@ const page = () => {
     status: "",
     organization: "",
   });
-  const [isTempSiblingAddDialogOpen, setIsTempSiblingAddDialogOpen] =
-    useState(false);
   const [firstName, setFirstName] = useState("");
   const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -208,8 +206,6 @@ const page = () => {
       status: "",
       organization: "",
     });
-
-    setIsTempSiblingAddDialogOpen(false);
   };
 
   const deleteSiblingInformationHandler = (e, siblingName) => {
@@ -855,12 +851,11 @@ const page = () => {
               Sibilings Information
             </h3>
 
-            <Dialog open={isTempSiblingAddDialogOpen}>
+            <Dialog>
               <DialogTrigger asChild>
                 <Button
                   variant="outline"
                   className="flex gap-3 items-center mt-2 md:mt-0"
-                  onClick={() => setIsTempSiblingAddDialogOpen(true)}
                 >
                   Add <Plus />
                 </Button>

@@ -196,7 +196,7 @@ const Page = () => {
       method: "POST",
       body: JSON.stringify({
         u_email: absentEmails,
-        u_message: "Your child has been absent today!",
+        u_message: "Your child has been absent today.!",
       }),
     });
 

@@ -5,6 +5,7 @@ export const GET_STUDENTS = gql`
   query GetStudents {
     students {
       userId
+      email
       firstname
       lastname
     }

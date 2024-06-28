@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { format } from "date-fns";
+import { format, set } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -44,6 +44,8 @@ const Page = () => {
   const today = new Date();
   const [date, setDate] = useState(today);
   const [formattedDate, setFormattedDate] = useState("");
+  // Emails of the absent students
+  const [absentEmails, setAbsentEmails] = useState([]);
   const months = [
     "Jan",
     "Feb",
@@ -140,6 +142,16 @@ const Page = () => {
     if (attendanceData?.attendance) {
       setPresent(attendanceData.attendance.present);
       setAbsent(attendanceData.attendance.absent);
+
+      console.log("STUD DATA", studentsData);
+
+      setAbsentEmails(
+        studentsData?.students
+          .filter((student) =>
+            attendanceData.attendance.absent.includes(student.userId)
+          )
+          .map((student) => student.email)
+      );
     } else {
       setPresent([]);
       setAbsent([]);
@@ -175,6 +187,28 @@ const Page = () => {
       });
     }
     toast.dismiss(toastId);
+  };
+
+  const sendEmailsHandler = async () => {
+    const toastId = toast.loading("Sending Emails/SMS...");
+
+    const emailresponse = await fetch("/api/email", {
+      method: "POST",
+      body: JSON.stringify({
+        u_email: absentEmails,
+        u_message: "Your child has been absent today!",
+      }),
+    });
+
+    if (emailresponse.status === 200) {
+      toast.success("Emails Sent", {
+        id: toastId,
+      });
+    } else {
+      toast.error("Mail not sent", {
+        id: toastId,
+      });
+    }
   };
 
   return (
@@ -312,10 +346,21 @@ const Page = () => {
                     </Button>
                   </div>
                   <div className="w-full md:w-[50%]">
-                    {formattedDate === todayDate && (
-                      // TODO: Add Sending Email/SMS functionality using Render
-                      <Button className="w-full">Send SMS/Email</Button>
-                    )}
+                    {attendanceData?.attendance?.absent &&
+                      attendanceData?.attendance.absent.length > 0 &&
+                      formattedDate === todayDate && (
+                        // TODO: Add Sending Email/SMS functionality using Render
+                        <Button
+                          className="w-full"
+                          onClick={() => {
+                            console.log("ABSENT", absent);
+                            console.log("ABSENT EMAILS", absentEmails);
+                            sendEmailsHandler();
+                          }}
+                        >
+                          Send SMS/Email
+                        </Button>
+                      )}
                   </div>
                 </>
               )}

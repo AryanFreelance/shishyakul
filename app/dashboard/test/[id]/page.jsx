@@ -418,7 +418,7 @@ const page = () => {
                   </div>
                 )}
 
-                {published && isPastDate && (
+                {sharedWith?.length !== 0 && published && isPastDate && (
                   <div className="mt-6">
                     <Button
                       className="w-full bg-yellow-600 hover:bg-yellow-700 text-primary"

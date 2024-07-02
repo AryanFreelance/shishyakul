@@ -3,7 +3,6 @@
 import { LoaderCircle, Mail, MapPinned, Phone } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "../ui/button";
-import emailjs from "@emailjs/browser";
 import toast from "react-hot-toast";
 
 const ContactUs = () => {
@@ -26,34 +25,38 @@ const ContactUs = () => {
       return;
     }
 
-    await emailjs
-      .send(
-        "service_ic02pwe",
-        "template_jg51ptr",
-        {
-          name,
-          email,
-          phone,
-          message,
-        },
-        {
-          publicKey: "0VNUkTzXWUy3G49zl",
-        }
-      )
-      .then(
-        () => {
-          console.log("SUCCESS!");
-          toast.success("Thank you for contacting us. We'll get back to you soon", {
-            id: toastId,
-          });
-        },
-        (error) => {
-          console.log("FAILED...", error);
-          toast.error("Failed to send message. Please try again.", {
-            id: toastId,
-          });
-        }
-      );
+    const emailResp = await fetch("/api/contact", {
+      method: "POST",
+      body: JSON.stringify({
+        u_name: name,
+        u_email: email,
+        u_phone: phone,
+        u_message: message,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (emailResp.status !== 200) {
+      console.log("Failed to send message. Please try again.");
+      toast.error("Failed to send message. Please try again.", {
+        id: toastId,
+      });
+
+      setName("");
+      setEmail("");
+      setPhone("");
+      setMessage("");
+      setIsSumbitting(false);
+      return;
+    }
+
+    console.log("SUCCESS!");
+
+    toast.success("Thank you for contacting us. We'll get back to you soon", {
+      id: toastId,
+    });
 
     setName("");
     setEmail("");

@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { format, set } from "date-fns";
+import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -152,6 +152,7 @@ const Page = () => {
           )
           .map((student) => student.email)
       );
+      console.log("ATTENDANCE DATA", attendanceData);
     } else {
       setPresent([]);
       setAbsent([]);
@@ -349,7 +350,6 @@ const Page = () => {
                     {attendanceData?.attendance?.absent &&
                       attendanceData?.attendance.absent.length > 0 &&
                       formattedDate === todayDate && (
-                        // TODO: Add Sending Email/SMS functionality using Render
                         <Button
                           className="w-full"
                           onClick={() => {

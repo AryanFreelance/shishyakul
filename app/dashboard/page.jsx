@@ -43,7 +43,6 @@ import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 import { useMutation } from "@apollo/client";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import emailjs from "@emailjs/browser";
 import {
   DELETE_STUDENT,
   DELETE_TEMP_STUDENT,
@@ -123,31 +122,31 @@ const page = () => {
 
     const domain = window.location.origin;
 
-    await emailjs
-      .send(
-        "service_ic02pwe",
-        "template_v53ko4t",
-        {
-          sign_up_link: `${domain}/register/${response?.data.initializeStudent}`,
-          sign_up_code: response?.data.initializeStudent,
-          to_email: studEmail,
-        },
-        "0VNUkTzXWUy3G49zl"
-      )
-      .then(
-        () => {
-          console.log("SUCCESS!");
-          toast.success("Student Added Successfully!", {
-            id: toastId,
-          });
-        },
-        (error) => {
-          console.log("FAILED...", error.text);
-          toast.error("Failed to add student!", {
-            id: toastId,
-          });
-        }
-      );
+    const inviteResp = await fetch("/api/invite", {
+      method: "POST",
+      body: JSON.stringify({
+        email: studEmail,
+        r_message: `Sign Up Link - ${domain}/register/${response?.data.initializeStudent}`,
+        r_code: response?.data.initializeStudent,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (inviteResp.status !== 200) {
+      console.log("Failed to send invite. Please try again.");
+      toast.error("Failed to send invite. Please try again.", {
+        id: toastId,
+      });
+      setOpenAddStudentDialog(false);
+      return;
+    }
+
+    toast.success("Student Added Successfully!", {
+      id: toastId,
+    });
+
     setOpenAddStudentDialog(false);
   };
 

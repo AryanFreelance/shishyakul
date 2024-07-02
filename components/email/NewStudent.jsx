@@ -13,7 +13,7 @@ import {
 } from "@react-email/components";
 import * as React from "react";
 
-export const YelpRecentLoginEmail = ({ u_message, loginDate }) => {
+export const YelpRecentLoginEmail = ({ r_message, r_code, loginDate }) => {
   const formattedDate = new Intl.DateTimeFormat("en", {
     dateStyle: "long",
     timeStyle: "short",
@@ -22,7 +22,7 @@ export const YelpRecentLoginEmail = ({ u_message, loginDate }) => {
   return (
     <Html>
       <Head />
-      <Preview>Student was Absent</Preview>
+      <Preview>New Student Registration</Preview>
       <Body style={main}>
         <Container>
           <Section style={content}>
@@ -57,9 +57,14 @@ export const YelpRecentLoginEmail = ({ u_message, loginDate }) => {
                   {u_email}
                 </Text> */}
                 <Text style={{ ...paragraph, marginTop: -5 }}>
-                  <b>Message: </b>
+                  <b>Registration Code: </b>
                   <br />
-                  {u_message}
+                  {r_code}
+                </Text>
+                <Text style={{ ...paragraph, marginTop: -5 }}>
+                  <b>Registration Link: </b>
+                  <br />
+                  {r_message}
                 </Text>
                 {/* <Text style={{ ...paragraph, marginTop: -5 }}>
                   <b>Location: </b>

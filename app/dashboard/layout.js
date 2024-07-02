@@ -14,7 +14,7 @@ const Layout = ({ children }) => {
       if (user) {
         const uid = user.uid;
         console.log(user);
-        if (user.email !== "shindearyan179@gmail.com") {
+        if (user.email !== "admin@shishyakul.in") {
           router.push(`/student/${uid}`);
         } else {
           setAuthStatus(true);

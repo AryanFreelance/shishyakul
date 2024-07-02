@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogDescription
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,7 +42,7 @@ const Page = () => {
         const userid = user.uid;
         setUid(userid);
         setAuthStatus(true);
-        if (user.email === "shindearyan179@gmail.com") {
+        if (user.email === "admin@shishyakul.in") {
           router.push("/dashboard");
         } else {
           router.push(`/student/${userid}`);
@@ -66,12 +66,12 @@ const Page = () => {
         error.code === "auth/user-not-found"
           ? "User not found. Please try again."
           : error.code === "auth/invalid-email"
-            ? "Invalid email. Please try again."
-            : error.code === "auth/missing-email"
-              ? "Email is missing. Please try again."
-              : error.code === "auth/network-request-failed"
-                ? "Network error. Please try again."
-                : "An error occurred. Please try again.";
+          ? "Invalid email. Please try again."
+          : error.code === "auth/missing-email"
+          ? "Email is missing. Please try again."
+          : error.code === "auth/network-request-failed"
+          ? "Network error. Please try again."
+          : "An error occurred. Please try again.";
       toast.error(errorMessage, { id: toastId });
     }
     setIsForgotDialogOpen(false);
@@ -82,25 +82,24 @@ const Page = () => {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password).then((res) => {
-        if (email === "shindearyan179@gmail.com") {
+        if (email === "admin@shishyakul.in") {
           router.push("/dashboard");
         } else {
           // router.push(`/student/${uid}`);
         }
         toast.success("User logged in successfully");
         console.log("RES", res, email, uid);
-      })
-
+      });
     } catch (error) {
       console.log(error.code, error.message);
       const errorMessage =
         error.code === "auth/invalid-credential"
           ? "Invalid credentials. Please try again."
           : error.code === "auth/user-not-found"
-            ? "User not found. Please try again."
-            : error.code === "auth/wrong-password"
-              ? "Wrong password. Please try again."
-              : "An error occurred. Please try again.";
+          ? "User not found. Please try again."
+          : error.code === "auth/wrong-password"
+          ? "Wrong password. Please try again."
+          : "An error occurred. Please try again.";
       toast.error(errorMessage);
     }
   };
@@ -220,8 +219,8 @@ const Page = () => {
                 <Button
                   className="lg:w-full w-[200px] flex justify-center items-center barlow-semibold text-lg gap-2"
                   onClick={(e) => {
-                    e.preventDefault()
-                    router.push("/")
+                    e.preventDefault();
+                    router.push("/");
                   }}
                 >
                   <ChevronLeft /> Go Home

@@ -158,7 +158,7 @@ const page = () => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         console.log(user);
-        if (user.email === "shindearyan179@gmail.com") {
+        if (user.email === "admin@shishyakul.in") {
           setIsAdmin(true);
         }
 

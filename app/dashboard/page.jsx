@@ -92,17 +92,41 @@ const page = () => {
 
   const deleteStudentHandler = async (userId) => {
     const toastId = toast.loading("Deleting Student...");
-    const response = await deleteStudent({ variables: { userId } });
+    try {
+      const response = await deleteStudent({ variables: { userId } });
 
-    if (response === "ERROR" || response === null) {
+      if (response === "ERROR" || response === null) {
+        toast.error("Failed to delete student!", {
+          id: toastId,
+        });
+        return;
+      }
+
+      const deleteuserResponse = await fetch("/api/user", {
+        method: "DELETE",
+        body: JSON.stringify({ uid: userId }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("DELETEUSERRESPONSE", deleteuserResponse);
+
+      if (deleteuserResponse.status !== 200) {
+        toast.error("Failed to delete student from database!", {
+          id: toastId,
+        });
+        return;
+      }
+
+      toast.success("Student Deleted Successfully!", {
+        id: toastId,
+      });
+    } catch (error) {
       toast.error("Failed to delete student!", {
         id: toastId,
       });
-      return;
     }
-    toast.success("Student Deleted Successfully!", {
-      id: toastId,
-    });
   };
 
   const addStudentHandler = async () => {

@@ -24,6 +24,7 @@ function Page() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [batch, setBatch] = useState("");
 
   const { data, loading, error } = useSuspenseQuery(VERIFY_CODE, {
     variables: { verificationCode: id },
@@ -61,7 +62,8 @@ function Page() {
       <div className="flex justify-center items-center flex-col h-[100svh] text-center">
         <h1 className="subheading">Invalid Verification Code</h1>
         <p className="barlow-regular mt-4">
-          The verification code you entered is invalid or expired. Please try again.
+          The verification code you entered is invalid or expired. Please try
+          again.
         </p>
         <div className="flex justify-center items-center gap-6">
           <Link
@@ -95,15 +97,22 @@ function Page() {
         password,
         phone,
         grade,
+        batch,
         verificationCode: id,
       },
-    }).then(() => {
-      toast.success("Student registered successfully!", { id: registeringToast });
-      router.push("/login");
-    }).catch((err) => {
-      console.log("ERROR REGISTERING STUDENT", err);
-      toast.error("Error registering student. Please try again.", { id: registeringToast });
-    });
+    })
+      .then(() => {
+        toast.success("Student registered successfully!", {
+          id: registeringToast,
+        });
+        router.push("/login");
+      })
+      .catch((err) => {
+        console.log("ERROR REGISTERING STUDENT", err);
+        toast.error("Error registering student. Please try again.", {
+          id: registeringToast,
+        });
+      });
   };
 
   return (
@@ -114,7 +123,12 @@ function Page() {
           <div>
             <form className="flex flex-col" onSubmit={studentRegisterHandler}>
               <div className="flex flex-col w-full mb-4">
-                <label htmlFor="firstname" className="input-label text-secondary">First Name</label>
+                <label
+                  htmlFor="firstname"
+                  className="input-label text-secondary"
+                >
+                  First Name
+                </label>
                 <input
                   type="text"
                   id="firstname"
@@ -125,7 +139,12 @@ function Page() {
                 />
               </div>
               <div className="flex flex-col w-full mb-4">
-                <label htmlFor="middlename" className="input-label text-secondary">Middle Name</label>
+                <label
+                  htmlFor="middlename"
+                  className="input-label text-secondary"
+                >
+                  Middle Name
+                </label>
                 <input
                   type="text"
                   id="middlename"
@@ -136,7 +155,12 @@ function Page() {
                 />
               </div>
               <div className="flex flex-col w-full mb-4">
-                <label htmlFor="lastname" className="input-label text-secondary">Last Name</label>
+                <label
+                  htmlFor="lastname"
+                  className="input-label text-secondary"
+                >
+                  Last Name
+                </label>
                 <input
                   type="text"
                   id="lastname"
@@ -147,7 +171,9 @@ function Page() {
                 />
               </div>
               <div className="flex flex-col w-full mb-4">
-                <label htmlFor="grade" className="input-label text-secondary">Grade</label>
+                <label htmlFor="grade" className="input-label text-secondary">
+                  Grade
+                </label>
                 <input
                   type="number"
                   min={6}
@@ -160,7 +186,22 @@ function Page() {
                 />
               </div>
               <div className="flex flex-col w-full mb-4">
-                <label htmlFor="email" className="input-label text-secondary">Email (Cannot be changed)</label>
+                <label htmlFor="batch" className="input-label text-secondary">
+                  Batch
+                </label>
+                <input
+                  type="number"
+                  id="batch"
+                  className="input-taking"
+                  placeholder="Enter your batch (Year)..."
+                  value={batch}
+                  onChange={(e) => setBatch(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col w-full mb-4">
+                <label htmlFor="email" className="input-label text-secondary">
+                  Email (Cannot be changed)
+                </label>
                 <input
                   type="email"
                   id="email"
@@ -171,7 +212,9 @@ function Page() {
                 />
               </div>
               <div className="flex flex-col w-full mb-4">
-                <label htmlFor="phone" className="input-label text-secondary">Phone</label>
+                <label htmlFor="phone" className="input-label text-secondary">
+                  Phone
+                </label>
                 <input
                   type="tel"
                   id="phone"
@@ -182,7 +225,12 @@ function Page() {
                 />
               </div>
               <div className="flex flex-col w-full mb-4">
-                <label htmlFor="password" className="input-label text-secondary">Password</label>
+                <label
+                  htmlFor="password"
+                  className="input-label text-secondary"
+                >
+                  Password
+                </label>
                 <div className="relative">
                   <input
                     type={passwordVisible ? "text" : "password"}

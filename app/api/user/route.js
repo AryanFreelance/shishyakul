@@ -1,20 +1,46 @@
-// Delete Route to delete the user
-import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+import admin from "firebase-admin";
 
-// Path to your service account key file
-const serviceAccount = require("@/firebase/firebase-sdk.json");
+function formatPrivateKey(key) {
+  return key.replace(/\\n/g, "\n");
+}
 
-// Initialize Firebase Admin SDK
-if (!getApps().length) {
-  initializeApp({
-    credential: cert(serviceAccount),
+function createFirebaseAdminApp(params) {
+  const privateKey = formatPrivateKey(params.privateKey);
+
+  if (admin.apps.length > 0) {
+    return admin.app();
+  }
+
+  const cert = admin.credential.cert({
+    projectId: params.projectId,
+    clientEmail: params.clientEmail,
+    privateKey,
   });
+
+  return admin.initializeApp({
+    credential: cert,
+    projectId: params.projectId,
+    storageBucket: params.storageBucket,
+  });
+}
+
+async function initAdmin() {
+  const params = {
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY,
+  };
+
+  return createFirebaseAdminApp(params);
 }
 
 export async function DELETE(req, res) {
   const body = await req.json();
   const { uid } = body;
+
+  await initAdmin();
 
   if (!uid) {
     return Response.json({ message: "UID is required" }, { status: 400 });

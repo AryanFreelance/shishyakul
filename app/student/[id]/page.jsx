@@ -429,7 +429,12 @@ const page = () => {
                 </span>
                 <span>Student Email - {studData?.student.email}</span>
                 <span>Student Phone - {studData?.student.phone}</span>
-                <span>Student Grade - {studData?.student.grade}</span>
+                <span>
+                  Student Grade - {studData?.student.grade || "No Grade"}
+                </span>
+                <span>
+                  Student Batch - {studData?.student.batch || "No Batch"}
+                </span>
               </div>
             </div>
             <div>

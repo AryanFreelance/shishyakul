@@ -19,6 +19,7 @@ export const CREATE_STUDENT = gql`
     $phone: String!
     $grade: String!
     $verificationCode: String!
+    $batch: String!
     $password: String!
   ) {
     createStudent(
@@ -29,6 +30,7 @@ export const CREATE_STUDENT = gql`
       phone: $phone
       grade: $grade
       verificationCode: $verificationCode
+      batch: $batch
       password: $password
     )
   }
@@ -43,6 +45,7 @@ export const UPDATE_STUDENT = gql`
     $lastname: String
     $phone: String
     $grade: String
+    $batch: String
     $studentInformation: StudentInformationInput
     $guardianInformation: GuardianInformationInput
     $siblingInformation: [SiblingInformationInput]
@@ -54,6 +57,7 @@ export const UPDATE_STUDENT = gql`
       lastname: $lastname
       phone: $phone
       grade: $grade
+      batch: $batch
       studentInformation: $studentInformation
       guardianInformation: $guardianInformation
       siblingInformation: $siblingInformation

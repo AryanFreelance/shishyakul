@@ -21,6 +21,7 @@ export const DASHBOARD_GET_STUDENT = gql`
       lastname
       phone
       grade
+      batch
       attendance {
         present
         absent
@@ -40,6 +41,7 @@ export const GET_STUDENT_DETAILS = gql`
       lastname
       phone
       grade
+      batch
       attendance {
         present
         absent
@@ -73,6 +75,7 @@ export const GET_STUDENT_PROFILE = gql`
       lastname
       phone
       grade
+      batch
       guardianInformation {
         motherFirstName
         motherMiddleName

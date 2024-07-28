@@ -80,6 +80,7 @@ const page = () => {
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [grade, setGrade] = useState("");
+  const [batch, setBatch] = useState("");
 
   const { id } = useParams();
 
@@ -154,11 +155,19 @@ const page = () => {
     if (data?.student.lastname != null) setLastName(data?.student.lastname);
     if (data?.student.phone != null) setPhone(data?.student.phone);
     if (data?.student.grade != null) setGrade(data?.student.grade);
+    if (data?.student.batch != null) setBatch(data?.student.batch);
   }, []);
 
   const updateInformationHandler = async (e) => {
     e.preventDefault();
     const toastId = toast.loading("Updating Information...");
+
+    if (batch < 2006 || batch > new Date().getFullYear()) {
+      toast.error("Enter Correct Batch!", {
+        id: toastId,
+      });
+      return;
+    }
 
     // Update Student Details
     await updateStudent({
@@ -169,6 +178,7 @@ const page = () => {
         lastname: lastName,
         phone: phone,
         grade: grade,
+        batch: batch,
         studentInformation: studentInformation,
         guardianInformation: guardianInformation,
         siblingInformation: siblingInformation,
@@ -352,18 +362,20 @@ const page = () => {
               <div className="flex flex-col lg:flex-row gap-4 w-full">
                 <div className="flex flex-col w-full">
                   <Label
-                    htmlFor="email-id"
+                    htmlFor="batch"
                     className="text-xl text-secondary barlow-medium mb-2"
                   >
-                    Email ID
+                    Batch
                   </Label>
                   <input
-                    type="email"
-                    id="email-id"
+                    type="number"
+                    min={2006}
+                    max={new Date().getFullYear()}
+                    id="batch"
                     className="input-taking w-full disabled:bg-black/10"
-                    placeholder="Update Email ID..."
-                    value={data?.student.email}
-                    disabled
+                    placeholder="Update Batch..."
+                    value={data?.student.batch}
+                    onChange={(e) => setBatch(e.target.value)}
                   />
                 </div>
                 <div className="flex flex-col w-full">

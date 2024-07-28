@@ -885,7 +885,7 @@ const page = () => {
                     </span>
                     {test?.marks !== null && (
                       <span className="barlow-regular">
-                        Rank - {test?.marks[0].rank}
+                        Rank - {test?.marks[0]?.rank || "No Rank Allocated"}
                       </span>
                     )}
                   </div>
@@ -953,7 +953,7 @@ const page = () => {
                         </span>
                         {test?.marks !== null && (
                           <span className="barlow-regular">
-                            Rank - {test?.marks[0].rank}
+                            Rank - {test?.marks[0]?.rank || "No Rank Allocated"}
                           </span>
                         )}
                       </div>

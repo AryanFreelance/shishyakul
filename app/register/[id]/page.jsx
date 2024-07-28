@@ -87,6 +87,12 @@ function Page() {
     e.preventDefault();
 
     const registeringToast = toast.loading("Registering...");
+    if (phone.length !== 10) {
+      toast.error("Phone number should be 10 digits long", {
+        id: registeringToast,
+      });
+      return;
+    }
 
     await createStudent({
       variables: {

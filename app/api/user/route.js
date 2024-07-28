@@ -49,7 +49,7 @@ export async function DELETE(req, res) {
   try {
     await getAuth().deleteUser(uid);
     return Response.json(
-      { message: `Successfully deleted user with UID: ${uid}` },
+      { message: `Successfully deleted user with User ID: ${uid}` },
       { status: 200 }
     );
   } catch (error) {

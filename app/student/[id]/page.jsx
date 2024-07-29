@@ -60,6 +60,7 @@ const page = () => {
   const router = useRouter();
   const [authStatus, setAuthStatus] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isFeeDialogOpen, setIsFeeDialogOpen] = useState(false);
   const [chartData, setChartData] = useState({
     labels: ["Present", "Absent"],
     datasets: [
@@ -217,6 +218,7 @@ const page = () => {
       toast.error("Please fill all the fields!", {
         id: toastId,
       });
+      setIsFeeDialogOpen(false);
       return;
     }
     console.log(feeData);
@@ -228,12 +230,14 @@ const page = () => {
       toast.error("Please fill all the fields!", {
         id: toastId,
       });
+      setIsFeeDialogOpen(false);
       return;
     }
     if (feeData.mode === "upi" && (!feeData.upiId || !feeData.upiImgUrl)) {
       toast.error("Please fill all the fields!", {
         id: toastId,
       });
+      setIsFeeDialogOpen(false);
       return;
     }
     let today = new Date();
@@ -278,6 +282,7 @@ const page = () => {
             id: toastId,
           });
           console.error(error);
+          setIsFeeDialogOpen(false);
           return;
         });
     }
@@ -339,6 +344,7 @@ const page = () => {
       upiId: "",
       upiImgUrl: "",
     });
+    setIsFeeDialogOpen(false);
   };
 
   const logoutHandler = () => {
@@ -443,7 +449,13 @@ const page = () => {
                   Fees Information
                 </h3>
                 {isAdmin && (
-                  <Dialog>
+                  <Dialog
+                    open={isFeeDialogOpen}
+                    onOpenChange={() => {
+                      setIsFeeDialogOpen(!isFeeDialogOpen);
+                      console.log("ISFEEDIALOGOPEN", isFeeDialogOpen);
+                    }}
+                  >
                     <DialogTrigger asChild>
                       <Button variant="outline" className="border-2">
                         Add Fee

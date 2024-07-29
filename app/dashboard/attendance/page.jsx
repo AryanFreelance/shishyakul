@@ -191,7 +191,7 @@ const Page = () => {
   };
 
   const sendEmailsHandler = async () => {
-    const toastId = toast.loading("Sending Emails/SMS...");
+    const toastId = toast.loading("Sending Emails...");
 
     const emailresponse = await fetch("/api/email", {
       method: "POST",
@@ -358,7 +358,7 @@ const Page = () => {
                             sendEmailsHandler();
                           }}
                         >
-                          Send SMS/Email
+                          Send Email
                         </Button>
                       )}
                   </div>

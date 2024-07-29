@@ -144,7 +144,8 @@ const page = () => {
     }
   };
 
-  const addStudentHandler = async () => {
+  const addStudentHandler = async (e) => {
+    e.preventDefault();
     const toastId = toast.loading("Adding Student...");
     const response = await initializeStudent({
       variables: { email: studEmail },
@@ -265,25 +266,27 @@ const page = () => {
                   Add Student
                 </DialogTitle>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="email" className="text-right">
-                    Email
-                  </Label>
-                  <Input
-                    id="email"
-                    placeholder="Enter your email..."
-                    className="col-span-3"
-                    value={studEmail}
-                    onChange={(e) => setStudEmail(e.target.value)}
-                  />
+              <form onSubmit={(e) => addStudentHandler(e)}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="email" className="text-right">
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      placeholder="Enter your email..."
+                      className="col-span-3"
+                      value={studEmail}
+                      onChange={(e) => setStudEmail(e.target.value)}
+                    />
+                  </div>
                 </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" onClick={addStudentHandler}>
-                  Add
-                </Button>
-              </DialogFooter>
+                {/* <DialogFooter> */}
+                <div className="flex justify-end items-center">
+                  <Button type="submit">Add</Button>
+                </div>
+                {/* </DialogFooter> */}
+              </form>
             </DialogContent>
           </Dialog>
         </div>

@@ -72,22 +72,16 @@ const page = () => {
                       {/* Date Format - "21/4/2024, 4:45:02 pm" convert it to "21/04/2024*/}
                       <span>
                         Created on -{" "}
-                        {item.createdAt
+                        {item?.createdAt
                           .split(",")[0]
                           .split("/")
                           .map((item) => {
-                            return item.length === 1 ? `0${item}` : item;
+                            return item?.length === 1 ? `0${item}` : item;
                           })
                           .join("/")}
                       </span>
                       <span>
-                        Test On -{" "}
-                        {item.date
-                          .split("/")
-                          .map((item) => {
-                            return item.length === 1 ? `0${item}` : item;
-                          })
-                          .join("/")}
+                        Test On - {item.date.split("-").reverse().join("/")}
                       </span>
                     </div>
                   </div>
@@ -99,10 +93,17 @@ const page = () => {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Test Paper Name</AlertDialogTitle>
+                        <AlertDialogTitle>{item.title}</AlertDialogTitle>
 
                         <AlertDialogDescription>
-                          Created on - 12/04/2024
+                          Created on -{" "}
+                          {item?.createdAt
+                            .split(",")[0]
+                            .split("/")
+                            .map((item) => {
+                              return item?.length === 1 ? `0${item}` : item;
+                            })
+                            .join("/")}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <iframe
@@ -162,14 +163,14 @@ const page = () => {
                       <CircleDashed className="text-gray-300" />
                     )}
                     <div>
-                      <h3 className="smallheading">{item.title}</h3>
+                      <h3 className="smallheading">{item?.title}</h3>
                       <span>
                         Created on -{" "}
-                        {item.createdAt
+                        {item?.createdAt
                           .split(",")[0]
                           .split("/")
                           .map((item) => {
-                            return item.length === 1 ? `0${item}` : item;
+                            return item?.length === 1 ? `0${item}` : item;
                           })
                           .join("/")}
                       </span>
@@ -183,10 +184,17 @@ const page = () => {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Test Paper Name</AlertDialogTitle>
+                        <AlertDialogTitle>{item?.title}</AlertDialogTitle>
 
                         <AlertDialogDescription>
-                          Created on - 12/04/2024
+                          Created on -{" "}
+                          {item?.createdAt
+                            .split(",")[0]
+                            .split("/")
+                            .map((item) => {
+                              return item?.length === 1 ? `0${item}` : item;
+                            })
+                            .join("/")}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <iframe
@@ -250,13 +258,7 @@ const page = () => {
                               .join("/")}
                           </span>
                           <span>
-                            Test On -{" "}
-                            {item.date
-                              .split("/")
-                              .map((item) => {
-                                return item.length === 1 ? `0${item}` : item;
-                              })
-                              .join("/")}
+                            Test On - {item.date.split("-").reverse().join("/")}
                           </span>
                         </div>
                       </div>
@@ -268,10 +270,17 @@ const page = () => {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Test Paper Name</AlertDialogTitle>
+                            <AlertDialogTitle>{item?.title}</AlertDialogTitle>
 
                             <AlertDialogDescription>
-                              Created on - 12/04/2024
+                              Created on -{" "}
+                              {item?.createdAt
+                                .split(",")[0]
+                                .split("/")
+                                .map((item) => {
+                                  return item.length === 1 ? `0${item}` : item;
+                                })
+                                .join("/")}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <iframe

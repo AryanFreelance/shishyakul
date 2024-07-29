@@ -15,6 +15,7 @@ export const DASHBOARD_GET_STUDENT = gql`
   query Students {
     students {
       userId
+      sId
       email
       firstname
       middlename

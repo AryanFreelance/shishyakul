@@ -356,7 +356,7 @@ const page = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="barlow-semibold w-[100px]">
-                  User ID.
+                  Student ID
                 </TableHead>
                 <TableHead className="barlow-semibold">Name</TableHead>
                 <TableHead className="barlow-semibold">Email</TableHead>
@@ -381,7 +381,7 @@ const page = () => {
                 filteredStudents?.map((student, index) => (
                   <TableRow key={index}>
                     <TableCell className="barlow-semibold">
-                      {student.userId}
+                      {student.sId}
                     </TableCell>
                     <TableCell className="barlow-regular">
                       {student.firstname} {student.lastname}

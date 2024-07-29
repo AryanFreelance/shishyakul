@@ -43,9 +43,9 @@ export const UPDATE_STUDENT = gql`
     $firstname: String
     $middlename: String
     $lastname: String
-    $phone: String
+    $phone: String!
     $grade: String
-    $batch: String
+    $batch: String!
     $studentInformation: StudentInformationInput
     $guardianInformation: GuardianInformationInput
     $siblingInformation: [SiblingInformationInput]

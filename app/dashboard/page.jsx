@@ -4,7 +4,7 @@ import Navbar from "@/components/shared/Navbar";
 import { dashboardNavLinks } from "@/constants";
 import Container from "@/components/shared/Container";
 import { Button } from "@/components/ui/button";
-import { Eye, Plus, Trash } from "lucide-react";
+import { Eye, Plus, SearchIcon, Trash } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -52,12 +52,27 @@ import {
   DASHBOARD_GET_STUDENT,
   GET_TEMP_STUDENTS,
 } from "@/graphql/queries/students.query";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+// import { unique } from "next/dist/build/utils";
 
 const page = () => {
   const [studEmail, setStudEmail] = useState("");
   const [openAddStudentDialog, setOpenAddStudentDialog] = useState(false);
   const [grades, setGrades] = useState(new Set());
-  const [selectedGrades, setSelectedGrades] = useState(new Set());
+  const [selectedGrades, setSelectedGrades] = useState();
+  const [batch, setBatch] = useState(new Set());
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [searchParameters, setSearchParameters] = useState({
+    studentName: "",
+    grade: "",
+    batch: "",
+  });
 
   // Queries - GET_TEMP_STUDENTS, DASHBOARD_GET_STUDENT
   const {
@@ -184,32 +199,50 @@ const page = () => {
     });
   };
 
-  // Extract unique grades from students data
+  // Extract unique grades and batches from students data
   useEffect(() => {
     if (students) {
       const uniqueGrades = new Set(
         students?.students.map((student) => student.grade)
       );
+      const uniqueBatches = new Set(
+        students?.students.map((student) => student.batch)
+      );
       setGrades(uniqueGrades);
-      setSelectedGrades(uniqueGrades); // Initially, all grades are selected
+      setBatch(uniqueBatches);
     }
   }, [students]);
 
-  const handleGradeChange = (grade) => {
-    setSelectedGrades((prev) => {
-      const newSelectedGrades = new Set(prev);
-      if (newSelectedGrades.has(grade)) {
-        newSelectedGrades.delete(grade);
-      } else {
-        newSelectedGrades.add(grade);
-      }
-      return newSelectedGrades;
-    });
-  };
+  // Update filtered students based on search parameters
+  useEffect(() => {
+    if (students) {
+      let filtered = students?.students;
 
-  const filteredStudents = students?.students?.filter((student) =>
-    selectedGrades.has(student.grade)
-  );
+      if (searchParameters.studentName) {
+        filtered = filtered.filter((student) =>
+          `${student.firstname} ${student.lastname}`
+            .toLowerCase()
+            .includes(searchParameters.studentName.toLowerCase())
+        );
+      }
+
+      if (searchParameters.grade && searchParameters.grade !== "select-grade") {
+        filtered = filtered.filter(
+          (student) => student.grade === searchParameters.grade
+        );
+      }
+
+      if (searchParameters.batch && searchParameters.batch !== "select-batch") {
+        filtered = filtered.filter(
+          (student) => student.batch === searchParameters.batch
+        );
+      }
+
+      setFilteredStudents(filtered);
+    }
+  }, [students, searchParameters]);
+
+  console.log("FILTERED STUDENTS", filteredStudents);
 
   return (
     <Container>
@@ -255,34 +288,70 @@ const page = () => {
           </Dialog>
         </div>
         <div className="mt-8">
-          <div>
-            <div>
-              <h2 className="subsubheading text-secondary">Grades</h2>
+          <div className="flex justify-between items-center flex-wrap w-full gap-2 mb-6">
+            {/* Searchbar */}
+            <div className=" w-full md:w-[58%]">
+              <form className="flex items-center gap-2 border-2 rounded-full md:rounded-r-none px-4 py-2 border-main md:border-r-slate-600">
+                <button type="submit" className="border-none outline-none">
+                  <SearchIcon />
+                </button>
+                <input
+                  type="text"
+                  placeholder="Enter Student Name..."
+                  className="w-full py-1 bg-transparent outline-none border-none text-secondary"
+                  value={searchParameters.studentName}
+                  onChange={(e) =>
+                    setSearchParameters({
+                      ...searchParameters,
+                      studentName: e.target.value,
+                    })
+                  }
+                />
+              </form>
             </div>
-            <div className="flex gap-4 max-w-full flex-wrap mt-2 ml-2">
-              {Array.from(grades).map((grade, index) => (
-                <div
-                  key={grade}
-                  className="flex gap-1 justify-center items-center"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedGrades.has(grade)}
-                    onChange={() => handleGradeChange(grade)}
-                    id={`grade${index}`}
-                  />
-                  <label htmlFor={`grade${index}`} className="font-semibold">
-                    {grade}
-                  </label>
-                </div>
-              ))}
+            {/* Batch Dropdown */}
+            <div className="w-[48%] md:w-[20%]">
+              <Select
+                onValueChange={(value) =>
+                  setSearchParameters({ ...searchParameters, batch: value })
+                }
+                defaultValue="select-batch"
+              >
+                <SelectTrigger className="px-4 text-secondary barlow-regular rounded-full border-main md:rounded-none md:border-t-main md:border-b-main border-2 md:border-r-slate-600 md:border-l-slate-600 outline-none focus:border-none focus-outline-none bg-transparent w-full py-6">
+                  <SelectValue placeholder="Batch" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="select-batch">Select Batch</SelectItem>
+                  {Array.from(batch).map((bch, index) => (
+                    <SelectItem key={index} value={bch}>
+                      {bch}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Standard Dropdown */}
+            <div className="w-[48%] md:w-[20%]">
+              <Select
+                onValueChange={(value) =>
+                  setSearchParameters({ ...searchParameters, grade: value })
+                }
+                defaultValue="select-grade"
+              >
+                <SelectTrigger className="px-4 text-secondary barlow-regular rounded-full md:rounded-none md:rounded-r-full border-main border-2 md:border-l-slate-600 outline-none focus:border-none focus-outline-none bg-transparent w-full py-6">
+                  <SelectValue placeholder="Grade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="select-grade">Select Grade</SelectItem>
+                  {Array.from(grades).map((grd, index) => (
+                    <SelectItem key={index} value={grd}>
+                      {grd}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          {/* {filteredStudents?.length === 0 ? (
-            <div className="mt-8">
-              <h3 className="barlow-semibold text-center">No students found</h3>
-            </div>
-          ) : ( */}
           <Table>
             <TableHeader>
               <TableRow>
@@ -308,7 +377,7 @@ const page = () => {
                   </TableCell>
                 </TableRow>
               )}
-              {filteredStudents.length > 0 &&
+              {filteredStudents?.length > 0 &&
                 filteredStudents?.map((student, index) => (
                   <TableRow key={index}>
                     <TableCell className="barlow-semibold">
@@ -380,7 +449,6 @@ const page = () => {
                 ))}
             </TableBody>
           </Table>
-          {/* )} */}
         </div>
       </div>
 

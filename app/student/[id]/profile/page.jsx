@@ -90,7 +90,9 @@ const page = () => {
   });
 
   // Mutations - Update Student Details
-  const [updateStudent] = useMutation(UPDATE_STUDENT);
+  const [updateStudent] = useMutation(UPDATE_STUDENT, {
+    refetchQueries: [{ query: GET_STUDENT_PROFILE, variables: { userId: id } }],
+  });
 
   console.log(data, loading, error);
 
@@ -374,7 +376,7 @@ const page = () => {
                     id="batch"
                     className="input-taking w-full disabled:bg-black/10"
                     placeholder="Update Batch..."
-                    value={data?.student.batch}
+                    value={batch}
                     onChange={(e) => setBatch(e.target.value)}
                   />
                 </div>

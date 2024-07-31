@@ -321,10 +321,10 @@ const page = () => {
                 defaultValue="select-batch"
               >
                 <SelectTrigger className="px-4 text-secondary barlow-regular rounded-full border-main md:rounded-none md:border-t-main md:border-b-main border-2 md:border-r-slate-600 md:border-l-slate-600 outline-none focus:border-none focus-outline-none bg-transparent w-full py-6">
-                  <SelectValue placeholder="Batch" />
+                  <SelectValue placeholder="Academic Year" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="select-batch">Select Batch</SelectItem>
+                  <SelectItem value="select-batch">Select A.Y.</SelectItem>
                   {Array.from(batch).map((bch, index) => (
                     <SelectItem key={index} value={bch}>
                       {bch}

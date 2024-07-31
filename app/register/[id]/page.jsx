@@ -94,6 +94,16 @@ function Page() {
       return;
     }
 
+    if (
+      batch.length !== 4 &&
+      (batch < 2008 || batch > new Date.getFullYear())
+    ) {
+      toast.error("Enter Valid Academic Year", {
+        id: registeringToast,
+      });
+      return;
+    }
+
     await createStudent({
       variables: {
         firstname,
@@ -192,14 +202,17 @@ function Page() {
                 />
               </div>
               <div className="flex flex-col w-full mb-4">
-                <label htmlFor="batch" className="input-label text-secondary">
-                  Batch
+                <label
+                  htmlFor="academic-year"
+                  className="input-label text-secondary"
+                >
+                  Academic Year
                 </label>
                 <input
                   type="number"
-                  id="batch"
+                  id="academic-year"
                   className="input-taking"
-                  placeholder="Enter your batch (Year)..."
+                  placeholder="Enter your a.y. (Year)..."
                   value={batch}
                   onChange={(e) => setBatch(e.target.value)}
                 />

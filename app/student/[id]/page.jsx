@@ -439,7 +439,7 @@ const page = () => {
                   Student Grade - {studData?.student.grade || "No Grade"}
                 </span>
                 <span>
-                  Student Batch - {studData?.student.batch || "No Batch"}
+                  Student A.Y. - {studData?.student.batch || "No Batch"}
                 </span>
               </div>
             </div>

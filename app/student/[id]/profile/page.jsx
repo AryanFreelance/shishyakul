@@ -165,7 +165,7 @@ const page = () => {
     const toastId = toast.loading("Updating Information...");
 
     if (batch < 2006 || batch > new Date().getFullYear()) {
-      toast.error("Enter Correct Batch!", {
+      toast.error("Enter Correct Academic Year!", {
         id: toastId,
       });
       return;
@@ -367,7 +367,7 @@ const page = () => {
                     htmlFor="batch"
                     className="text-xl text-secondary barlow-medium mb-2"
                   >
-                    Batch
+                    Academic Year
                   </Label>
                   <input
                     type="number"
@@ -375,7 +375,7 @@ const page = () => {
                     max={new Date().getFullYear()}
                     id="batch"
                     className="input-taking w-full disabled:bg-black/10"
-                    placeholder="Update Batch..."
+                    placeholder="Update A.Y..."
                     value={batch}
                     onChange={(e) => setBatch(e.target.value)}
                   />

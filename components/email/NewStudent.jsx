@@ -10,6 +10,7 @@ import {
   Row,
   Section,
   Text,
+  Link,
 } from "@react-email/components";
 import * as React from "react";
 
@@ -35,7 +36,7 @@ export const YelpRecentLoginEmail = ({ r_message, r_code, loginDate }) => {
                     textAlign: "center",
                   }}
                 >
-                  Hi There,
+                  Namaste,
                 </Heading>
                 <Heading
                   as="h2"
@@ -45,17 +46,12 @@ export const YelpRecentLoginEmail = ({ r_message, r_code, loginDate }) => {
                     textAlign: "center",
                   }}
                 >
-                  Your child has been absent today.
+                  You are invited to SHISHYAKUL.
                 </Heading>
-
                 <Text style={paragraph}>
                   <b>Time: </b>
                   {formattedDate}
                 </Text>
-                {/* <Text style={{ ...paragraph, marginTop: -5 }}>
-                  <b>Email: </b>
-                  {u_email}
-                </Text> */}
                 <Text style={{ ...paragraph, marginTop: -5 }}>
                   <b>Registration Code: </b>
                   <br />
@@ -102,7 +98,8 @@ export const YelpRecentLoginEmail = ({ r_message, r_code, loginDate }) => {
               color: "rgb(0,0,0, 0.7)",
             }}
           >
-            © 2024 | Aryan Shinde | Portfolio | www.aryanshinde.in
+            © {new Date().getFullYear()} | SHISHYAKUL |{" "}
+            <Link href="https://shishyakul.in">www.shishyakul.in</Link>
           </Text>
         </Container>
       </Body>

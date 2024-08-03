@@ -61,7 +61,7 @@ import {
 } from "@/components/ui/select";
 // import { unique } from "next/dist/build/utils";
 
-const page = () => {
+const DashboardPage = () => {
   const [studEmail, setStudEmail] = useState("");
   const [openAddStudentDialog, setOpenAddStudentDialog] = useState(false);
   const [grades, setGrades] = useState(new Set());
@@ -147,6 +147,19 @@ const page = () => {
   const addStudentHandler = async (e) => {
     e.preventDefault();
     const toastId = toast.loading("Adding Student...");
+
+    if (
+      !studEmail ||
+      !studEmail.includes("@") ||
+      !studEmail.includes(".") ||
+      studEmail.length < 5
+    ) {
+      toast.error("Please enter a valid email!", {
+        id: toastId,
+      });
+      return;
+    }
+
     const response = await initializeStudent({
       variables: { email: studEmail },
     });
@@ -530,4 +543,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default DashboardPage;

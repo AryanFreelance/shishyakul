@@ -87,6 +87,30 @@ function Page() {
     e.preventDefault();
 
     const registeringToast = toast.loading("Registering...");
+    if (
+      !firstname ||
+      !middlename ||
+      !lastname ||
+      !grade ||
+      !email ||
+      !phone ||
+      !password ||
+      !batch ||
+      firstname === "" ||
+      middlename === "" ||
+      lastname === "" ||
+      grade === "" ||
+      email === "" ||
+      phone === "" ||
+      password === "" ||
+      batch === ""
+    ) {
+      toast.error("Please fill all the fields", {
+        id: registeringToast,
+      });
+      return;
+    }
+
     if (phone.length !== 10) {
       toast.error("Phone number should be 10 digits long", {
         id: registeringToast,

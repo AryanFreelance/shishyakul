@@ -326,7 +326,7 @@ const page = () => {
                 <SelectContent>
                   <SelectItem value="select-batch">Select A.Y.</SelectItem>
                   {Array.from(batch).map((bch, index) => (
-                    <SelectItem key={index} value={bch}>
+                    <SelectItem key={index} value={bch || index}>
                       {bch}
                     </SelectItem>
                   ))}
@@ -347,7 +347,7 @@ const page = () => {
                 <SelectContent>
                   <SelectItem value="select-grade">Select Grade</SelectItem>
                   {Array.from(grades).map((grd, index) => (
-                    <SelectItem key={index} value={grd}>
+                    <SelectItem key={index} value={grd || index}>
                       {grd}
                     </SelectItem>
                   ))}

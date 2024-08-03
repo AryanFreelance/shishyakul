@@ -86,7 +86,7 @@ const page = () => {
   const updateTestPaperHandler = async (e) => {
     e.preventDefault();
     const toastId = toast.loading("Updating Test Paper...");
-    console.log(testData);
+    // console.log(testData);
 
     !published &&
       (await updateTestPaper({
@@ -127,7 +127,7 @@ const page = () => {
     e.preventDefault();
     const toastId = toast.loading("Publishing Test Paper...");
 
-    // console.log("TESTDATA", testpaperData);
+    // // console.log("TESTDATA", testpaperData);
     if (testDate < todayDate) {
       toast.error("Please update the test with a future date.", {
         id: toastId,
@@ -158,12 +158,12 @@ const page = () => {
         url: testpaperData?.testpaper?.url,
         sharedWith: testpaperData?.testpaper?.sharedWith,
       });
-      console.log(testpaperData);
-      console.log("Test Data", testpaperData?.testpaper.date);
+      // console.log(testpaperData);
+      // console.log("Test Data", testpaperData?.testpaper.date);
       setSharedWith(testpaperData?.testpaper?.sharedWith);
     }
 
-    console.log("DATE", testData?.date >= todayDate);
+    // console.log("DATE", testData?.date >= todayDate);
   }, [testpaperData]);
 
   const isPastDate = testData?.date < todayDate;

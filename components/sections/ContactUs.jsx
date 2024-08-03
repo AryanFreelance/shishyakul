@@ -39,7 +39,7 @@ const ContactUs = () => {
     });
 
     if (emailResp.status !== 200) {
-      console.log("Failed to send message. Please try again.");
+      // console.log("Failed to send message. Please try again.");
       toast.error("Failed to send message. Please try again.", {
         id: toastId,
       });
@@ -52,7 +52,7 @@ const ContactUs = () => {
       return;
     }
 
-    console.log("SUCCESS!");
+    // console.log("SUCCESS!");
 
     toast.success("Thank you for contacting us. We'll get back to you soon", {
       id: toastId,

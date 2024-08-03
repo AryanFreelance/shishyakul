@@ -81,11 +81,11 @@ const Page = () => {
   // Mutations - Create Attendance, Update Attendance
   const [createAttendance] = useMutation(CREATE_ATTENDANCE, {
     onCompleted: (data) => {
-      console.log("Attendance Created: ", data);
+      // console.log("Attendance Created: ", data);
       toast.success("Attendance Saved Successfully!");
     },
     onError: (error) => {
-      console.log("Error creating attendance: ", error);
+      // console.log("Error creating attendance: ", error);
       toast.error("Error saving attendance.");
     },
     refetchQueries: [
@@ -98,11 +98,11 @@ const Page = () => {
 
   const [updateAttendance] = useMutation(UPDATE_ATTENDANCE, {
     onCompleted: (data) => {
-      console.log("Attendance Updated: ", data);
+      // console.log("Attendance Updated: ", data);
       toast.success("Attendance Updated Successfully!");
     },
     onError: (error) => {
-      console.log("Error updating attendance: ", error);
+      // console.log("Error updating attendance: ", error);
       toast.error("Error updating attendance.");
     },
     refetchQueries: [
@@ -143,7 +143,7 @@ const Page = () => {
       setPresent(attendanceData.attendance.present);
       setAbsent(attendanceData.attendance.absent);
 
-      console.log("STUD DATA", studentsData);
+      // console.log("STUD DATA", studentsData);
 
       setAbsentEmails(
         studentsData?.students
@@ -152,7 +152,7 @@ const Page = () => {
           )
           .map((student) => student.email)
       );
-      console.log("ATTENDANCE DATA", attendanceData);
+      // console.log("ATTENDANCE DATA", attendanceData);
     } else {
       setPresent([]);
       setAbsent([]);
@@ -353,8 +353,8 @@ const Page = () => {
                         <Button
                           className="w-full"
                           onClick={() => {
-                            console.log("ABSENT", absent);
-                            console.log("ABSENT EMAILS", absentEmails);
+                            // console.log("ABSENT", absent);
+                            // console.log("ABSENT EMAILS", absentEmails);
                             sendEmailsHandler();
                           }}
                         >

@@ -13,7 +13,7 @@ const Layout = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         const uid = user.uid;
-        console.log(user);
+        // console.log(user);
         if (user.email !== "admin@shishyakul.in") {
           router.push(`/student/${uid}`);
         } else {

@@ -130,8 +130,8 @@ const page = () => {
       </div>
     );
 
-  console.log(studData);
-  console.log("TEST", testPaperUsers?.testpaperUsers);
+  // console.log(studData);
+  // console.log("TEST", testPaperUsers?.testpaperUsers);
 
   // Mutations - Create Fee, Delete Fee
   const [createFee] = useMutation(CREATE_FEE, {
@@ -158,7 +158,7 @@ const page = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        console.log(user);
+        // console.log(user);
         if (user.email === "admin@shishyakul.in") {
           setIsAdmin(true);
         }
@@ -221,7 +221,7 @@ const page = () => {
       setIsFeeDialogOpen(false);
       return;
     }
-    console.log(feeData);
+    // console.log(feeData);
 
     if (
       feeData.mode === "cheque" &&
@@ -258,8 +258,8 @@ const page = () => {
       )
         .then(async (snapshot) => {
           const downloadUrl = await getDownloadURL(storageRef);
-          console.log("SNAPSHOT", snapshot);
-          console.log("DOWNLOAD", downloadUrl);
+          // console.log("SNAPSHOT", snapshot);
+          // console.log("DOWNLOAD", downloadUrl);
           // feeData.mode === "cheque"
           //   ? setFeeData({ ...feeData, chequeImgUrl: downloadUrl })
           //   : setFeeData({ ...feeData, upiImgUrl: downloadUrl });
@@ -271,7 +271,7 @@ const page = () => {
             feeData.upiImgUrl = downloadUrl;
           }
 
-          console.log("FEE DATA", feeData);
+          // console.log("FEE DATA", feeData);
 
           // toast.success("Test Paper Added Successfully!", {
           //   id: toastId,
@@ -287,22 +287,22 @@ const page = () => {
         });
     }
 
-    console.log("FEE DATA", feeData);
+    // console.log("FEE DATA", feeData);
     // toast.success("Fee added successfully!", { id: toastId });
-    console.log("FEEINGDATA", {
-      id: feeid,
-      userId: id,
-      email: studData?.student.email,
-      feesPaid: parseInt(feeData.feesPaid),
-      paidOn: feeData.paidOn,
-      month: feeData.month,
-      year: feeData.year,
-      mode: feeData.mode,
-      chequeRefNo: feeData.chequeRefNo || "",
-      chequeImgUrl: feeData.chequeImgUrl || "",
-      upiId: feeData.upiId || "",
-      upiImgUrl: feeData.upiImgUrl || "",
-    });
+    // console.log("FEEINGDATA", {
+    //   id: feeid,
+    //   userId: id,
+    //   email: studData?.student.email,
+    //   feesPaid: parseInt(feeData.feesPaid),
+    //   paidOn: feeData.paidOn,
+    //   month: feeData.month,
+    //   year: feeData.year,
+    //   mode: feeData.mode,
+    //   chequeRefNo: feeData.chequeRefNo || "",
+    //   chequeImgUrl: feeData.chequeImgUrl || "",
+    //   upiId: feeData.upiId || "",
+    //   upiImgUrl: feeData.upiImgUrl || "",
+    // });
 
     await createFee({
       variables: {
@@ -321,13 +321,13 @@ const page = () => {
       },
     })
       .then((data) => {
-        console.log(data);
+        // console.log(data);
         toast.success("Fee added successfully!", {
           id: toastId,
         });
       })
       .catch((error) => {
-        console.log(error);
+        // console.log(error);
         toast.error("There was an error adding fee!", {
           id: toastId,
         });
@@ -357,7 +357,7 @@ const page = () => {
         router.push("/login");
       })
       .catch((error) => {
-        console.log(error);
+        // console.log(error);
         toast.error("There was an error logging out!", {
           id: toastId,
         });
@@ -367,7 +367,7 @@ const page = () => {
   const deleteFeeHandler = async (e, feeid) => {
     e.preventDefault();
 
-    console.log("Fee Deleted");
+    // console.log("Fee Deleted");
 
     const toastId = toast.loading("Deleting Fee...");
 
@@ -378,13 +378,13 @@ const page = () => {
       },
     })
       .then((data) => {
-        console.log(data);
+        // console.log(data);
         toast.success("Fee deleted successfully!", {
           id: toastId,
         });
       })
       .catch((error) => {
-        console.log(error);
+        // console.log(error);
         toast.error("There was an error deleting fee!", {
           id: toastId,
         });
@@ -453,7 +453,7 @@ const page = () => {
                     open={isFeeDialogOpen}
                     onOpenChange={() => {
                       setIsFeeDialogOpen(!isFeeDialogOpen);
-                      console.log("ISFEEDIALOGOPEN", isFeeDialogOpen);
+                      // console.log("ISFEEDIALOGOPEN", isFeeDialogOpen);
                     }}
                   >
                     <DialogTrigger asChild>
@@ -606,7 +606,7 @@ const page = () => {
                                           ...feeData,
                                           chequeImgUrl: e.target.files[0],
                                         });
-                                        console.log("FILE", e.target.files[0]);
+                                        // console.log("FILE", e.target.files[0]);
                                       }}
                                     />
                                   </>
@@ -675,7 +675,7 @@ const page = () => {
                                           ...feeData,
                                           upiImgUrl: e.target.files[0],
                                         });
-                                        console.log("FILE", e.target.files[0]);
+                                        // console.log("FILE", e.target.files[0]);
                                       }}
                                     />
                                   </>

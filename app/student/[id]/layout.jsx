@@ -13,7 +13,7 @@ const layout = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        console.log(user);
+        // console.log(user);
         setAuthStatus(true);
       } else {
         setAuthStatus(false);

@@ -14,7 +14,7 @@ const layout = ({ children }) => {
   // onAuthStateChanged(auth, (user) => {
   //   if (user) {
   //     const uid = user.uid;
-  //     console.log(user);
+  //     // console.log(user);
   //     setAuthStatus(true);
   //     router.push(`/student/${uid}`);
   //   } else {

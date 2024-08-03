@@ -94,12 +94,12 @@ const page = () => {
     refetchQueries: [{ query: GET_STUDENT_PROFILE, variables: { userId: id } }],
   });
 
-  console.log(data, loading, error);
+  // console.log(data, loading, error);
 
   if (loading) return <div>Loading...</div>;
 
   if (error) {
-    console.log(error);
+    // console.log(error);
     return <div>Error...</div>;
   }
 

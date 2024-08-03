@@ -80,7 +80,7 @@ const Page = () => {
   //     currentRank += 1;
   //   }
   //   ranks.push({ ...user, rank: currentRank });
-  //   console.log("RANKS", ranks);
+  //   // console.log("RANKS", ranks);
   // });
 
   useEffect(() => {
@@ -121,7 +121,7 @@ const Page = () => {
       (mark) => mark.marks > testpaperData.testpaper.totalMarks
     );
 
-    console.log("INVALID", invalidMarks);
+    // console.log("INVALID", invalidMarks);
 
     if (invalidMarks) {
       toast.error("Marks cannot be greater than total marks!", { id: toastId });
@@ -169,7 +169,7 @@ const Page = () => {
     );
   }
 
-  console.log("TESTPAPER MARKS", testpaperMarks);
+  // console.log("TESTPAPER MARKS", testpaperMarks);
 
   return (
     <Container>

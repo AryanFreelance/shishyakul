@@ -35,7 +35,11 @@ const page = () => {
   const [loading, setLoading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
   const today = new Date();
-  const todayDate = `${today.getFullYear()}-${(today.getMonth() + 1) < 10 ? "0" + (today.getMonth() + 1) : today.getMonth() + 1}-${today.getDate() < 10 ? "0" + today.getDate() : today.getDate()}`;
+  const todayDate = `${today.getFullYear()}-${
+    today.getMonth() + 1 < 10
+      ? "0" + (today.getMonth() + 1)
+      : today.getMonth() + 1
+  }-${today.getDate() < 10 ? "0" + today.getDate() : today.getDate()}`;
 
   const maxSize = 20971520;
 
@@ -50,7 +54,7 @@ const page = () => {
   });
 
   useEffect(() => {
-    console.log(isFormLoading);
+    // console.log(isFormLoading);
   }, [isFormLoading]);
 
   const onDrop = (acceptedFiles) => {
@@ -78,7 +82,7 @@ const page = () => {
       return;
     }
     try {
-      console.log(selectedFile);
+      // console.log(selectedFile);
       setFormData({ ...formData, question_paper: selectedFile });
       setUploaded(true);
       toast.success("File Uploaded Successfully!", {
@@ -114,19 +118,22 @@ const page = () => {
       setIsFormLoading(false);
     } else {
       const today = new Date();
-      let fileid = `${today.getFullYear()}${today.getHours() < 10 ? "0" + today.getHours() : today.getHours()
-        }${today.getMinutes() < 10 ? "0" + today.getMinutes() : today.getMinutes()
-        }${today.getSeconds() < 10 ? "0" + today.getSeconds() : today.getSeconds()
-        }`;
-      console.log(fileid);
+      let fileid = `${today.getFullYear()}${
+        today.getHours() < 10 ? "0" + today.getHours() : today.getHours()
+      }${
+        today.getMinutes() < 10 ? "0" + today.getMinutes() : today.getMinutes()
+      }${
+        today.getSeconds() < 10 ? "0" + today.getSeconds() : today.getSeconds()
+      }`;
+      // console.log(fileid);
       const storageRef = ref(storage, `test_papers/${fileid}`);
 
       // Upload the file
       await uploadBytes(storageRef, formData.question_paper)
         .then(async (snapshot) => {
           const downloadUrl = await getDownloadURL(storageRef);
-          console.log("SNAPSHOT", snapshot);
-          console.log("DOWNLOAD", downloadUrl);
+          // console.log("SNAPSHOT", snapshot);
+          // console.log("DOWNLOAD", downloadUrl);
 
           await createTest({
             variables: {
@@ -151,8 +158,8 @@ const page = () => {
         });
       router.push("/dashboard/tests");
 
-      console.log(formData.question_paper);
-      console.log(formData);
+      // console.log(formData.question_paper);
+      // console.log(formData);
     }
   };
 

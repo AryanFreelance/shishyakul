@@ -97,13 +97,13 @@ const DashboardPage = () => {
     refetchQueries: [{ query: GET_TEMP_STUDENTS }],
   });
 
-  if (tempStudents) console.log("tempStudents", tempStudents);
-  if (students) console.log("STUDENTS", students);
-  if (tempStudentsLoading) console.log("tempStudents LOADING...");
-  if (studentsLoading) console.log("STUDENTS LOADING...");
-  if (tempStudentsError)
-    console.log(`tempStudents ERROR! ${tempStudentsError}`);
-  if (studentsError) console.log(`STUDENTS ERROR! ${studentsError}`);
+  // if (tempStudents) // console.log("tempStudents", tempStudents);
+  // if (students) // console.log("STUDENTS", students);
+  // if (tempStudentsLoading) // console.log("tempStudents LOADING...");
+  // if (studentsLoading) // console.log("STUDENTS LOADING...");
+  // if (tempStudentsError)
+  //   // console.log(`tempStudents ERROR! ${tempStudentsError}`);
+  // if (studentsError) // console.log(`STUDENTS ERROR! ${studentsError}`);
 
   const deleteStudentHandler = async (userId) => {
     const toastId = toast.loading("Deleting Student...");
@@ -125,7 +125,7 @@ const DashboardPage = () => {
         },
       });
 
-      console.log("DELETEUSERRESPONSE", deleteuserResponse);
+      // console.log("DELETEUSERRESPONSE", deleteuserResponse);
 
       if (deleteuserResponse.status !== 200) {
         toast.error("Failed to delete student from database!", {
@@ -170,8 +170,8 @@ const DashboardPage = () => {
       });
       return;
     }
-    console.log("MAINRESPONSE", response);
-    console.log("RESPONSE", response.initializeStudent);
+    // console.log("MAINRESPONSE", response);
+    // console.log("RESPONSE", response.initializeStudent);
 
     const domain = window.location.origin;
 
@@ -188,7 +188,7 @@ const DashboardPage = () => {
     });
 
     if (inviteResp.status !== 200) {
-      console.log("Failed to send invite. Please try again.");
+      // console.log("Failed to send invite. Please try again.");
       toast.error("Failed to send invite. Please try again.", {
         id: toastId,
       });
@@ -256,7 +256,7 @@ const DashboardPage = () => {
     }
   }, [students, searchParameters]);
 
-  console.log("FILTERED STUDENTS", filteredStudents);
+  // console.log("FILTERED STUDENTS", filteredStudents);
 
   return (
     <Container>

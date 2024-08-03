@@ -61,7 +61,7 @@ const Page = () => {
       await sendPasswordResetEmail(auth, resetEmail);
       toast.success("Password reset email sent successfully", { id: toastId });
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       const errorMessage =
         error.code === "auth/user-not-found"
           ? "User not found. Please try again."
@@ -88,10 +88,10 @@ const Page = () => {
           // router.push(`/student/${uid}`);
         }
         toast.success("User logged in successfully");
-        console.log("RES", res, email, uid);
+        // console.log("RES", res, email, uid);
       });
     } catch (error) {
-      console.log(error.code, error.message);
+      // console.log(error.code, error.message);
       const errorMessage =
         error.code === "auth/invalid-credential"
           ? "Invalid credentials. Please try again."

@@ -35,7 +35,7 @@ const Navbar = ({ navLinks, isHome }) => {
         router.push("/login");
       })
       .catch((error) => {
-        console.log(error);
+        // console.log(error);
       });
   };
 
@@ -107,21 +107,19 @@ const Navbar = ({ navLinks, isHome }) => {
                         <span>{link.title}</span>
                       </Button>
                     ))}
-                  {
-                    isHome && (
-                      <Button
-                        variant="nav"
-                        asChild
-                        onClick={(e) => {
-                          e.preventDefault()
-                          router.push("/login")
-                        }}
-                        className="md:hidden"
-                      >
-                        <span>Login</span>
-                      </Button>
-                    )
-                  }
+                  {isHome && (
+                    <Button
+                      variant="nav"
+                      asChild
+                      onClick={(e) => {
+                        e.preventDefault();
+                        router.push("/login");
+                      }}
+                      className="md:hidden"
+                    >
+                      <span>Login</span>
+                    </Button>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
@@ -140,8 +138,8 @@ const Navbar = ({ navLinks, isHome }) => {
               className="text-[16px] filled-button hidden md:block"
               variant="navBtn"
               onClick={(e) => {
-                e.preventDefault()
-                router.push("/login")
+                e.preventDefault();
+                router.push("/login");
               }}
             >
               Login

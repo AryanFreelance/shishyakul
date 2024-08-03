@@ -148,7 +148,7 @@ function Page() {
         router.push("/login");
       })
       .catch((err) => {
-        console.log("ERROR REGISTERING STUDENT", err);
+        // console.log("ERROR REGISTERING STUDENT", err);
         toast.error("Error registering student. Please try again.", {
           id: registeringToast,
         });

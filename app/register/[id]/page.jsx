@@ -120,7 +120,7 @@ function Page() {
 
     if (
       batch.length !== 4 &&
-      (batch < 2008 || batch > new Date.getFullYear())
+      (batch < 2008 || batch > new Date().getFullYear())
     ) {
       toast.error("Enter Valid Academic Year", {
         id: registeringToast,

@@ -25,7 +25,7 @@ const page = () => {
   // Queries
   const { data } = useSuspenseQuery(GET_TESTPAPERS);
 
-  if (data) // console.log(data);
+  //if (data) // console.log(data);
   // Check if the minumum date is less than less than today's date in the data
   const today = new Date();
   const todayDate = `${

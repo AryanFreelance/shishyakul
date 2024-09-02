@@ -285,6 +285,14 @@ const Page = () => {
                     >
                       Absent
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setAbsent([]);
+                        setPresent([]);
+                      }}
+                    >
+                      Clear
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}

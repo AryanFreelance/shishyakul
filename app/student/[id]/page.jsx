@@ -130,9 +130,6 @@ const page = () => {
       </div>
     );
 
-  // console.log(studData);
-  // console.log("TEST", testPaperUsers?.testpaperUsers);
-
   // Mutations - Create Fee, Delete Fee
   const [createFee] = useMutation(CREATE_FEE, {
     refetchQueries: [
@@ -367,7 +364,8 @@ const page = () => {
   const deleteFeeHandler = async (e, feeid) => {
     e.preventDefault();
 
-    // console.log("Fee Deleted");
+    // console.log("Fee Deleting");
+    // console.log("FEEID", feeid, id);
 
     const toastId = toast.loading("Deleting Fee...");
 
@@ -640,7 +638,7 @@ const page = () => {
                             <>
                               <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="year" className="text-right">
-                                  UPI ID
+                                  Transaction ID
                                 </Label>
                                 <Input
                                   id="upiId"

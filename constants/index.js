@@ -27,7 +27,7 @@ export const navLinks = [
 
 export const dashboardNavLinks = [
   {
-    title: "Manage Students",
+    title: "Manage Shishya",
     href: "/dashboard",
   },
   {

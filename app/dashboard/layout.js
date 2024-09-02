@@ -4,6 +4,7 @@ import { auth } from "@/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
+import DevelopmentMode from "@/components/shared/DevelopmentMode";
 
 const Layout = ({ children }) => {
   const [authStatus, setAuthStatus] = useState(null);
@@ -42,6 +43,11 @@ const Layout = ({ children }) => {
         Redirecting...
       </div>
     );
+  }
+
+  // Development Mode Page
+  if (authStatus) {
+    return <DevelopmentMode />;
   }
 
   return <div>{children}</div>;

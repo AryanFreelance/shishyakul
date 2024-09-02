@@ -8,7 +8,6 @@ import { Eye, Plus, SearchIcon, Trash } from "lucide-react";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -17,7 +16,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -59,32 +57,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// import { unique } from "next/dist/build/utils";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const DashboardPage = () => {
   const [studEmail, setStudEmail] = useState("");
   const [openAddStudentDialog, setOpenAddStudentDialog] = useState(false);
   const [grades, setGrades] = useState(new Set());
-  const [selectedGrades, setSelectedGrades] = useState();
   const [batch, setBatch] = useState(new Set());
   const [filteredStudents, setFilteredStudents] = useState([]);
+  // const [searchParameters, setSearchParameters] = useState({
+  //   studentName: "",
+  //   grade: "",
+  //   batch: "",
+  // });
   const [searchParameters, setSearchParameters] = useState({
-    studentName: "",
-    grade: "",
-    batch: "",
+    studentName: localStorage.getItem("studentName") || "",
+    grade: localStorage.getItem("grade") || "select-grade",
+    batch: localStorage.getItem("batch") || "select-batch",
   });
 
   // Queries - GET_TEMP_STUDENTS, DASHBOARD_GET_STUDENT
-  const {
-    data: tempStudents,
-    loading: tempStudentsLoading,
-    error: tempStudentsError,
-  } = useSuspenseQuery(GET_TEMP_STUDENTS);
-  const {
-    data: students,
-    loading: studentsLoading,
-    error: studentsError,
-  } = useSuspenseQuery(DASHBOARD_GET_STUDENT);
+  const { data: tempStudents } = useSuspenseQuery(GET_TEMP_STUDENTS);
+  const { data: students } = useSuspenseQuery(DASHBOARD_GET_STUDENT);
 
   // Mutations - INITIALIZE_STUDENT, DELETE_STUDENT, DELETE_TEMP_STUDENT
   const [initializeStudent] = useMutation(INITIALIZE_STUDENT, {
@@ -96,14 +90,6 @@ const DashboardPage = () => {
   const [deleteTempStudent] = useMutation(DELETE_TEMP_STUDENT, {
     refetchQueries: [{ query: GET_TEMP_STUDENTS }],
   });
-
-  // if (tempStudents) // console.log("tempStudents", tempStudents);
-  // if (students) // console.log("STUDENTS", students);
-  // if (tempStudentsLoading) // console.log("tempStudents LOADING...");
-  // if (studentsLoading) // console.log("STUDENTS LOADING...");
-  // if (tempStudentsError)
-  //   // console.log(`tempStudents ERROR! ${tempStudentsError}`);
-  // if (studentsError) // console.log(`STUDENTS ERROR! ${studentsError}`);
 
   const deleteStudentHandler = async (userId) => {
     const toastId = toast.loading("Deleting Student...");
@@ -170,8 +156,6 @@ const DashboardPage = () => {
       });
       return;
     }
-    // console.log("MAINRESPONSE", response);
-    // console.log("RESPONSE", response.initializeStudent);
 
     const domain = window.location.origin;
 
@@ -188,7 +172,6 @@ const DashboardPage = () => {
     });
 
     if (inviteResp.status !== 200) {
-      // console.log("Failed to send invite. Please try again.");
       toast.error("Failed to send invite. Please try again.", {
         id: toastId,
       });
@@ -227,11 +210,18 @@ const DashboardPage = () => {
     }
   }, [students]);
 
+  // Update the localStorage whenever the search parameters change
+  useEffect(() => {
+    localStorage.setItem("studentName", searchParameters.studentName);
+    localStorage.setItem("grade", searchParameters.grade);
+    localStorage.setItem("batch", searchParameters.batch);
+  }, [searchParameters]);
+
   // Update filtered students based on search parameters
   useEffect(() => {
     if (students) {
       let filtered = students?.students;
-
+      // if (search!== "") {
       if (searchParameters.studentName) {
         filtered = filtered.filter((student) =>
           `${student.firstname} ${student.lastname}`
@@ -256,14 +246,22 @@ const DashboardPage = () => {
     }
   }, [students, searchParameters]);
 
-  // console.log("FILTERED STUDENTS", filteredStudents);
+  // const updateQueryParams = (param, value) => {
+  //   const newSearchParams = new URLSearchParams(searchParams.toString());
+  //   if (value === "") {
+  //     newSearchParams.delete(param);
+  //   } else {
+  //     newSearchParams.set(param, value);
+  //   }
+  //   router.push(`?${newSearchParams.toString()}`);
+  // };
 
   return (
     <Container>
       <Navbar navLinks={dashboardNavLinks} isHome={false} />
       <div className="pb-10">
         <div className="flex justify-between items-center">
-          <h2 className="subheading">Manage Students</h2>
+          <h2 className="subheading">Manage Shishya</h2>
           <Dialog
             open={openAddStudentDialog}
             onOpenChange={setOpenAddStudentDialog}
@@ -331,6 +329,7 @@ const DashboardPage = () => {
                 onValueChange={(value) =>
                   setSearchParameters({ ...searchParameters, batch: value })
                 }
+                value={searchParameters.batch}
                 defaultValue="select-batch"
               >
                 <SelectTrigger className="px-4 text-secondary barlow-regular rounded-full border-main md:rounded-none md:border-t-main md:border-b-main border-2 md:border-r-slate-600 md:border-l-slate-600 outline-none focus:border-none focus-outline-none bg-transparent w-full py-6">
@@ -352,6 +351,7 @@ const DashboardPage = () => {
                 onValueChange={(value) =>
                   setSearchParameters({ ...searchParameters, grade: value })
                 }
+                value={searchParameters.grade}
                 defaultValue="select-grade"
               >
                 <SelectTrigger className="px-4 text-secondary barlow-regular rounded-full md:rounded-none md:rounded-r-full border-main border-2 md:border-l-slate-600 outline-none focus:border-none focus-outline-none bg-transparent w-full py-6">

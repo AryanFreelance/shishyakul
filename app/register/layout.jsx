@@ -1,6 +1,7 @@
 "use client";
 
 import Container from "@/components/shared/Container";
+import DevelopmentMode from "@/components/shared/DevelopmentMode";
 import { auth } from "@/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -53,6 +54,10 @@ const layout = ({ children }) => {
         Redirecting...
       </div>
     );
+  }
+
+  if (!authStatus) {
+    return <DevelopmentMode />;
   }
 
   return <Container>{children}</Container>;

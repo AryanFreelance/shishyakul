@@ -25,6 +25,7 @@ import {
 import { auth } from "@/firebase";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import DevelopmentMode from "@/components/shared/DevelopmentMode";
 
 const Page = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -118,6 +119,10 @@ const Page = () => {
         Redirecting...
       </div>
     );
+  }
+
+  if (!authStatus) {
+    return <DevelopmentMode />;
   }
 
   return (

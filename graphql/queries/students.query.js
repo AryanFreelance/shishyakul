@@ -1,5 +1,12 @@
 import { gql } from "@apollo/client";
 
+// Get Academic Years
+export const GET_ACADEMIC_YEARS = gql`
+  query GetAcademicYears {
+    academicYears
+  }
+`;
+
 // Get Temp Students
 export const GET_TEMP_STUDENTS = gql`
   query TempStudents {
@@ -12,15 +19,15 @@ export const GET_TEMP_STUDENTS = gql`
 
 // Get Students for Dashboard
 export const DASHBOARD_GET_STUDENT = gql`
-  query Students {
-    students {
+  query Students($ay: String!, $grade: String) {
+    students(ay: $ay, grade: $grade) {
       userId
-      sId
       email
       firstname
       middlename
       lastname
       phone
+      ay
       grade
       batch
       attendance {
@@ -31,16 +38,31 @@ export const DASHBOARD_GET_STUDENT = gql`
   }
 `;
 
+// Get Student Information
+export const GET_STUDENT_INFO = gql`
+  query StudentInfo($userId: ID!) {
+    studentInfo(userId: $userId) {
+      userId
+      firstname
+      lastname
+      email
+      ay
+      grade
+    }
+  }
+`;
+
 // Get Student Details
 export const GET_STUDENT_DETAILS = gql`
-  query Student($userId: ID!) {
-    student(userId: $userId) {
+  query Student($ay: String!, $grade: String!, $userId: ID!) {
+    student(ay: $ay, grade: $grade, userId: $userId) {
       userId
       email
       firstname
       middlename
       lastname
       phone
+      ay
       grade
       batch
       attendance {
@@ -68,13 +90,14 @@ export const GET_STUDENT_DETAILS = gql`
 
 // Get Student Profile Information
 export const GET_STUDENT_PROFILE = gql`
-  query Student($userId: ID!) {
-    student(userId: $userId) {
+  query Student($ay: String!, $grade: String!, $userId: ID!) {
+    student(ay: $ay, grade: $grade, userId: $userId) {
       email
       firstname
       middlename
       lastname
       phone
+      ay
       grade
       batch
       guardianInformation {

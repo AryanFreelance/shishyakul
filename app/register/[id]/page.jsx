@@ -13,6 +13,13 @@ import { VERIFY_CODE } from "@/graphql/mutations/verifications.mutation";
 export const dynamic = "force-dynamic";
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 import { CREATE_STUDENT } from "@/graphql/mutations/students.mutation";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function Page() {
   const { id } = useParams();
@@ -24,7 +31,7 @@ function Page() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [batch, setBatch] = useState("");
+  const [ay, setAy] = useState("");
 
   const { data, loading, error } = useSuspenseQuery(VERIFY_CODE, {
     variables: { verificationCode: id },
@@ -95,7 +102,7 @@ function Page() {
       !email ||
       !phone ||
       !password ||
-      !batch ||
+      !ay ||
       firstname === "" ||
       middlename === "" ||
       lastname === "" ||
@@ -103,7 +110,7 @@ function Page() {
       email === "" ||
       phone === "" ||
       password === "" ||
-      batch === ""
+      ay === ""
     ) {
       toast.error("Please fill all the fields", {
         id: registeringToast,
@@ -118,10 +125,38 @@ function Page() {
       return;
     }
 
-    if (
-      batch.length !== 4 &&
-      (batch < 2008 || batch > new Date().getFullYear())
-    ) {
+    // TODO: Validate the AY
+
+    // Check if the AY is valid using following testcases:
+    // 1. AY should be 9 digit long including the hyphen (-) i.e. 2024-2025
+    // 2. AY should be between 2008 and current year + 1
+    // 3. AY should be in the format 2024-2025
+    // 4. The first year in AY i.e. 2024 should be less than the second year in AY i.e. 2025
+
+    const aySplit = ay.split("-");
+    if (aySplit.length !== 2) {
+      toast.error("Enter Valid Academic Year", {
+        id: registeringToast,
+      });
+      return;
+    }
+    const ayStart = parseInt(aySplit[0]);
+    const ayEnd = parseInt(aySplit[1]);
+    if (ayStart < 2008 || ayEnd > new Date().getFullYear() + 1) {
+      toast.error("Enter Valid Academic Year", {
+        id: registeringToast,
+      });
+      return;
+    }
+
+    if (ayStart > ayEnd) {
+      toast.error("Enter Valid Academic Year", {
+        id: registeringToast,
+      });
+      return;
+    }
+
+    if (ayStart + 1 !== ayEnd) {
       toast.error("Enter Valid Academic Year", {
         id: registeringToast,
       });
@@ -136,8 +171,8 @@ function Page() {
         email,
         password,
         phone,
+        ay,
         grade,
-        batch,
         verificationCode: id,
       },
     })
@@ -214,7 +249,7 @@ function Page() {
                 <label htmlFor="grade" className="input-label text-secondary">
                   Grade
                 </label>
-                <input
+                {/* <input
                   type="number"
                   min={6}
                   max={12}
@@ -223,22 +258,42 @@ function Page() {
                   placeholder="Enter your grade..."
                   value={grade}
                   onChange={(e) => setGrade(e.target.value)}
-                />
+                /> */}
+
+                <Select onValueChange={(value) => setGrade(value)}>
+                  <SelectTrigger className="input-taking w-full py-6 border-2 border-secondary">
+                    <SelectValue
+                      placeholder="Select your grade"
+                      value={grade}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="8">8</SelectItem>
+                    <SelectItem value="9">9</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="11">11</SelectItem>
+                    <SelectItem value="12">12</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex flex-col w-full mb-4">
                 <label
                   htmlFor="academic-year"
                   className="input-label text-secondary"
                 >
-                  Academic Year
+                  Academic Year (
+                  {`${new Date().getFullYear()}-${
+                    new Date().getFullYear() + 1
+                  }`}
+                  )
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   id="academic-year"
                   className="input-taking"
-                  placeholder="Enter your a.y. (Year)..."
-                  value={batch}
-                  onChange={(e) => setBatch(e.target.value)}
+                  placeholder="From Year - To Year..."
+                  value={ay}
+                  onChange={(e) => setAy(e.target.value)}
                 />
               </div>
               <div className="flex flex-col w-full mb-4">

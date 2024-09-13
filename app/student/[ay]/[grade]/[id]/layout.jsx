@@ -41,9 +41,9 @@ const layout = ({ children }) => {
     );
   }
 
-  if (authStatus) {
-    return <DevelopmentMode />;
-  }
+  // if (authStatus) {
+  //   return <DevelopmentMode />;
+  // }
 
   return <div>{children}</div>;
 };

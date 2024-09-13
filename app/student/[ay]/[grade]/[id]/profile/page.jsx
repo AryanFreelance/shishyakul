@@ -35,7 +35,7 @@ export const dynamic = "force-dynamic";
 
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 import { GET_STUDENT_PROFILE } from "@/graphql/queries/students.query";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { UPDATE_STUDENT } from "@/graphql/mutations/students.mutation";
 import toast from "react-hot-toast";
@@ -81,12 +81,14 @@ const page = () => {
   const [phone, setPhone] = useState("");
   const [grade, setGrade] = useState("");
   const [batch, setBatch] = useState("");
+  const [ay, setAy] = useState("");
 
-  const { id } = useParams();
+  const { ay: pAy, grade: pGrade, id } = useParams();
+  const router = useRouter();
 
   // Query - Get Student Profile Information
   const { data, loading, error } = useSuspenseQuery(GET_STUDENT_PROFILE, {
-    variables: { userId: id },
+    variables: { ay: pAy, grade: pGrade, userId: id },
   });
 
   // Mutations - Update Student Details
@@ -94,17 +96,16 @@ const page = () => {
     refetchQueries: [{ query: GET_STUDENT_PROFILE, variables: { userId: id } }],
   });
 
-  // console.log(data, loading, error);
-
   if (loading) return <div>Loading...</div>;
 
   if (error) {
-    // console.log(error);
     return <div>Error...</div>;
   }
 
+  console.log("DATA", data);
+
   useEffect(() => {
-    if (data?.student.studentInformation != null) {
+    if (data?.student?.studentInformation != null) {
       setStudentInformation({
         dob: data?.student.studentInformation.dob,
         age: data?.student.studentInformation.age,
@@ -116,7 +117,7 @@ const page = () => {
         medium: data?.student.studentInformation.medium,
       });
     }
-    if (data?.student.guardianInformation != null) {
+    if (data?.student?.guardianInformation != null) {
       setGuardianInformation({
         motherFirstName: data?.student.guardianInformation.motherFirstName,
         motherMiddleName: data?.student.guardianInformation.motherMiddleName,
@@ -138,7 +139,7 @@ const page = () => {
           data?.student.guardianInformation.fatherContactNumber,
       });
     }
-    if (data?.student.siblingInformation != null) {
+    if (data?.student?.siblingInformation != null) {
       let arr = [];
       data?.student.siblingInformation.map((sibling) => {
         arr.push({
@@ -151,20 +152,42 @@ const page = () => {
       setSiblingInformation(arr);
     }
 
-    if (data?.student.firstname != null) setFirstName(data?.student.firstname);
-    if (data?.student.middlename != null)
+    if (data?.student?.firstname != null) setFirstName(data?.student.firstname);
+    if (data?.student?.middlename != null)
       setMiddleName(data?.student.middlename);
-    if (data?.student.lastname != null) setLastName(data?.student.lastname);
-    if (data?.student.phone != null) setPhone(data?.student.phone);
-    if (data?.student.grade != null) setGrade(data?.student.grade);
-    if (data?.student.batch != null) setBatch(data?.student.batch);
+    if (data?.student?.lastname != null) setLastName(data?.student.lastname);
+    if (data?.student?.phone != null) setPhone(data?.student.phone);
+    if (data?.student?.grade != null) setGrade(data?.student.grade);
+    if (data?.student?.batch != null) setBatch(data?.student.batch);
+    if (data?.student?.ay != null) setAy(data?.student.ay);
   }, []);
 
   const updateInformationHandler = async (e) => {
     e.preventDefault();
     const toastId = toast.loading("Updating Information...");
 
-    if (batch < 2006 || batch > new Date().getFullYear()) {
+    if (
+      firstName == "" ||
+      middleName == "" ||
+      lastName == "" ||
+      phone == "" ||
+      grade == "" ||
+      ay == ""
+    ) {
+      toast.error("Please Fill All Required Fields!", {
+        id: toastId,
+      });
+      return;
+    }
+
+    let aySplit = ay.split("-");
+    if (
+      aySplit.length !== 2 ||
+      aySplit[0].length !== 4 ||
+      aySplit[1].length !== 4 ||
+      Number(aySplit[0]) > Number(aySplit[1]) ||
+      Number(aySplit[0]) + 1 !== Number(aySplit[1])
+    ) {
       toast.error("Enter Correct Academic Year!", {
         id: toastId,
       });
@@ -172,20 +195,31 @@ const page = () => {
     }
 
     // Update Student Details
-    await updateStudent({
+    const updateResp = await updateStudent({
       variables: {
         userId: id,
         firstname: firstName,
         middlename: middleName,
         lastname: lastName,
         phone: phone,
-        grade: grade,
+        ay: pAy,
+        newAy: pAy === ay ? null : ay,
+        grade: pGrade,
+        newGrade: pGrade === grade ? null : grade,
         batch: batch,
         studentInformation: studentInformation,
         guardianInformation: guardianInformation,
         siblingInformation: siblingInformation,
       },
     });
+
+    console.log("UPDATERESP", updateResp);
+
+    console.log("AY", ay, pAy, grade, pGrade);
+
+    if (pAy !== ay || pGrade !== grade) {
+      router.push(`/student/${ay}/${grade}/${id}`);
+    }
 
     toast.success("Information Updated Successfully!", {
       id: toastId,
@@ -231,7 +265,7 @@ const page = () => {
 
   return (
     <Container>
-      <Link href={`/student/${id}`}>
+      <Link href={`/student/${ay}/${grade}/${id}`}>
         <div className="py-10 text-[20px] barlow-semibold flex items-center gap-2">
           <ArrowLeft /> Go Back
         </div>
@@ -367,15 +401,15 @@ const page = () => {
                     htmlFor="batch"
                     className="text-xl text-secondary barlow-medium mb-2"
                   >
-                    Academic Year
+                    Batch
                   </Label>
                   <input
                     type="number"
-                    min={2006}
-                    max={new Date().getFullYear()}
                     id="batch"
+                    min={1}
+                    max={10}
                     className="input-taking w-full disabled:bg-black/10"
-                    placeholder="Update A.Y..."
+                    placeholder="Update Batch..."
                     value={batch}
                     onChange={(e) => setBatch(e.target.value)}
                   />
@@ -462,6 +496,22 @@ const page = () => {
                         school: e.target.value,
                       })
                     }
+                  />
+                </div>
+                <div className="flex flex-col w-full">
+                  <Label
+                    htmlFor="ay"
+                    className="text-xl text-secondary barlow-medium mb-2"
+                  >
+                    Academic Year
+                  </Label>
+                  <input
+                    type="text"
+                    id="ay"
+                    className="input-taking w-full disabled:bg-black/10"
+                    placeholder="Update A.Y..."
+                    value={ay}
+                    onChange={(e) => setAy(e.target.value)}
                   />
                 </div>
               </div>

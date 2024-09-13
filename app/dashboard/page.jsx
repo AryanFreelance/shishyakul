@@ -38,7 +38,7 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
-import { useMutation } from "@apollo/client";
+import { useLazyQuery, useMutation } from "@apollo/client";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
@@ -48,6 +48,7 @@ import {
 } from "@/graphql/mutations/students.mutation";
 import {
   DASHBOARD_GET_STUDENT,
+  GET_ACADEMIC_YEARS,
   GET_TEMP_STUDENTS,
 } from "@/graphql/queries/students.query";
 import {
@@ -62,23 +63,34 @@ import { useRouter, useSearchParams } from "next/navigation";
 const DashboardPage = () => {
   const [studEmail, setStudEmail] = useState("");
   const [openAddStudentDialog, setOpenAddStudentDialog] = useState(false);
-  const [grades, setGrades] = useState(new Set());
+  const [grades, setGrades] = useState(["8", "9", "10", "11", "12"]);
   const [batch, setBatch] = useState(new Set());
-  const [filteredStudents, setFilteredStudents] = useState([]);
-  // const [searchParameters, setSearchParameters] = useState({
-  //   studentName: "",
-  //   grade: "",
-  //   batch: "",
-  // });
+  const [selectedBatch, setSelectedBatch] = useState("select-batch");
+  const [students, setStudents] = useState([]);
+  const [studentName, setStudentName] = useState("");
   const [searchParameters, setSearchParameters] = useState({
-    studentName: localStorage.getItem("studentName") || "",
     grade: localStorage.getItem("grade") || "select-grade",
-    batch: localStorage.getItem("batch") || "select-batch",
+    ay: localStorage.getItem("ay") || "select-ay",
   });
 
-  // Queries - GET_TEMP_STUDENTS, DASHBOARD_GET_STUDENT
+  // Queries - GET_ACADEMIC_YEARS, GET_TEMP_STUDENTS, DASHBOARD_GET_STUDENT
+  const { data: ay } = useSuspenseQuery(GET_ACADEMIC_YEARS);
+
   const { data: tempStudents } = useSuspenseQuery(GET_TEMP_STUDENTS);
-  const { data: students } = useSuspenseQuery(DASHBOARD_GET_STUDENT);
+
+  const [fetchStudents, { data: dStudents }] = useLazyQuery(
+    DASHBOARD_GET_STUDENT,
+    {
+      fetchPolicy: "network-only",
+      variables: { ay: searchParameters.ay, grade: searchParameters.grade },
+      onCompleted: (data) => {
+        setStudents(data.students || []);
+        console.log("DATA", data);
+      },
+    }
+  );
+
+  console.log("DSTUDENTS", dStudents);
 
   // Mutations - INITIALIZE_STUDENT, DELETE_STUDENT, DELETE_TEMP_STUDENT
   const [initializeStudent] = useMutation(INITIALIZE_STUDENT, {
@@ -196,65 +208,69 @@ const DashboardPage = () => {
     });
   };
 
-  // Extract unique grades and batches from students data
+  // Update the localStorage whenever the search parameters change
   useEffect(() => {
-    if (students) {
-      const uniqueGrades = new Set(
-        students?.students.map((student) => student.grade)
+    localStorage.setItem("grade", searchParameters.grade);
+    localStorage.setItem("ay", searchParameters.ay);
+  }, [searchParameters]);
+
+  useEffect(() => {
+    if (searchParameters.ay && searchParameters.ay !== "select-ay")
+      fetchStudents({
+        fetchPolicy: "network-only",
+        variables: {
+          ay: searchParameters.ay,
+          grade:
+            searchParameters.grade === "select-grade"
+              ? null
+              : searchParameters.grade,
+        },
+        onCompleted: (data) => {
+          setStudents(data.students || []);
+          console.log("DATA", data);
+        },
+      });
+    if (searchParameters.ay === "select-ay") setStudents([]);
+  }, [searchParameters]);
+
+  useEffect(() => {
+    if (students?.length > 0) {
+      const uniqueBatch = Array.from(
+        new Set(students.map((student) => student.batch).filter(Boolean))
       );
-      const uniqueBatches = new Set(
-        students?.students.map((student) => student.batch)
-      );
-      setGrades(uniqueGrades);
-      setBatch(uniqueBatches);
+      setBatch(uniqueBatch);
+      console.log("UNIQUE BATCH", uniqueBatch);
+    } else {
+      setBatch([]);
     }
   }, [students]);
 
-  // Update the localStorage whenever the search parameters change
   useEffect(() => {
-    localStorage.setItem("studentName", searchParameters.studentName);
-    localStorage.setItem("grade", searchParameters.grade);
-    localStorage.setItem("batch", searchParameters.batch);
-  }, [searchParameters]);
-
-  // Update filtered students based on search parameters
-  useEffect(() => {
-    if (students) {
-      let filtered = students?.students;
-      // if (search!== "") {
-      if (searchParameters.studentName) {
-        filtered = filtered.filter((student) =>
-          `${student.firstname} ${student.lastname}`
-            .toLowerCase()
-            .includes(searchParameters.studentName.toLowerCase())
-        );
-      }
-
-      if (searchParameters.grade && searchParameters.grade !== "select-grade") {
-        filtered = filtered.filter(
-          (student) => student.grade === searchParameters.grade
-        );
-      }
-
-      if (searchParameters.batch && searchParameters.batch !== "select-batch") {
-        filtered = filtered.filter(
-          (student) => student.batch === searchParameters.batch
-        );
-      }
-
-      setFilteredStudents(filtered);
+    if (
+      selectedBatch &&
+      students?.length > 0 &&
+      selectedBatch !== "select-batch"
+    ) {
+      const selectedBatchStudents = students.filter(
+        (student) => student.batch === selectedBatch
+      );
+      setStudents(selectedBatchStudents);
     }
-  }, [students, searchParameters]);
+    if (selectedBatch === "select-batch" || !selectedBatch)
+      setStudents(dStudents?.students);
+  }, [selectedBatch]);
 
-  // const updateQueryParams = (param, value) => {
-  //   const newSearchParams = new URLSearchParams(searchParams.toString());
-  //   if (value === "") {
-  //     newSearchParams.delete(param);
-  //   } else {
-  //     newSearchParams.set(param, value);
-  //   }
-  //   router.push(`?${newSearchParams.toString()}`);
-  // };
+  useEffect(() => {
+    if (studentName.length > 0) {
+      let filteredStudents = students.filter((student) =>
+        `${student.firstname} ${student.lastname}`
+          .toLowerCase()
+          .includes(studentName.toLowerCase())
+      );
+      setStudents(filteredStudents);
+    }
+    if (studentName.length === 0) setStudents(dStudents?.students);
+  }, [studentName]);
 
   return (
     <Container>
@@ -262,6 +278,7 @@ const DashboardPage = () => {
       <div className="pb-10">
         <div className="flex justify-between items-center">
           <h2 className="subheading">Manage Shishya</h2>
+          {/* Add Student Dialog Box */}
           <Dialog
             open={openAddStudentDialog}
             onOpenChange={setOpenAddStudentDialog}
@@ -302,51 +319,31 @@ const DashboardPage = () => {
           </Dialog>
         </div>
         <div className="mt-8">
-          <div className="flex justify-between items-center flex-wrap w-full gap-2 mb-6">
-            {/* Searchbar */}
-            <div className=" w-full md:w-[58%]">
-              <form className="flex items-center gap-2 border-2 rounded-full md:rounded-r-none px-4 py-2 border-main md:border-r-slate-600">
-                <button type="submit" className="border-none outline-none">
-                  <SearchIcon />
-                </button>
-                <input
-                  type="text"
-                  placeholder="Enter Student Name..."
-                  className="w-full py-1 bg-transparent outline-none border-none text-secondary"
-                  value={searchParameters.studentName}
-                  onChange={(e) =>
-                    setSearchParameters({
-                      ...searchParameters,
-                      studentName: e.target.value,
-                    })
-                  }
-                />
-              </form>
-            </div>
-            {/* Batch Dropdown */}
-            <div className="w-[48%] md:w-[20%]">
+          <div className="flex justify-between items-center flex-wrap w-[40%] gap-2 mb-6">
+            {/* Academic Year Dropdown */}
+            <div className="w-[48%]">
               <Select
-                onValueChange={(value) =>
-                  setSearchParameters({ ...searchParameters, batch: value })
-                }
-                value={searchParameters.batch}
-                defaultValue="select-batch"
+                onValueChange={(value) => {
+                  setSearchParameters({ ...searchParameters, ay: value });
+                }}
+                value={searchParameters.ay}
+                defaultValue="select-ay"
               >
-                <SelectTrigger className="px-4 text-secondary barlow-regular rounded-full border-main md:rounded-none md:border-t-main md:border-b-main border-2 md:border-r-slate-600 md:border-l-slate-600 outline-none focus:border-none focus-outline-none bg-transparent w-full py-6">
+                <SelectTrigger className="px-4 text-secondary barlow-regular rounded-full border-2 md:rounded-r-none border-main md:border-r-slate-600 outline-none focus:border-none focus-outline-none bg-transparent w-full py-6">
                   <SelectValue placeholder="Academic Year" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="select-batch">Select A.Y.</SelectItem>
-                  {Array.from(batch).map((bch, index) => (
-                    <SelectItem key={index} value={bch || index}>
-                      {bch}
+                  <SelectItem value="select-ay">Select A.Y.</SelectItem>
+                  {Array.from(ay.academicYears).map((acay, index) => (
+                    <SelectItem key={index} value={acay}>
+                      {acay}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             {/* Standard Dropdown */}
-            <div className="w-[48%] md:w-[20%]">
+            <div className="w-[48%]">
               <Select
                 onValueChange={(value) =>
                   setSearchParameters({ ...searchParameters, grade: value })
@@ -359,7 +356,7 @@ const DashboardPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="select-grade">Select Grade</SelectItem>
-                  {Array.from(grades).map((grd, index) => (
+                  {grades.map((grd, index) => (
                     <SelectItem key={index} value={grd || index}>
                       {grd}
                     </SelectItem>
@@ -368,11 +365,51 @@ const DashboardPage = () => {
               </Select>
             </div>
           </div>
+          <div className="flex justify-between items-center flex-wrap w-full gap-2 mb-6">
+            {/* Searchbar */}
+            <div className=" w-full md:w-[58%]">
+              <form className="flex items-center gap-2 border-2 rounded-full md:rounded-r-none px-4 py-2 border-main md:border-r-slate-600">
+                <button type="submit" className="border-none outline-none">
+                  <SearchIcon />
+                </button>
+                <input
+                  type="text"
+                  placeholder="Enter Student Name..."
+                  className="w-full py-1 bg-transparent outline-none border-none text-secondary"
+                  value={studentName}
+                  onChange={(e) => setStudentName(e.target.value)}
+                />
+              </form>
+            </div>
+            {/* Batch Dropdown */}
+            <div className="w-[40%]">
+              <Select
+                onValueChange={(value) => setSelectedBatch(value)}
+                value={selectedBatch}
+                defaultValue="select-batch"
+              >
+                <SelectTrigger className="px-4 text-secondary barlow-regular rounded-full md:rounded-none md:rounded-r-full border-main border-2 md:border-l-slate-600 outline-none focus:border-none focus-outline-none bg-transparent w-full py-6">
+                  <SelectValue placeholder="Batch" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="select-batch">Select Batch</SelectItem>
+                  {Array.from(batch).map((bth, index) => (
+                    <SelectItem key={index} value={bth || index}>
+                      {bth}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <span className="mt-3 mb-6 text-lg">
+            {students?.length || 0} Students Found
+          </span>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="barlow-semibold w-[100px]">
-                  Student ID
+                  SR No.
                 </TableHead>
                 <TableHead className="barlow-semibold">Name</TableHead>
                 <TableHead className="barlow-semibold">Email</TableHead>
@@ -383,7 +420,7 @@ const DashboardPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredStudents?.length === 0 && (
+              {students?.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan="7"
@@ -393,11 +430,11 @@ const DashboardPage = () => {
                   </TableCell>
                 </TableRow>
               )}
-              {filteredStudents?.length > 0 &&
-                filteredStudents?.map((student, index) => (
+              {students?.length > 0 &&
+                students?.map((student, index) => (
                   <TableRow key={index}>
                     <TableCell className="barlow-semibold">
-                      {student.sId}
+                      {index + 1}
                     </TableCell>
                     <TableCell className="barlow-regular">
                       {student.firstname} {student.lastname}
@@ -425,7 +462,7 @@ const DashboardPage = () => {
                     </TableCell>
                     <TableCell className="barlow-regular flex items-center gap-4">
                       <Link
-                        href={`/student/${student.userId}`}
+                        href={`/student/${student.ay}/${student.grade}/${student.userId}`}
                         className="border-2 border-main rounded p-1"
                       >
                         <Eye />

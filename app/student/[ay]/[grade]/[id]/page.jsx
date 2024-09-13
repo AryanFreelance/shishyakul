@@ -56,7 +56,7 @@ import Image from "next/image";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const page = () => {
-  const { id } = useParams();
+  const { ay, grade, id } = useParams();
   const router = useRouter();
   const [authStatus, setAuthStatus] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -108,7 +108,11 @@ const page = () => {
 
   // Queries - Get Student, Get Published Papers
   const { data: studData } = useSuspenseQuery(GET_STUDENT_DETAILS, {
-    variables: { userId: id },
+    variables: {
+      ay,
+      grade,
+      userId: id,
+    },
   });
 
   const { data: testPaperUsers } = useSuspenseQuery(
@@ -129,6 +133,16 @@ const page = () => {
         </small>
       </div>
     );
+
+  console.log("STUDDATA", studData);
+
+  if (!studData?.student) {
+    return (
+      <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
+        No Student Found
+      </div>
+    );
+  }
 
   // Mutations - Create Fee, Delete Fee
   const [createFee] = useMutation(CREATE_FEE, {
@@ -166,8 +180,8 @@ const page = () => {
             {
               label: "Days",
               data: [
-                studData?.student.attendance.present,
-                studData?.student.attendance.absent,
+                studData?.student?.attendance.present,
+                studData?.student?.attendance.absent,
               ],
               backgroundColor: ["#159a3a", "#d92e39"],
               borderColor: ["#159a3a", "#d92e39"],
@@ -413,10 +427,10 @@ const page = () => {
             </div>
             <div className="flex justify-between items-center">
               <h2 className="subheading">
-                Welcome {studData?.student.firstname}
+                Welcome {studData?.student?.firstname}
               </h2>
               <Link
-                href={`/student/${id}/profile`}
+                href={`/student/${ay}/${grade}/${id}/profile`}
                 className="barlow-medium border-2 border-main rounded px-4 py-2"
               >
                 Profile
@@ -428,16 +442,15 @@ const page = () => {
               </h3>
               <div className="flex flex-col gap-4 ml-6">
                 <span>
-                  Student Name - {studData?.student.firstname}{" "}
-                  {studData?.student.middlename} {studData?.student.lastname}
+                  Student Name - {studData?.student?.firstname}{" "}
+                  {studData?.student?.middlename} {studData?.student?.lastname}
                 </span>
-                <span>Student Email - {studData?.student.email}</span>
-                <span>Student Phone - {studData?.student.phone}</span>
+                <span>Student Email - {studData?.student?.email}</span>
+                <span>Student Phone - {studData?.student?.phone}</span>
+                <span>Student Grade - {studData?.student?.grade}</span>
+                <span>Student A.Y. - {studData?.student?.ay}</span>
                 <span>
-                  Student Grade - {studData?.student.grade || "No Grade"}
-                </span>
-                <span>
-                  Student A.Y. - {studData?.student.batch || "No Batch"}
+                  Student Batch - {studData?.student?.batch || "Not Assigned"}
                 </span>
               </div>
             </div>
@@ -725,7 +738,7 @@ const page = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {studData?.student.fees.length === 0 && (
+                  {studData && studData?.student.fees.length === 0 && (
                     <TableRow>
                       <TableCell
                         className="barlow-medium text-center"
@@ -735,7 +748,8 @@ const page = () => {
                       </TableCell>
                     </TableRow>
                   )}
-                  {studData?.student.fees.length !== 0 &&
+                  {studData &&
+                    studData?.student.fees.length !== 0 &&
                     studData?.student.fees.map((fee) => (
                       <TableRow key={fee.id}>
                         <TableCell className="barlow-medium">

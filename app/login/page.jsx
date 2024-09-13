@@ -46,7 +46,7 @@ const Page = () => {
         if (user.email === "admin@shishyakul.in") {
           router.push("/dashboard");
         } else {
-          router.push(`/student/${userid}`);
+          router.push(`/student/user/${userid}`);
         }
       } else {
         setAuthStatus(false);
@@ -121,9 +121,9 @@ const Page = () => {
     );
   }
 
-  if (!authStatus) {
-    return <DevelopmentMode />;
-  }
+  // if (!authStatus) {
+  //   return <DevelopmentMode />;
+  // }
 
   return (
     <Container>

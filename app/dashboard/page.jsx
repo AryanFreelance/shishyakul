@@ -4,7 +4,14 @@ import Navbar from "@/components/shared/Navbar";
 import { dashboardNavLinks } from "@/constants";
 import Container from "@/components/shared/Container";
 import { Button } from "@/components/ui/button";
-import { Eye, Plus, SearchIcon, Trash } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Eye,
+  Plus,
+  SearchIcon,
+  Trash,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -71,6 +78,11 @@ const DashboardPage = () => {
     grade: localStorage.getItem("grade") || "select-grade",
     ay: localStorage.getItem("ay") || "select-ay",
   });
+  const [pageSize, setPageSize] = useState("20");
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pages, setPages] = useState(0);
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [onePageStudents, setOnePageStudent] = useState([]);
 
   // Queries - GET_ACADEMIC_YEARS, GET_TEMP_STUDENTS, DASHBOARD_GET_STUDENT
   const { data: ay } = useSuspenseQuery(GET_ACADEMIC_YEARS);
@@ -211,6 +223,7 @@ const DashboardPage = () => {
         },
         onCompleted: (data) => {
           setStudents(data.students || []);
+          setFilteredStudents(data.students || []);
           console.log("DATA", data);
         },
       });
@@ -218,16 +231,37 @@ const DashboardPage = () => {
   }, [searchParameters]);
 
   useEffect(() => {
-    if (students?.length > 0) {
+    setFilteredStudents(students);
+  }, [students]);
+
+  useEffect(() => {
+    if (filteredStudents?.length > 0) {
       const uniqueBatch = Array.from(
-        new Set(students.map((student) => student.batch).filter(Boolean))
+        new Set(
+          filteredStudents.map((student) => student.batch).filter(Boolean)
+        )
       );
       setBatch(uniqueBatch);
       console.log("UNIQUE BATCH", uniqueBatch);
     } else {
       setBatch([]);
     }
-  }, [students]);
+  }, [filteredStudents]);
+
+  useEffect(() => {
+    if (filteredStudents?.length > 0) {
+      const startIndex = currentPage * parseInt(pageSize);
+      const endIndex = startIndex + parseInt(pageSize);
+      const slicedTempStudents = filteredStudents.slice(startIndex, endIndex);
+
+      setOnePageStudent(slicedTempStudents);
+      setPages(Math.ceil(filteredStudents.length / parseInt(pageSize)));
+
+      console.log("Sliced Temp Students", slicedTempStudents);
+      console.log("Pages", pages);
+      console.log("Current Page", currentPage);
+    }
+  }, [filteredStudents, currentPage, pageSize]);
 
   useEffect(() => {
     if (
@@ -238,10 +272,10 @@ const DashboardPage = () => {
       const selectedBatchStudents = students.filter(
         (student) => student.batch === selectedBatch
       );
-      setStudents(selectedBatchStudents);
+      setFilteredStudents(selectedBatchStudents);
     }
     if (selectedBatch === "select-batch" || !selectedBatch)
-      setStudents(dStudents?.students);
+      setFilteredStudents(dStudents?.students);
   }, [selectedBatch]);
 
   useEffect(() => {
@@ -251,9 +285,9 @@ const DashboardPage = () => {
           .toLowerCase()
           .includes(studentName.toLowerCase())
       );
-      setStudents(filteredStudents);
+      setFilteredStudents(filteredStudents);
     }
-    if (studentName.length === 0) setStudents(dStudents?.students);
+    if (studentName.length === 0) setFilteredStudents(dStudents?.students);
   }, [studentName]);
 
   return (
@@ -301,7 +335,7 @@ const DashboardPage = () => {
           </Dialog>
         </div>
         <div className="mt-8">
-          <div className="flex justify-between items-center flex-wrap w-[40%] gap-2 mb-6">
+          <div className="flex justify-between items-center flex-wrap w-full md:w-[40%] gap-2 mb-2">
             {/* Academic Year Dropdown */}
             <div className="w-[48%]">
               <Select
@@ -325,7 +359,7 @@ const DashboardPage = () => {
               </Select>
             </div>
             {/* Standard Dropdown */}
-            <div className="w-[48%]">
+            <div className="w-full md:w-[48%]">
               <Select
                 onValueChange={(value) =>
                   setSearchParameters({ ...searchParameters, grade: value })
@@ -387,6 +421,60 @@ const DashboardPage = () => {
           <span className="mt-3 mb-6 text-lg">
             {students?.length || 0} Students Found
           </span>
+          {/* Pagination */}
+          {students?.length !== 0 && (
+            <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-4">
+              {/* Set the value of the input in the pageSize when the input focus changes */}
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(e.target.value);
+                  setCurrentPage(0);
+                }}
+                className="border-2 border-main bg-transparent px-3 py-1 rounded"
+              >
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+              </select>
+              <div className="flex justify-center items-center gap-4 mt-4 md:mt-0">
+                <button
+                  onClick={() =>
+                    currentPage !== 0 && setCurrentPage(currentPage - 1)
+                  }
+                  className="border-2 px-3 py-1 rounded border-black/50 hover:border-black disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-black/50"
+                  disabled={currentPage === 0}
+                >
+                  <ArrowLeft />
+                </button>
+                <div className="flex flex-wrap justify-center items-center max-w-[300px] lg:max-w-[600px] gap-4">
+                  {new Array(pages).fill(0).map((_, index) => (
+                    <button
+                      key={index}
+                      className={`border-2 px-3 py-1 rounded ${
+                        index === currentPage
+                          ? "text-black border-main"
+                          : "border-black/50 hover:border-black"
+                      }`}
+                      onClick={() => setCurrentPage(index)}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() =>
+                    currentPage !== pages - 1 && setCurrentPage(currentPage + 1)
+                  }
+                  className="border-2 px-3 py-1 rounded border-black/50 hover:border-black disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-black/50"
+                  disabled={currentPage === pages - 1}
+                >
+                  <ArrowRight />
+                </button>
+              </div>
+            </div>
+          )}
           <Table>
             <TableHeader>
               <TableRow>
@@ -413,10 +501,11 @@ const DashboardPage = () => {
                 </TableRow>
               )}
               {students?.length > 0 &&
-                students?.map((student, index) => (
+                onePageStudents?.length > 0 &&
+                onePageStudents?.map((student, index) => (
                   <TableRow key={index}>
                     <TableCell className="barlow-semibold">
-                      {index + 1}
+                      {currentPage * pageSize + index + 1}
                     </TableCell>
                     <TableCell className="barlow-regular">
                       {student.firstname} {student.lastname}

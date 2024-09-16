@@ -43,7 +43,6 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
   DELETE_STUDENT,
-  DELETE_TEMP_STUDENT,
   INITIALIZE_STUDENT,
 } from "@/graphql/mutations/students.mutation";
 import {
@@ -58,7 +57,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useRouter, useSearchParams } from "next/navigation";
+import TempStudentsComp from "@/components/private/dashboard/TempStudentsComp";
 
 const DashboardPage = () => {
   const [studEmail, setStudEmail] = useState("");
@@ -75,8 +74,6 @@ const DashboardPage = () => {
 
   // Queries - GET_ACADEMIC_YEARS, GET_TEMP_STUDENTS, DASHBOARD_GET_STUDENT
   const { data: ay } = useSuspenseQuery(GET_ACADEMIC_YEARS);
-
-  const { data: tempStudents } = useSuspenseQuery(GET_TEMP_STUDENTS);
 
   const [fetchStudents, { data: dStudents }] = useLazyQuery(
     DASHBOARD_GET_STUDENT,
@@ -98,9 +95,6 @@ const DashboardPage = () => {
   });
   const [deleteStudent] = useMutation(DELETE_STUDENT, {
     refetchQueries: [{ query: DASHBOARD_GET_STUDENT }],
-  });
-  const [deleteTempStudent] = useMutation(DELETE_TEMP_STUDENT, {
-    refetchQueries: [{ query: GET_TEMP_STUDENTS }],
   });
 
   const deleteStudentHandler = async (userId) => {
@@ -196,16 +190,6 @@ const DashboardPage = () => {
     });
 
     setOpenAddStudentDialog(false);
-  };
-
-  const deleteTempStudentHandler = async (email) => {
-    const toastId = toast.loading("Deleting Student...");
-
-    await deleteTempStudent({ variables: { email: email } });
-
-    toast.success("Temporary Student Deleted Successfully!", {
-      id: toastId,
-    });
   };
 
   // Update the localStorage whenever the search parameters change
@@ -309,11 +293,9 @@ const DashboardPage = () => {
                     />
                   </div>
                 </div>
-                {/* <DialogFooter> */}
                 <div className="flex justify-end items-center">
                   <Button type="submit">Add</Button>
                 </div>
-                {/* </DialogFooter> */}
               </form>
             </DialogContent>
           </Dialog>
@@ -506,75 +488,7 @@ const DashboardPage = () => {
       </div>
 
       <div className="pb-10">
-        <div className="flex justify-between items-center">
-          <h2 className="subheading">Students Pending</h2>
-        </div>
-        <div className="mt-8">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="barlow-semibold">Email</TableHead>
-                <TableHead className="barlow-semibold">
-                  Verification Code
-                </TableHead>
-                <TableHead className="barlow-semibold">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tempStudents.tempStudents?.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan="3"
-                    className="barlow-semibold text-center"
-                  >
-                    No pending students
-                  </TableCell>
-                </TableRow>
-              )}
-              {tempStudents.tempStudents?.map((tempStudents, index) => (
-                <TableRow key={index}>
-                  <TableCell className="barlow-semibold">
-                    {tempStudents.email}
-                  </TableCell>
-                  <TableCell className="barlow-regular">
-                    {tempStudents.verificationCode}
-                  </TableCell>
-                  <TableCell className="barlow-regular flex items-center gap-4">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <button className="border-2 border-main rounded p-1">
-                          <Trash />
-                        </button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Are you absolutely sure?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently
-                            delete your account and remove your data from our
-                            servers.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() =>
-                              deleteTempStudentHandler(tempStudents.email)
-                            }
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <TempStudentsComp />
       </div>
     </Container>
   );

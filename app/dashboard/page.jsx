@@ -485,6 +485,7 @@ const DashboardPage = () => {
                 <TableHead className="barlow-semibold">Email</TableHead>
                 <TableHead className="barlow-semibold">Phone</TableHead>
                 <TableHead className="barlow-semibold">Grade</TableHead>
+                <TableHead className="barlow-semibold">Batch</TableHead>
                 <TableHead className="barlow-semibold">Attendance</TableHead>
                 <TableHead className="barlow-semibold">Actions</TableHead>
               </TableRow>
@@ -518,6 +519,9 @@ const DashboardPage = () => {
                     </TableCell>
                     <TableCell className="barlow-regular">
                       {student.grade}
+                    </TableCell>
+                    <TableCell className="barlow-regular">
+                      {student?.batch ? student?.batch : "N/A"}
                     </TableCell>
                     <TableCell className="barlow-regular">
                       {student.attendance.present +
@@ -573,6 +577,61 @@ const DashboardPage = () => {
                 ))}
             </TableBody>
           </Table>
+
+          {/* Pagination */}
+          {students?.length !== 0 && (
+            <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-4">
+              {/* Set the value of the input in the pageSize when the input focus changes */}
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(e.target.value);
+                  setCurrentPage(0);
+                }}
+                className="border-2 border-main bg-transparent px-3 py-1 rounded"
+              >
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+              </select>
+              <div className="flex justify-center items-center gap-4 mt-4 md:mt-0">
+                <button
+                  onClick={() =>
+                    currentPage !== 0 && setCurrentPage(currentPage - 1)
+                  }
+                  className="border-2 px-3 py-1 rounded border-black/50 hover:border-black disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-black/50"
+                  disabled={currentPage === 0}
+                >
+                  <ArrowLeft />
+                </button>
+                <div className="flex flex-wrap justify-center items-center max-w-[300px] lg:max-w-[600px] gap-4">
+                  {new Array(pages).fill(0).map((_, index) => (
+                    <button
+                      key={index}
+                      className={`border-2 px-3 py-1 rounded ${
+                        index === currentPage
+                          ? "text-black border-main"
+                          : "border-black/50 hover:border-black"
+                      }`}
+                      onClick={() => setCurrentPage(index)}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() =>
+                    currentPage !== pages - 1 && setCurrentPage(currentPage + 1)
+                  }
+                  className="border-2 px-3 py-1 rounded border-black/50 hover:border-black disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-black/50"
+                  disabled={currentPage === pages - 1}
+                >
+                  <ArrowRight />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

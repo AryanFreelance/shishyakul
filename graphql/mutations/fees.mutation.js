@@ -2,23 +2,6 @@ import { gql } from "@apollo/client";
 
 // Create a fee
 export const CREATE_FEE = gql`
-  # mutation CreateFee(
-  #   $userId: ID!
-  #   $email: String!
-  #   $feesPaid: Int!
-  #   $paidOn: String!
-  #   $month: String!
-  #   $year: String!
-  # ) {
-  #   createFee(
-  #     userId: $userId
-  #     email: $email
-  #     feesPaid: $feesPaid
-  #     paidOn: $paidOn
-  #     month: $month
-  #     year: $year
-  #   )
-  # }
   mutation CreateFee(
     $id: ID!
     $userId: String!
@@ -47,6 +30,12 @@ export const CREATE_FEE = gql`
       chequeRefNo: $chequeRefNo
       chequeImgUrl: $chequeImgUrl
     )
+  }
+`;
+
+export const UPDATE_FEE = gql`
+  mutation UpdateFee($id: ID!, $userId: String!, $remark: String!) {
+    updateFee(id: $id, userId: $userId, remark: $remark)
   }
 `;
 

@@ -83,6 +83,7 @@ export const GET_STUDENT_DETAILS = gql`
         upiImgUrl
         chequeRefNo
         chequeImgUrl
+        remark
       }
     }
   }

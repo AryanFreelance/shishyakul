@@ -65,6 +65,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import TempStudentsComp from "@/components/private/dashboard/TempStudentsComp";
+import SearchBarStudent from "@/components/private/dashboard/SearchBarStudent";
 
 const DashboardPage = () => {
   const [studEmail, setStudEmail] = useState("");
@@ -384,7 +385,7 @@ const DashboardPage = () => {
           <div className="flex justify-between items-center flex-wrap w-full gap-2 mb-6">
             {/* Searchbar */}
             <div className=" w-full md:w-[58%]">
-              <form className="flex items-center gap-2 border-2 rounded-full md:rounded-r-none px-4 py-2 border-main md:border-r-slate-600">
+              {/* <form className="flex items-center gap-2 border-2 rounded-full md:rounded-r-none px-4 py-2 border-main md:border-r-slate-600">
                 <button type="submit" className="border-none outline-none">
                   <SearchIcon />
                 </button>
@@ -395,7 +396,11 @@ const DashboardPage = () => {
                   value={studentName}
                   onChange={(e) => setStudentName(e.target.value)}
                 />
-              </form>
+              </form> */}
+              <SearchBarStudent
+                studentName={studentName}
+                setStudentName={setStudentName}
+              />
             </div>
             {/* Batch Dropdown */}
             <div className="w-[40%]">
@@ -419,7 +424,7 @@ const DashboardPage = () => {
             </div>
           </div>
           <span className="mt-3 mb-6 text-lg">
-            {students?.length || 0} Students Found
+            {filteredStudents?.length || 0} Students Found
           </span>
           {/* Pagination */}
           {students?.length !== 0 && (

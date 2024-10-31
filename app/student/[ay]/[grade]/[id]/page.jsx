@@ -233,7 +233,7 @@ const page = () => {
                     ay={ay}
                     grade={grade}
                     userId={id}
-                    feeData={studData?.student?.fee}
+                    feeData={studData?.student?.fees}
                   />
                 )}
               </div>

@@ -22,3 +22,14 @@ export const GET_ATTENDANCE = gql`
     }
   }
 `;
+
+// Get the Student's attendance of a particular academic year, grade, and timestamp
+export const GET_AG_ATTENDANCE = gql`
+  query Attendance($ay: String!, $grade: String!, $timestamp: String!) {
+    attendance(ay: $ay, grade: $grade, timestamp: $timestamp) {
+      timestamp
+      present
+      absent
+    }
+  }
+`;

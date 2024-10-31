@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { format } from "date-fns";
+import { format, set } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 
 import {
+  GET_AG_ATTENDANCE,
   GET_ATTENDANCE,
   GET_STUDENTS,
 } from "@/graphql/queries/attendance.query";
@@ -32,11 +33,19 @@ import {
 export const dynamic = "force-dynamic";
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 import { useLazyQuery, useMutation } from "@apollo/client";
-import {
-  CREATE_ATTENDANCE,
-  UPDATE_ATTENDANCE,
-} from "@/graphql/mutations/attendance.mutation";
+import { ATTENDANCE_HANDLER } from "@/graphql/mutations/attendance.mutation";
 import toast from "react-hot-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  GET_ACADEMIC_YEARS,
+  GET_STUDENTS_FOR_ATTENDANCE,
+} from "@/graphql/queries/students.query";
 
 const Page = () => {
   const [present, setPresent] = useState([]);
@@ -44,8 +53,15 @@ const Page = () => {
   const today = new Date();
   const [date, setDate] = useState(today);
   const [formattedDate, setFormattedDate] = useState("");
-  // Emails of the absent students
   const [absentEmails, setAbsentEmails] = useState([]);
+  const [searchParameters, setSearchParameters] = useState({
+    ay: localStorage.getItem("a-ay") || "select-ay",
+    grade: localStorage.getItem("a-grade") || "select-grade",
+  });
+  const [selectedBatch, setSelectedBatch] = useState("select-batch");
+  const [batches, setBatches] = useState(new Set());
+  const [students, setStudents] = useState([]);
+  const [isStudentDataLoading, setIsStudentDataLoading] = useState(false);
   const months = [
     "Jan",
     "Feb",
@@ -60,6 +76,7 @@ const Page = () => {
     "Nov",
     "Dec",
   ];
+  const grades = ["8", "9", "10", "11", "12"];
   const todayDate = `${
     today.getDate() < 10 ? "0" + today.getDate() : today.getDate()
   }-${
@@ -69,17 +86,35 @@ const Page = () => {
   }-${today.getFullYear()}`;
 
   // Queries - Get Students, Get Attendance
-  const { data: studentsData } = useSuspenseQuery(GET_STUDENTS);
+  const [fetchStudents, { data: studentsData, loading: studDataLoading }] =
+    useLazyQuery(GET_STUDENTS_FOR_ATTENDANCE, {
+      fetchPolicy: "network-only",
+      variables: { ay: searchParameters.ay, grade: searchParameters.grade },
+      onCompleted: (data) => {
+        setStudents(data?.gStudents || []);
+        console.log("DATA", data);
+      },
+    });
 
   const [fetchAttendance, { data: attendanceData }] = useLazyQuery(
-    GET_ATTENDANCE,
+    GET_AG_ATTENDANCE,
     {
       fetchPolicy: "network-only",
+      variables: {
+        ay: searchParameters.ay,
+        grade: searchParameters.grade,
+        timestamp: formattedDate.split("-").reverse().join("-"),
+      },
+      onCompleted: (data) => {
+        console.log("DATA", data);
+      },
     }
   );
 
+  const { data: ay } = useSuspenseQuery(GET_ACADEMIC_YEARS);
+
   // Mutations - Create Attendance, Update Attendance
-  const [createAttendance] = useMutation(CREATE_ATTENDANCE, {
+  const [attendanceHandler] = useMutation(ATTENDANCE_HANDLER, {
     onCompleted: (data) => {
       // console.log("Attendance Created: ", data);
       toast.success("Attendance Saved Successfully!");
@@ -87,23 +122,6 @@ const Page = () => {
     onError: (error) => {
       // console.log("Error creating attendance: ", error);
       toast.error("Error saving attendance.");
-    },
-    refetchQueries: [
-      {
-        query: GET_ATTENDANCE,
-        variables: { timestamp: formattedDate.split("-").reverse().join("-") },
-      },
-    ],
-  });
-
-  const [updateAttendance] = useMutation(UPDATE_ATTENDANCE, {
-    onCompleted: (data) => {
-      // console.log("Attendance Updated: ", data);
-      toast.success("Attendance Updated Successfully!");
-    },
-    onError: (error) => {
-      // console.log("Error updating attendance: ", error);
-      toast.error("Error updating attendance.");
     },
     refetchQueries: [
       {
@@ -125,6 +143,13 @@ const Page = () => {
   };
 
   useEffect(() => {
+    setStudents(studentsData?.gStudents || []);
+    setIsStudentDataLoading(studDataLoading);
+    console.log("STUDENTS", studentsData?.gStudents);
+  }, [studentsData, studDataLoading]);
+
+  // Update the formattedDate whenever the date changes
+  useEffect(() => {
     const sDate = date && date.toString().split(" ");
     const formattedDate =
       date && `${sDate[2]}-${getMonthNumber(sDate[1])}-${sDate[3]}`;
@@ -132,12 +157,79 @@ const Page = () => {
     if (formattedDate) {
       fetchAttendance({
         variables: {
+          ay: searchParameters.ay,
+          grade: searchParameters.grade,
           timestamp: formattedDate.split("-").reverse().join("-"),
         },
       });
     }
+    // Set the batch value to select-batch
+    if (selectedBatch && selectedBatch !== "select-batch") {
+      setSelectedBatch("select-batch");
+    }
   }, [date]);
 
+  // Update the localStorage whenever the search parameters change
+  useEffect(() => {
+    localStorage.setItem("a-grade", searchParameters.grade);
+    localStorage.setItem("a-ay", searchParameters.ay);
+  }, [searchParameters]);
+
+  // Update the students array whenever the search parameters change
+  useEffect(() => {
+    if (searchParameters.ay && searchParameters.ay !== "select-ay") {
+      fetchAttendance({
+        fetchPolicy: "network-only",
+        variables: {
+          ay: searchParameters.ay,
+          grade:
+            searchParameters.grade === "select-grade"
+              ? null
+              : searchParameters.grade,
+        },
+        onCompleted: (data) => {
+          // setStudents(data?.gStudents || []);
+          // setFilteredStudents(data.students || []);
+          console.log("DATA", data);
+        },
+      });
+
+      fetchStudents({
+        fetchPolicy: "network-only",
+        variables: {
+          ay: searchParameters.ay,
+          grade:
+            searchParameters.grade === "select-grade"
+              ? null
+              : searchParameters.grade,
+        },
+        onCompleted: (data) => {
+          setStudents(data.gStudents || []);
+          // setFilteredStudents(data.students || []);
+          console.log("DATA", data);
+        },
+      });
+    }
+    // if (searchParameters.ay === "select-ay") console.log("NO STUDENT");
+    console.log("SEARCHPARAMS", searchParameters);
+    setSelectedBatch("select-batch");
+  }, [searchParameters]);
+
+  useEffect(() => {
+    if (selectedBatch && selectedBatch !== "select-batch") {
+      console.log("BATCH MODIFIED", selectedBatch);
+      setStudents(
+        studentsData?.gStudents?.filter(
+          (student) => student.batch === selectedBatch
+        )
+      );
+    } else {
+      setStudents(studentsData?.gStudents || []);
+    }
+    console.log("SELECTEDBATCH", selectedBatch);
+  }, [selectedBatch]);
+
+  // Update the present and absent arrays whenever the attendanceData changes
   useEffect(() => {
     if (attendanceData?.attendance) {
       setPresent(attendanceData.attendance.present);
@@ -146,7 +238,7 @@ const Page = () => {
       // console.log("STUD DATA", studentsData);
 
       setAbsentEmails(
-        studentsData?.students
+        students
           .filter((student) =>
             attendanceData.attendance.absent.includes(student.userId)
           )
@@ -159,6 +251,23 @@ const Page = () => {
     }
   }, [attendanceData]);
 
+  useEffect(() => {
+    if (studentsData?.gStudents?.length > 0) {
+      const uniqueBatch = Array.from(
+        new Set(
+          studentsData?.gStudents
+            ?.map((student) => student.batch)
+            .filter(Boolean)
+        )
+      );
+      setBatches(uniqueBatch);
+      console.log("UNIQUE BATCH", uniqueBatch);
+    } else {
+      setBatches([]);
+    }
+  }, [studentsData]);
+
+  // Get the month number from the month name
   function getMonthNumber(monthName) {
     const monthIndex = months.indexOf(monthName);
     if (monthIndex === -1) {
@@ -167,29 +276,45 @@ const Page = () => {
     return monthIndex + 1 < 10 ? "0" + (monthIndex + 1) : monthIndex + 1;
   }
 
+  // Update the attendance data in the database
   const updateAttendanceHandler = async () => {
     const toastId = toast.loading("Updating Attendance...");
 
-    if (!attendanceData?.attendance) {
-      await createAttendance({
-        variables: {
-          timestamp: formattedDate.split("-").reverse().join("-"),
-          present: present,
-          absent: absent,
-        },
-      });
-    } else {
-      await updateAttendance({
-        variables: {
-          present: present,
-          absent: absent,
-          timestamp: formattedDate.split("-").reverse().join("-"),
-        },
-      });
-    }
+    await attendanceHandler({
+      variables: {
+        ay: searchParameters.ay,
+        grade: searchParameters.grade,
+        timestamp: formattedDate.split("-").reverse().join("-"),
+        present: present,
+        absent: absent,
+        date: formattedDate,
+      },
+    });
+
+    // if (!attendanceData?.attendance) {
+    //   await createAttendance({
+    //     variables: {
+    //       ay: searchParameters.ay,
+    //       grade: searchParameters.grade,
+    //       timestamp: formattedDate.split("-").reverse().join("-"),
+    //       present: present,
+    //       absent: absent,
+    //       date: formattedDate,
+    //     },
+    //   });
+    // } else {
+    //   await updateAttendance({
+    //     variables: {
+    //       present: present,
+    //       absent: absent,
+    //       timestamp: formattedDate.split("-").reverse().join("-"),
+    //     },
+    //   });
+    // }
     toast.dismiss(toastId);
   };
 
+  // Send emails to absent students
   const sendEmailsHandler = async () => {
     const toastId = toast.loading("Sending Emails...");
 
@@ -212,48 +337,52 @@ const Page = () => {
     }
   };
 
+  console.log("FORMATTEDDATE", formattedDate);
+
   return (
     <Container>
       <Navbar navLinks={dashboardNavLinks} isHome={false} />
       <div className="pb-10">
-        <h2 className="subheading mb-4 text-center md:text-left">Attendance</h2>
-        {studentsData !== null && studentsData?.students.length > 0 && (
-          <div className="flex justify-center md:justify-end items-center">
-            <Popover className="w-full">
-              <PopoverTrigger
-                asChild
-                className="flex justify-center items-center"
-              >
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-[280px] justify-center font-normal",
-                    !date && "text-muted-foreground"
-                  )}
+        <div className="flex justify-between items-center flex-col md:flex-row gap-4">
+          <h2 className="subheading text-center md:text-left">Attendance</h2>
+          {students !== null && students?.length > 0 && (
+            <div className="flex justify-center md:justify-end items-center">
+              <Popover className="w-full">
+                <PopoverTrigger
+                  asChild
+                  className="flex justify-center items-center"
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-        )}
-        <div className="mt-8 flex flex-col lg:flex-row gap-10">
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-[280px] justify-center font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+        </div>
+        <div className="mt-6 flex flex-col lg:flex-row gap-10">
           <div className="w-full">
             <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-              <h3 className="subsubheading text-secondary">
-                Attendance marking for {formattedDate}
+              <h3 className="subsubheading text-secondary flex flex-col md:flex-row">
+                <span>Attendance marking for</span> <span>{formattedDate}</span>
               </h3>
 
-              {studentsData !== null && studentsData?.students.length > 0 && (
+              {students !== null && students?.length > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button className="w-full md:w-auto">
@@ -263,11 +392,7 @@ const Page = () => {
                   <DropdownMenuContent>
                     <DropdownMenuItem
                       onClick={() => {
-                        setPresent(
-                          studentsData?.students.map(
-                            (student) => student.userId
-                          )
-                        );
+                        setPresent(students?.map((student) => student.userId));
                         setAbsent([]);
                       }}
                     >
@@ -275,11 +400,7 @@ const Page = () => {
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
-                        setAbsent(
-                          studentsData?.students.map(
-                            (student) => student.userId
-                          )
-                        );
+                        setAbsent(students?.map((student) => student.userId));
                         setPresent([]);
                       }}
                     >
@@ -297,8 +418,79 @@ const Page = () => {
                 </DropdownMenu>
               )}
             </div>
+
+            <div className="my-4">
+              {/* Searchbar */}
+              <div className="flex justify-between items-center flex-wrap w-full md:w-[60%] gap-2 mb-2">
+                {/* Academic Year Dropdown */}
+                <div className="w-full md:w-[30%]">
+                  <Select
+                    onValueChange={(value) => {
+                      setSearchParameters({ ...searchParameters, ay: value });
+                    }}
+                    value={searchParameters.ay}
+                    defaultValue="select-ay"
+                  >
+                    <SelectTrigger className="px-4 text-secondary barlow-regular rounded-full border-2 md:rounded-r-none border-main md:border-r-slate-600 outline-none focus:border-none focus-outline-none bg-transparent w-full py-6">
+                      <SelectValue placeholder="Academic Year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="select-ay">Select A.Y.</SelectItem>
+                      {Array.from(ay?.academicYears)?.map((acay, index) => (
+                        <SelectItem key={index} value={acay}>
+                          {acay}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Standard Dropdown */}
+                <div className="w-full md:w-[30%]">
+                  <Select
+                    onValueChange={(value) =>
+                      setSearchParameters({ ...searchParameters, grade: value })
+                    }
+                    value={searchParameters.grade}
+                    defaultValue="select-grade"
+                  >
+                    <SelectTrigger className="px-4 text-secondary barlow-regular rounded-full md:rounded-none border-main border-2 md:border-l-slate-600 md:border-r-slate-600 outline-none focus:border-none focus-outline-none bg-transparent w-full py-6">
+                      <SelectValue placeholder="Grade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="select-grade">Select Grade</SelectItem>
+                      {grades.map((grd, index) => (
+                        <SelectItem key={index} value={grd || index}>
+                          {grd}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Batch Dropdown */}
+                <div className="w-full md:w-[30%]">
+                  <Select
+                    onValueChange={(value) => setSelectedBatch(value)}
+                    value={selectedBatch}
+                    defaultValue="select-batch"
+                  >
+                    <SelectTrigger className="px-4 text-secondary barlow-regular rounded-full md:rounded-none md:rounded-r-full border-main border-2 md:border-l-slate-600 outline-none focus:border-none focus-outline-none bg-transparent w-full py-6">
+                      <SelectValue placeholder="Batch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="select-batch">Select Batch</SelectItem>
+                      {Array.from(batches).map((bth, index) => (
+                        <SelectItem key={index} value={bth || index}>
+                          {bth}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
             <div className="mt-6">
-              {studentsData?.students.map((item, index) => (
+              {students?.map((item, index) => (
                 <div key={index}>
                   <div className="flex justify-between items-center rounded my-4">
                     <div>{item.firstname + " " + item.lastname}</div>
@@ -338,13 +530,28 @@ const Page = () => {
               ))}
             </div>
             <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-6 mt-8 w-full">
-              {(studentsData === null ||
-                studentsData?.students.length == 0) && (
+              {isStudentDataLoading && (
                 <span className="text-lg text-secondary">
-                  No Students Found! Please add students to create attendance!!
+                  Loading! Please Wait...
                 </span>
               )}
-              {studentsData !== null && studentsData?.students.length > 0 && (
+              {!isStudentDataLoading &&
+                (searchParameters.ay === "select-ay" ||
+                  searchParameters.grade === "select-grade") && (
+                  <span className="text-lg text-secondary">
+                    Please select both Academic Year & Grade to view Students.
+                  </span>
+                )}
+              {(students === null || students?.length == 0) &&
+                !isStudentDataLoading &&
+                searchParameters.ay !== "select-ay" &&
+                searchParameters.grade !== "select-grade" && (
+                  <span className="text-lg text-secondary">
+                    No Students Found! Please add students to create
+                    attendance!!
+                  </span>
+                )}
+              {students !== null && students?.length > 0 && (
                 <>
                   <div className="w-full md:w-[50%]">
                     <Button

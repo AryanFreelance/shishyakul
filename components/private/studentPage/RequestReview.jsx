@@ -34,6 +34,8 @@ const RequestReview = ({ name, email, ay, grade, userId, feeData }) => {
       return;
     }
 
+    console.log("FEEDATA", feeData);
+
     const emailResp = await fetch("/api/review", {
       method: "POST",
       body: JSON.stringify({

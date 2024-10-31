@@ -1,9 +1,40 @@
 const { gql } = require("@apollo/client");
 
 // Create Attendance
-export const CREATE_ATTENDANCE = gql`
-  mutation CreateAttendance($timestamp: ID!, $present: [ID]!, $absent: [ID]!) {
-    createAttendance(present: $present, absent: $absent, timestamp: $timestamp)
+// mutation CreateAttendance(
+//   $ay: String!
+//   $grade: String!
+//   $timestamp: ID!
+//   $date: String!
+//   $present: [ID]!
+//   $absent: [ID]!
+// ) {
+//   createAttendance(
+//     ay: $ay
+//     grade: $grade
+//     timestamp: $timestamp
+//     date: $date
+//     present: $present
+//     absent: $absent
+//   )
+// }
+export const ATTENDANCE_HANDLER = gql`
+  mutation AttendanceHandler(
+    $ay: String!
+    $grade: String!
+    $timestamp: ID!
+    $date: String!
+    $present: [ID]!
+    $absent: [ID]!
+  ) {
+    attendanceHandler(
+      ay: $ay
+      grade: $grade
+      timestamp: $timestamp
+      date: $date
+      present: $present
+      absent: $absent
+    )
   }
 `;
 

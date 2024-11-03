@@ -378,8 +378,9 @@ const Page = () => {
         <div className="mt-6 flex flex-col lg:flex-row gap-10">
           <div className="w-full">
             <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-              <h3 className="subsubheading text-secondary flex flex-col md:flex-row">
-                <span>Attendance marking for</span> <span>{formattedDate}</span>
+              <h3 className="subsubheading text-secondary flex flex-col md:flex-row gap-2">
+                <span>Attendance marking for </span>{" "}
+                <span>{formattedDate}</span>
               </h3>
 
               {students !== null && students?.length > 0 && (
@@ -487,6 +488,12 @@ const Page = () => {
                   </Select>
                 </div>
               </div>
+            </div>
+
+            <div>
+              <span>
+                {students?.length > 0 && students?.length} Students Found.
+              </span>
             </div>
 
             <div className="mt-6">

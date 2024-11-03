@@ -245,18 +245,16 @@ const DashboardPage = () => {
   }, [students]);
 
   useEffect(() => {
-    if (filteredStudents?.length > 0) {
+    if (students?.length > 0) {
       const uniqueBatch = Array.from(
-        new Set(
-          filteredStudents.map((student) => student.batch).filter(Boolean)
-        )
+        new Set(students.map((student) => student.batch).filter(Boolean))
       );
       setBatch(uniqueBatch);
       console.log("UNIQUE BATCH", uniqueBatch);
     } else {
       setBatch([]);
     }
-  }, [filteredStudents]);
+  }, [students]);
 
   useEffect(() => {
     if (filteredStudents?.length > 0) {

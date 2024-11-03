@@ -51,6 +51,7 @@ const TempStudentsComp = () => {
     toast.success("Temporary Student Deleted Successfully!", {
       id: toastId,
     });
+    setSearchEmail("");
   };
 
   const handleSearchTempStudent = (e) => {

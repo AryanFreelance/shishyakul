@@ -4,7 +4,7 @@ import Image from "next/image";
 
 const DevelopmentMode = () => {
   return (
-    <div className="flex justify-center items-center h-[100svh] flex-col px-8 py-10">
+    <div className="flex justify-center items-center h-[calc(100svh-120px)] flex-col px-8 py-10">
       <Image
         src={constructionImg}
         alt="Construction Image"

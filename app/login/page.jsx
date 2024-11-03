@@ -59,7 +59,13 @@ const Page = () => {
     e.preventDefault();
     const toastId = toast.loading("Sending password reset email...");
     try {
-      await sendPasswordResetEmail(auth, resetEmail);
+      await sendPasswordResetEmail(auth, resetEmail)
+        .then(() => {
+          console.log("Password reset email sent successfully");
+        })
+        .catch((error) => {
+          console.log("ERROR", error);
+        });
       toast.success("Password reset email sent successfully", { id: toastId });
     } catch (error) {
       // console.log(error);

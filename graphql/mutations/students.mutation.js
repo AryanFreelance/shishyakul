@@ -80,7 +80,7 @@ export const DELETE_TEMP_STUDENT = gql`
 
 // Delete a Student
 export const DELETE_STUDENT = gql`
-  mutation DeleteStudent($ay: String!, $grade: String, $userId: ID!) {
+  mutation DeleteStudent($ay: String!, $grade: String!, $userId: ID!) {
     deleteStudent(ay: $ay, grade: $grade, userId: $userId)
   }
 `;

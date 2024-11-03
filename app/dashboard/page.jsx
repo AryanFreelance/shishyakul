@@ -100,7 +100,7 @@ const DashboardPage = () => {
     }
   );
 
-  console.log("DSTUDENTS", dStudents);
+  // console.log("DSTUDENTS", dStudents);
 
   // Mutations - INITIALIZE_STUDENT, DELETE_STUDENT, DELETE_TEMP_STUDENT
   const [initializeStudent] = useMutation(INITIALIZE_STUDENT, {
@@ -110,10 +110,18 @@ const DashboardPage = () => {
     refetchQueries: [{ query: DASHBOARD_GET_STUDENT }],
   });
 
-  const deleteStudentHandler = async (userId) => {
+  const deleteStudentHandler = async (pay, pgrade, puserId) => {
     const toastId = toast.loading("Deleting Student...");
+    console.log("USERID", puserId);
     try {
-      const response = await deleteStudent({ variables: { userId } });
+      const response = await deleteStudent({
+        variables: {
+          ay: pay,
+          grade: pgrade,
+          userId: puserId,
+        },
+      });
+      console.log("RESPONSE", response);
 
       if (response === "ERROR" || response === null) {
         toast.error("Failed to delete student!", {
@@ -124,13 +132,13 @@ const DashboardPage = () => {
 
       const deleteuserResponse = await fetch("/api/user", {
         method: "DELETE",
-        body: JSON.stringify({ uid: userId }),
+        body: JSON.stringify({ uid: puserId }),
         headers: {
           "Content-Type": "application/json",
         },
       });
 
-      // console.log("DELETEUSERRESPONSE", deleteuserResponse);
+      console.log("DELETEUSERRESPONSE", deleteuserResponse);
 
       if (deleteuserResponse.status !== 200) {
         toast.error("Failed to delete student from database!", {
@@ -143,6 +151,7 @@ const DashboardPage = () => {
         id: toastId,
       });
     } catch (error) {
+      console.log("ERROR", error);
       toast.error("Failed to delete student!", {
         id: toastId,
       });
@@ -569,7 +578,11 @@ const DashboardPage = () => {
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() =>
-                                deleteStudentHandler(student.userId)
+                                deleteStudentHandler(
+                                  student.ay,
+                                  student.grade,
+                                  student.userId
+                                )
                               }
                             >
                               Delete

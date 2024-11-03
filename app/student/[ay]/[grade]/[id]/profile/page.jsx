@@ -93,7 +93,17 @@ const page = () => {
 
   // Mutations - Update Student Details
   const [updateStudent] = useMutation(UPDATE_STUDENT, {
-    refetchQueries: [{ query: GET_STUDENT_PROFILE, variables: { userId: id } }],
+    // onCompleted: () => console.log("COMPLETED"),
+    onCompleted: () => {
+      console.log("SUCCESS COMPLETED");
+      toast.success("Updated Successfully");
+    },
+    refetchQueries: [
+      {
+        query: GET_STUDENT_PROFILE,
+        variables: { userId: id },
+      },
+    ],
   });
 
   if (loading) return <div>Loading...</div>;
@@ -193,6 +203,23 @@ const page = () => {
       });
       return;
     }
+    const info = {
+      userId: id,
+      firstname: firstName,
+      middlename: middleName,
+      lastname: lastName,
+      phone: phone,
+      ay: pAy,
+      newAy: pAy === ay ? null : ay,
+      grade: pGrade,
+      newGrade: pGrade === grade ? null : grade,
+      batch: batch,
+      studentInformation: studentInformation,
+      guardianInformation: guardianInformation,
+      siblingInformation: siblingInformation,
+    };
+
+    console.log("INFO", info);
 
     // Update Student Details
     const updateResp = await updateStudent({
@@ -215,15 +242,21 @@ const page = () => {
 
     console.log("UPDATERESP", updateResp);
 
-    console.log("AY", ay, pAy, grade, pGrade);
+    if (updateResp?.data.updateStudent === "SUCCESS") {
+      console.log("AY", ay, pAy, grade, pGrade);
 
-    if (pAy !== ay || pGrade !== grade) {
-      router.push(`/student/${ay}/${grade}/${id}`);
+      toast.success("Information Updated Successfully!", {
+        id: toastId,
+      });
+
+      if (pAy !== ay || pGrade !== grade) {
+        router.push(`/student/${ay}/${grade}/${id}`);
+      }
+    } else {
+      toast.error(updateResp?.data.updateStudent, {
+        id: toastId,
+      });
     }
-
-    toast.success("Information Updated Successfully!", {
-      id: toastId,
-    });
   };
 
   const addSiblingInformation = (e) => {

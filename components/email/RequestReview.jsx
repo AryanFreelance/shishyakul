@@ -84,6 +84,11 @@ export const YelpRecentLoginEmail = ({
                   <Text style={{ ...paragraph, marginTop: -5 }}>
                     Fee Details
                   </Text>
+                  {feeData.length === 0 && (
+                    <Text style={{ ...paragraph, marginTop: -5 }}>
+                      No Fee Data Added Yet...
+                    </Text>
+                  )}
                   {/* Fee Data */}
                   <Container style={feeContainerStyle}>
                     {feeData &&
@@ -170,7 +175,7 @@ const button = {
 const feeContainerStyle = {
   display: "flex",
   flexDirection: "column",
-  gap: "60px",
+  gap: "30px",
 };
 
 const feeBoxStyle = {

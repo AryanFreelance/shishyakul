@@ -37,6 +37,14 @@ import {
 } from "@/graphql/mutations/testPaper.mutation";
 
 const page = () => {
+  if (true) {
+    return (
+      <>
+        <Navbar navLinks={dashboardNavLinks} isHome={false} />
+        <DevelopmentMode />
+      </>
+    );
+  }
   // Test Paper Fields - Test Name, Subject, Date, Total Marks, Question Paper (PDF)
   let { id } = useParams();
   const [testData, setTestData] = useState({

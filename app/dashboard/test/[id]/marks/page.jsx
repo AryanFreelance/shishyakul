@@ -35,10 +35,20 @@ import { useMutation } from "@apollo/client";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Medal } from "lucide-react";
+import DevelopmentMode from "@/components/shared/DevelopmentMode";
+import { Header } from "@/components/sections";
 
 export const dynamic = "force-dynamic";
 
 const Page = () => {
+  if (true) {
+    return (
+      <>
+        <Navbar navLinks={dashboardNavLinks} isHome={false} />
+        <DevelopmentMode />
+      </>
+    );
+  }
   const { id } = useParams();
   const [studMarks, setStudMarks] = useState([]);
   const [marksSaveDialogHandler, setMarksSaveDialogHandler] = useState(false);

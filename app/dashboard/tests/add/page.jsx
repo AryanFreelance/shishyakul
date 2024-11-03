@@ -23,6 +23,14 @@ export const dynamic = "force-dynamic";
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 
 const page = () => {
+  if (true) {
+    return (
+      <>
+        <Navbar navLinks={dashboardNavLinks} isHome={false} />
+        <DevelopmentMode />
+      </>
+    );
+  }
   // Test Paper Form Fields - Test Name, Subject, Date, Total Marks, Question Paper (PDF)
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [formData, setFormData] = useState({

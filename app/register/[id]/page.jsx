@@ -176,17 +176,23 @@ function Page() {
         verificationCode: id,
       },
     })
-      .then(() => {
-        toast.success("Student registered successfully!", {
-          id: registeringToast,
-        });
-        router.push("/login");
+      .then((res) => {
+        // router.push("/login");
+        console.log("RES", res);
+
+        if (res?.data?.createStudent === "SUCCESS") {
+          toast.success("Student registered successfully!", {
+            id: registeringToast,
+          });
+          router.push("/login");
+        }
       })
       .catch((err) => {
         // console.log("ERROR REGISTERING STUDENT", err);
         toast.error("Error registering student. Please try again.", {
           id: registeringToast,
         });
+        console.log(err);
       });
   };
 

@@ -67,7 +67,7 @@ const Navbar = ({ navLinks, isHome }) => {
         </div>
         <div>
           <div className="hidden md:block">
-            {navLinks.length > 0 &&
+            {navLinks?.length > 0 &&
               navLinks.map((link) => (
                 <Button
                   key={link.title}

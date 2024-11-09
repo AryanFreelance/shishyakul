@@ -10,7 +10,11 @@ export const GET_TESTPAPERS = gql`
         subject
         totalMarks
         date
-        sharedWith
+        sharedWith {
+          academicYear
+          grade
+          batch
+        }
         url
         createdAt
         published
@@ -21,7 +25,11 @@ export const GET_TESTPAPERS = gql`
         subject
         totalMarks
         date
-        sharedWith
+        sharedWith {
+          academicYear
+          grade
+          batch
+        }
         url
         createdAt
         published
@@ -39,7 +47,11 @@ export const GET_TESTPAPER = gql`
       subject
       totalMarks
       date
-      sharedWith
+      sharedWith {
+        academicYear
+        grade
+        batch
+      }
       url
       createdAt
       published
@@ -57,7 +69,11 @@ export const GET_PUBLISHED_TESTPAPERS = gql`
         subject
         totalMarks
         date
-        sharedWith
+        sharedWith {
+          academicYear
+          grade
+          batch
+        }
         url
         createdAt
         published
@@ -74,7 +90,11 @@ export const GET_PUBLISHED_TESTPAPERS_SECURE = gql`
         id
         title
         createdAt
-        sharedWith
+        sharedWith {
+          academicYear
+          grade
+          batch
+        }
       }
     }
   }

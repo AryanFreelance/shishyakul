@@ -41,14 +41,14 @@ import { Header } from "@/components/sections";
 export const dynamic = "force-dynamic";
 
 const Page = () => {
-  if (true) {
-    return (
-      <>
-        <Navbar navLinks={dashboardNavLinks} isHome={false} />
-        <DevelopmentMode />
-      </>
-    );
-  }
+  // if (true) {
+  //   return (
+  //     <>
+  //       <Navbar navLinks={dashboardNavLinks} isHome={false} />
+  //       <DevelopmentMode />
+  //     </>
+  //   );
+  // }
   const { id } = useParams();
   const [studMarks, setStudMarks] = useState([]);
   const [marksSaveDialogHandler, setMarksSaveDialogHandler] = useState(false);

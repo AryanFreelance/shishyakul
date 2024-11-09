@@ -35,16 +35,28 @@ import {
   UPDATE_SHARED_WITH,
   UPDATE_TESTPAPER,
 } from "@/graphql/mutations/testPaper.mutation";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import TestShareDialog from "@/components/private/dashboard/TestShareDialog";
+import { set } from "date-fns";
 
 const page = () => {
-  if (true) {
-    return (
-      <>
-        <Navbar navLinks={dashboardNavLinks} isHome={false} />
-        <DevelopmentMode />
-      </>
-    );
-  }
+  // if (true) {
+  //   return (
+  //     <>
+  //       <Navbar navLinks={dashboardNavLinks} isHome={false} />
+  //       <DevelopmentMode />
+  //     </>
+  //   );
+  // }
   // Test Paper Fields - Test Name, Subject, Date, Total Marks, Question Paper (PDF)
   let { id } = useParams();
   const [testData, setTestData] = useState({
@@ -168,7 +180,18 @@ const page = () => {
       });
       // console.log(testpaperData);
       // console.log("Test Data", testpaperData?.testpaper.date);
-      setSharedWith(testpaperData?.testpaper?.sharedWith);
+      // setSharedWith(testpaperData?.testpaper?.sharedWith);
+      // Remove the _typename frrom the testpaperData?.testpaper?.sharedWith, and add everything to sharedWith
+      const sharedWithDetails = testpaperData?.testpaper?.sharedWith;
+      setSharedWith(
+        sharedWithDetails.map((e) => {
+          return {
+            academicYear: e.academicYear,
+            grade: e.grade,
+            batch: e.batch,
+          };
+        })
+      );
     }
 
     // console.log("DATE", testData?.date >= todayDate);
@@ -277,48 +300,12 @@ const page = () => {
 
                 {published && !isPastDate && (
                   <>
-                    <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 mt-4">
-                      <Label
-                        htmlFor="share-to"
-                        className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%] py-3"
-                      >
-                        Share To
-                      </Label>
-                      <div className="w-full lg:w-[80%] md:w-[70%] flex flex-col md:gap-6 gap-2">
-                        <div className="flex gap-2 md:gap-6">
-                          <input
-                            type="number"
-                            id="share-to"
-                            className="input-taking w-[74%]"
-                            placeholder="Enter Grade..."
-                            value={shareInput}
-                            min={8}
-                            max={12}
-                            onChange={(e) => setShareInput(e.target.value)}
-                          />
-                          <Button
-                            className="w-[26%] md:mt-0 py-6"
-                            disabled={
-                              shareInput === "" ||
-                              shareInput.includes(".") ||
-                              shareInput.includes(" ") ||
-                              shareInput.includes(",") ||
-                              shareInput.includes(";") ||
-                              sharedWith.includes(shareInput)
-                            }
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setSharedWith([...sharedWith, shareInput]);
-                              setShareInput("");
-                            }}
-                          >
-                            Share
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+                    <TestShareDialog
+                      sharedWith={sharedWith}
+                      setSharedWith={setSharedWith}
+                    />
 
-                    <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 mt-4">
+                    {/* <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 mt-4">
                       <Label
                         htmlFor="share-to"
                         className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%] py-3"
@@ -377,7 +364,7 @@ const page = () => {
                           ))}
                         </div>
                       </div>
-                    </div>
+                    </div> */}
                   </>
                 )}
 

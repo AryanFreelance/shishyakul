@@ -49,7 +49,7 @@ export const PUBLISH_TESTPAPER = gql`
 
 // Update Shared With for Published Tests
 export const UPDATE_SHARED_WITH = gql`
-  mutation UpdateSharedTest($id: ID!, $sharedWith: [String]) {
+  mutation UpdateSharedTest($id: ID!, $sharedWith: [TestSharedWithInp]) {
     updateSharedTest(id: $id, sharedWith: $sharedWith)
   }
 `;

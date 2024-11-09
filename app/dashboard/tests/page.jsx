@@ -23,14 +23,14 @@ import { GET_TESTPAPERS } from "@/graphql/queries/testPaper.query";
 import DevelopmentMode from "@/components/shared/DevelopmentMode";
 
 const page = () => {
-  if (true) {
-    return (
-      <>
-        <Navbar navLinks={dashboardNavLinks} isHome={false} />
-        <DevelopmentMode />
-      </>
-    );
-  }
+  // if (true) {
+  //   return (
+  //     <>
+  //       <Navbar navLinks={dashboardNavLinks} isHome={false} />
+  //       <DevelopmentMode />
+  //     </>
+  //   );
+  // }
 
   // Queries
   const { data } = useSuspenseQuery(GET_TESTPAPERS);

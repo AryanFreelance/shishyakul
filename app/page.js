@@ -14,6 +14,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import Container from "@/components/shared/Container";
 import { navLinks } from "@/constants";
+import AdComponent from "@/components/ads/AdComponent";
 
 export default function Home() {
   return (
@@ -26,6 +27,7 @@ export default function Home() {
         <Separator className="my-[3rem] lg:my-[4rem]" />
         <WhatCanWeProvide />
         <Statistics />
+        <AdComponent />
         <OurTeachers />
         <Separator className="my-[3rem] lg:my-[4rem]" />
         <Testimonials />

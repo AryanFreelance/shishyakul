@@ -2,7 +2,6 @@ import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { ApolloWrapper } from "@/components/shared/ApolloWrapper";
 import GoogleAnalytics from "@/lib/GoogleAnalytics";
-import Script from "next/script";
 
 export const metadata = {
   title: "Shishyakul | Tution Classes",

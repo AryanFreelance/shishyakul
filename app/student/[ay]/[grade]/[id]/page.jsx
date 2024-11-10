@@ -77,6 +77,8 @@ const page = () => {
     GET_PUBLISHED_TESTPAPERS_USERS,
     {
       variables: {
+        ay: ay,
+        grade: grade,
         id: id,
       },
     }
@@ -280,7 +282,10 @@ const page = () => {
                 className="flex items-center justify-between gap-6 bg-secondary text-primary px-6 py-4 rounded"
               >
                 <div className="flex items-center gap-4">
-                  {test?.marks !== null ? (
+                  {Number(test?.date.split("-").join("")) <
+                  Number(
+                    new Date().toISOString().split("T")[0].split("-").join("")
+                  ) ? (
                     <CircleCheck className="text-green-300" />
                   ) : (
                     <Circle className="text-red-300" />
@@ -289,6 +294,9 @@ const page = () => {
                     <h4 className="smallheading">{test.title}</h4>
                     <span className="barlow-regular">
                       Created on - {test.createdAt.split(",")[0]}
+                    </span>
+                    <span className="barlow-regular">
+                      Test On - {test.date.split("-").reverse().join("/")}
                     </span>
                     {test?.marks !== null && (
                       <span className="barlow-regular">
@@ -308,8 +316,15 @@ const page = () => {
                         <AlertDialogTitle>{test.title}</AlertDialogTitle>
 
                         <AlertDialogDescription>
-                          {/* Created on - {test.createdAt.split(",")[0]} */}
-                          Test On - {test.date.split("-").reverse().join("/")}
+                          <div className="flex flex-col gap-2">
+                            <span>
+                              Created on - {test.createdAt.split(",")[0]}
+                            </span>
+                            <span>
+                              Test On -{" "}
+                              {test.date.split("-").reverse().join("/")}
+                            </span>
+                          </div>
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <iframe
@@ -344,7 +359,17 @@ const page = () => {
             )}
 
             {testPaperUsers?.testpaperUsers.map((test) => {
-              if (test?.marks !== null) {
+              console.log(
+                "TEST",
+                test?.date.split("-").join(""),
+                new Date().toISOString().split("T")[0].split("-").join("")
+              );
+              if (
+                Number(test?.date.split("-").join("")) <
+                Number(
+                  new Date().toISOString().split("T")[0].split("-").join("")
+                )
+              ) {
                 return (
                   <div
                     key={test.id}
@@ -355,7 +380,9 @@ const page = () => {
                       <div className="flex flex-col">
                         <h4 className="smallheading">{test.title}</h4>
                         <span className="barlow-regular">
-                          {/* Created on - {test.createdAt.split(",")[0]} */}
+                          Created on - {test.createdAt.split(",")[0]}
+                        </span>
+                        <span className="barlow-regular">
                           Test On - {test.date.split("-").reverse().join("/")}
                         </span>
                         {test?.marks !== null && (
@@ -376,7 +403,15 @@ const page = () => {
                             <AlertDialogTitle>{test.title}</AlertDialogTitle>
 
                             <AlertDialogDescription>
-                              Created on - {test.createdAt.split(",")[0]}
+                              <div className="flex flex-col gap-2">
+                                <span>
+                                  Created on - {test.createdAt.split(",")[0]}
+                                </span>
+                                <span>
+                                  Test On -{" "}
+                                  {test.date.split("-").reverse().join("/")}
+                                </span>
+                              </div>
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <iframe

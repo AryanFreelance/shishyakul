@@ -133,6 +133,24 @@ export const GET_STUDENT_PROFILE = gql`
         board
         medium
       }
+      parentSection {
+        expectationsWithShishyakul
+        strengthAndWeakness
+        medicalAllergiesAndConcerns
+      }
+      studentSection {
+        describeYourself
+        passion
+        skills
+        hobbies
+        dreams
+        achievements
+        strength
+        weakness
+        thingsWantToImprove
+        anythingToShare
+        expectationsWithShishyakul
+      }
     }
   }
 `;

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, EyeIcon, EyeOff, Home } from "lucide-react";
+import { ArrowLeft, EyeIcon, EyeOff, Home, LogIn } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import Container from "@/components/shared/Container";
@@ -78,6 +78,12 @@ function Page() {
             className="bg-secondary text-primary px-4 py-2 rounded barlow-medium flex gap-2 items-center mt-6"
           >
             Try Again <ArrowLeft />
+          </Link>
+          <Link
+            href="/login"
+            className="bg-secondary text-primary px-4 py-2 rounded barlow-medium flex gap-2 items-center mt-6"
+          >
+            Login <LogIn />
           </Link>
           <Link
             href="/"

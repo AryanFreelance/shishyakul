@@ -102,8 +102,8 @@ export const GET_PUBLISHED_TESTPAPERS_SECURE = gql`
 
 // Get Test Papers for the User
 export const GET_PUBLISHED_TESTPAPERS_USERS = gql`
-  query TestpaperUsers($id: ID!) {
-    testpaperUsers(id: $id) {
+  query TestpaperUsers($ay: String!, $grade: String!, $id: ID!) {
+    testpaperUsers(ay: $ay, grade: $grade, id: $id) {
       id
       title
       subject

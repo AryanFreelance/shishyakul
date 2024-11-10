@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Eye,
   Plus,
+  RefreshCw,
   SearchIcon,
   Trash,
 } from "lucide-react";
@@ -212,6 +213,29 @@ const DashboardPage = () => {
     });
 
     setOpenAddStudentDialog(false);
+  };
+
+  const handleRefreshStudents = async (e) => {
+    e.preventDefault();
+
+    await fetchStudents({
+      fetchPolicy: "network-only",
+      variables: {
+        ay: searchParameters.ay,
+        grade:
+          searchParameters.grade === "select-grade"
+            ? null
+            : searchParameters.grade,
+      },
+      onCompleted: (data) => {
+        setStudents(data.students || []);
+        setFilteredStudents(data.students || []);
+        setSelectedBatch("select-batch");
+        console.log("DATA", data);
+      },
+    });
+
+    toast.success("Students Refreshed Successfully!");
   };
 
   // Update the localStorage whenever the search parameters change
@@ -430,9 +454,13 @@ const DashboardPage = () => {
               </Select>
             </div>
           </div>
-          <span className="mt-3 mb-6 text-lg">
-            {filteredStudents?.length || 0} Students Found
+          <span className="mt-3 mb-6 text-lg flex items-center gap-3">
+            <span>{filteredStudents?.length || 0} Students Found</span>
+            <button onClick={handleRefreshStudents}>
+              <RefreshCw />
+            </button>
           </span>
+
           {/* Pagination */}
           {students?.length !== 0 && (
             <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-4">

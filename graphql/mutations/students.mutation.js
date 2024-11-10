@@ -52,6 +52,8 @@ export const UPDATE_STUDENT = gql`
     $studentInformation: StudentInformationInput
     $guardianInformation: GuardianInformationInput
     $siblingInformation: [SiblingInformationInput]
+    $parentSection: ParentSectionInformationInput
+    $studentSection: StudentSectionInformationInput
   ) {
     updateStudent(
       userId: $userId
@@ -67,6 +69,8 @@ export const UPDATE_STUDENT = gql`
       studentInformation: $studentInformation
       guardianInformation: $guardianInformation
       siblingInformation: $siblingInformation
+      parentSection: $parentSection
+      studentSection: $studentSection
     )
   }
 `;

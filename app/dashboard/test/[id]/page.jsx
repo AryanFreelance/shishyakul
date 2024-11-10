@@ -184,7 +184,7 @@ const page = () => {
       // Remove the _typename frrom the testpaperData?.testpaper?.sharedWith, and add everything to sharedWith
       const sharedWithDetails = testpaperData?.testpaper?.sharedWith;
       setSharedWith(
-        sharedWithDetails.map((e) => {
+        sharedWithDetails?.map((e) => {
           return {
             academicYear: e.academicYear,
             grade: e.grade,

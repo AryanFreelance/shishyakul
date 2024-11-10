@@ -23,7 +23,13 @@ import { DELETE_TEMP_STUDENT } from "@/graphql/mutations/students.mutation";
 import { GET_TEMP_STUDENTS } from "@/graphql/queries/students.query";
 import { useMutation, useSuspenseQuery } from "@apollo/client";
 import { set } from "date-fns";
-import { ArrowLeft, ArrowRight, SearchIcon, Trash } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  RefreshCw,
+  SearchIcon,
+  Trash,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -90,7 +96,7 @@ const TempStudentsComp = () => {
       <div className="flex justify-between items-center">
         <h2 className="subheading">Students Pending</h2>
       </div>
-      <div className="my-4">
+      <div className="my-4 mb-6 text-lg">
         <span>{filteredTempStudents.length} Students Found.</span>
       </div>
       {/* Searchbar */}

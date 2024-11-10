@@ -1,6 +1,7 @@
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { ApolloWrapper } from "@/components/shared/ApolloWrapper";
+import GoogleAnalytics from "@/lib/GoogleAnalytics";
 
 export const metadata = {
   title: "Shishyakul | Tution Classes",
@@ -101,6 +102,9 @@ export default function RootLayout({ children }) {
       <body suppressHydrationWarning={true}>
         <ApolloWrapper>{children}</ApolloWrapper>
         <Toaster />
+        {process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS ? (
+          <GoogleAnalytics ga_id={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS} />
+        ) : null}
       </body>
     </html>
   );

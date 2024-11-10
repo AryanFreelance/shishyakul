@@ -2,6 +2,7 @@ import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { ApolloWrapper } from "@/components/shared/ApolloWrapper";
 import GoogleAnalytics from "@/lib/GoogleAnalytics";
+import Script from "next/script";
 
 export const metadata = {
   title: "Shishyakul | Tution Classes",
@@ -112,6 +113,15 @@ export default function RootLayout({ children }) {
         {process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS ? (
           <GoogleAnalytics ga_id={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS} />
         ) : null}
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          strategy="afterInteractive"
+          onLoad={() => {
+            (window.adsbygoogle = window.adsbygoogle || []).push({});
+          }}
+          crossOrigin="anonymous"
+        />
       </body>
     </html>
   );

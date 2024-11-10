@@ -113,15 +113,6 @@ export default function RootLayout({ children }) {
         {process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS ? (
           <GoogleAnalytics ga_id={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS} />
         ) : null}
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          strategy="afterInteractive"
-          onLoad={() => {
-            (window.adsbygoogle = window.adsbygoogle || []).push({});
-          }}
-          crossOrigin="anonymous"
-        />
       </body>
     </html>
   );

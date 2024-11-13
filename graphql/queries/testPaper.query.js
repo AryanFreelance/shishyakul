@@ -164,3 +164,18 @@ export const GET_TESTPAPER_ATTENDANCE_STUDENTS = gql`
     }
   }
 `;
+
+export const GET_TESTPAPER_MARKS_STUDENTS = gql`
+  query TestpaperAttendanceStudents($id: ID!) {
+    testpaperAttendanceStudents(id: $id) {
+      userId
+      firstname
+      middlename
+      lastname
+      ay
+      grade
+      batch
+      email
+    }
+  }
+`;

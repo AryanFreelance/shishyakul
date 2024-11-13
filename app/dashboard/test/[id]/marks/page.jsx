@@ -26,7 +26,9 @@ import {
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 import {
   GET_TESTPAPER,
+  GET_TESTPAPER_ATTENDANCE_STUDENTS,
   GET_TESTPAPER_MARKS,
+  GET_TESTPAPER_MARKS_STUDENTS,
   GET_TESTPAPER_SHARED_USERS,
 } from "@/graphql/queries/testPaper.query";
 import { Button } from "@/components/ui/button";
@@ -59,11 +61,24 @@ const Page = () => {
   const { data: testpaperMarks } = useSuspenseQuery(GET_TESTPAPER_MARKS, {
     variables: { id },
   });
-  const { data: sharedTestPaperUsers } = useSuspenseQuery(
-    GET_TESTPAPER_SHARED_USERS,
-    {
-      variables: { id },
-    }
+  // const { data: sharedTestPaperUsers } = useSuspenseQuery(
+  //   GET_TESTPAPER_SHARED_USERS,
+  //   {
+  //     variables: { id },
+  //   }
+  // );
+
+  const {
+    data: sharedTestPaperUsers,
+    loading: loadingTestpaperStudentAttendancedata,
+  } = useSuspenseQuery(GET_TESTPAPER_MARKS_STUDENTS, {
+    variables: { id },
+  });
+
+  console.log(
+    "SHAREDTESTPAPERUSER",
+    sharedTestPaperUsers,
+    loadingTestpaperStudentAttendancedata
   );
 
   const [saveTestMarks] = useMutation(SAVE_TEST_MARKS, {
@@ -95,8 +110,8 @@ const Page = () => {
 
   useEffect(() => {
     if (testpaperMarks?.testpaperMarks) {
-      const initialMarks = sharedTestPaperUsers?.testAccessedUsers.map(
-        (user) => {
+      const initialMarks =
+        sharedTestPaperUsers?.testpaperAttendanceStudents.map((user) => {
           const existingMarks = testpaperMarks.testpaperMarks.find(
             (mark) => mark.email === user.email
           );
@@ -107,8 +122,7 @@ const Page = () => {
             grade: user.grade,
             marks: existingMarks ? existingMarks.marks : "",
           };
-        }
-      );
+        });
       setStudMarks(initialMarks);
     }
   }, [testpaperMarks, sharedTestPaperUsers]);
@@ -120,7 +134,10 @@ const Page = () => {
       toast.error("Please add marks for the students!", { id: toastId });
       return;
     }
-    if (studMarks.length !== sharedTestPaperUsers.testAccessedUsers.length) {
+    if (
+      studMarks.length !==
+      sharedTestPaperUsers.testpaperAttendanceStudents.length
+    ) {
       toast.error("Please add marks for all the students!", { id: toastId });
       return;
     }
@@ -189,6 +206,10 @@ const Page = () => {
           <h1 className="subheading text-secondary">
             Add/Update Student Test Marks
           </h1>
+          <span className="mt-3">
+            {sharedTestPaperUsers?.testpaperAttendanceStudents?.length} Students
+            Found.
+          </span>
           <div className="mt-4">
             <Table>
               <TableHeader>
@@ -202,39 +223,41 @@ const Page = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sharedTestPaperUsers?.testAccessedUsers.map((user, index) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      {user.firstname} {user.lastname}
-                    </TableCell>
-                    <TableCell>{user.grade}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <input
-                        placeholder="Enter Marks"
-                        className="input-taking w-full"
-                        type="number"
-                        value={studMarks[index]?.marks || ""}
-                        min={0}
-                        max={testpaperData?.testpaper.totalMarks}
-                        onChange={(e) => {
-                          e.preventDefault();
-                          setStudMarks((prev) => {
-                            const newMarks = [...prev];
-                            newMarks[index] = {
-                              id: user.userId,
-                              name: `${user.firstname} ${user.lastname}`,
-                              email: user.email,
-                              grade: user.grade,
-                              marks: Number(e.target.value),
-                            };
-                            return newMarks;
-                          });
-                        }}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {sharedTestPaperUsers?.testpaperAttendanceStudents.map(
+                  (user, index) => (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        {user.firstname} {user.lastname}
+                      </TableCell>
+                      <TableCell>{user.grade}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <input
+                          placeholder="Enter Marks"
+                          className="input-taking w-full"
+                          type="number"
+                          value={studMarks[index]?.marks || ""}
+                          min={0}
+                          max={testpaperData?.testpaper.totalMarks}
+                          onChange={(e) => {
+                            e.preventDefault();
+                            setStudMarks((prev) => {
+                              const newMarks = [...prev];
+                              newMarks[index] = {
+                                id: user.userId,
+                                name: `${user.firstname} ${user.lastname}`,
+                                email: user.email,
+                                grade: user.grade,
+                                marks: Number(e.target.value),
+                              };
+                              return newMarks;
+                            });
+                          }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )
+                )}
               </TableBody>
             </Table>
           </div>

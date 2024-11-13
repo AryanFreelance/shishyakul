@@ -23,8 +23,19 @@ import ProfileStudentInformation from "@/components/private/studentPage/ProfileS
 import ProfileGuardianInformation from "@/components/private/studentPage/ProfileGuardianInformation";
 import ProfileSiblingInformation from "@/components/private/studentPage/ProfileSiblingInformation";
 import ProfileParentSectionInformation from "@/components/private/studentPage/ProfileParentSectionInformation";
-import { ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, ShieldAlert } from "lucide-react";
 import ProfileStudentSectionInformation from "@/components/private/studentPage/ProfileStudentSectionInformation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const page = () => {
   const [studentInformation, setStudentInformation] = useState({
@@ -85,6 +96,9 @@ const page = () => {
     anythingToShare: "",
     expectationsWithShishyakul: "",
   });
+
+  const [isParentSectionNull, setIsParentSectionNull] = useState(false);
+  const [isStudentBasicInfoNull, setIsStudentBasicInfoNull] = useState(false);
 
   // Collapsible Open States
   // const [isStudentInformationOpen, setIsStudentInformationOpen] =
@@ -212,6 +226,14 @@ const page = () => {
     if (data?.student?.grade != null) setGrade(data?.student.grade);
     if (data?.student?.batch != null) setBatch(data?.student.batch);
     if (data?.student?.ay != null) setAy(data?.student.ay);
+
+    if (data?.student?.parentSection === null) {
+      setIsParentSectionNull(true);
+    }
+
+    if (data?.student?.studentSection === null) {
+      setIsStudentBasicInfoNull(true);
+    }
     console.log("DATA", data);
   }, [data]);
 
@@ -340,7 +362,72 @@ const page = () => {
       </div>
 
       <div className="py-4">
-        <h2 className="subheading mb-8">Welcome {firstName}</h2>
+        <div className="w-full flex md:justify-between items-center flex-col md:flex-row gap-3">
+          <h2 className="subheading mb-8">Welcome {firstName}</h2>
+          <div className="flex gap-3 items-center">
+            {isParentSectionNull && (
+              <AlertDialog>
+                <AlertDialogTrigger>
+                  <div
+                    className="text-red-700 p-1 border-2 border-transparent hover:border-gray-500 rounded-full transition-all ease-in-out duration-200"
+                    title="Complete Parent Section!"
+                  >
+                    <ShieldAlert />
+                  </div>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Please Complete the Parents Section!
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Parents Section should be compulsarily be filled by the
+                      parents of the student or the students with the consent of
+                      the parents.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogAction>Ok</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            {isStudentBasicInfoNull && (
+              // <div
+              //   className="text-red-700"
+              //   title="Complete Student Basic Information Section!"
+              // >
+              //   <ShieldAlert />
+              // </div>
+
+              <AlertDialog>
+                <AlertDialogTrigger>
+                  <div
+                    className="text-red-700 p-1 border-2 border-transparent hover:border-gray-500 rounded-full transition-all ease-in-out duration-200"
+                    title="Complete Parent Section!"
+                  >
+                    <ShieldAlert />
+                  </div>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Please Complete the Student Basic Info Section!
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Students Basic Info Section should be compulsarily be
+                      filled by the students with the information completely
+                      based on facts.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogAction>Ok</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
+        </div>
         <ProfileStudentInformation
           firstName={firstName}
           setFirstName={setFirstName}
@@ -415,7 +502,15 @@ const page = () => {
         >
           <CollapsibleTrigger className="flex w-full justify-between">
             <span className="barlow-semibold text-xl">Parent Section</span>
-            {isParentSectionOpen ? <ChevronUp /> : <ChevronDown />}
+
+            <div className="flex gap-2 items-center">
+              {isParentSectionNull && (
+                <div className="text-red-700">
+                  <ShieldAlert />
+                </div>
+              )}
+              {isParentSectionOpen ? <ChevronUp /> : <ChevronDown />}
+            </div>
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-3 barlow-regular text-md">
             <ProfileParentSectionInformation
@@ -435,7 +530,14 @@ const page = () => {
             <span className="barlow-semibold text-xl">
               Student Basic Information
             </span>
-            {isStudentSectionOpen ? <ChevronUp /> : <ChevronDown />}
+            <div className="flex gap-2 items-center">
+              {isStudentBasicInfoNull && (
+                <div className="text-red-700">
+                  <ShieldAlert />
+                </div>
+              )}
+              {isStudentSectionOpen ? <ChevronUp /> : <ChevronDown />}
+            </div>
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-3 barlow-regular text-md">
             <ProfileStudentSectionInformation

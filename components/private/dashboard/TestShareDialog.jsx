@@ -12,16 +12,25 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X } from "lucide-react";
+import { LOCK_SHARED_WITH_TESTPAPER } from "@/graphql/mutations/testPaper.mutation";
+import { GET_TESTPAPER } from "@/graphql/queries/testPaper.query";
+import { useMutation } from "@apollo/client";
+import { LockOpen, X } from "lucide-react";
 import React, { useState } from "react";
 
-const TestShareDialog = ({ sharedWith, setSharedWith }) => {
+const TestShareDialog = ({ sharedWith, setSharedWith, testpaperId }) => {
   const [academicYear, setAcademicYear] = useState(
     `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`
   );
   const [grade, setGrade] = useState("");
   const [batch, setBatch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const [lockSharedWithTestpaper] = useMutation(LOCK_SHARED_WITH_TESTPAPER, {
+    refetchQueries: [
+      { query: GET_TESTPAPER, variables: { id: testpaperId, published: true } },
+    ],
+  });
 
   const addShareInfo = (e) => {
     console.log("SHAREDWITH", sharedWith);
@@ -40,14 +49,42 @@ const TestShareDialog = ({ sharedWith, setSharedWith }) => {
     setSharedWith(sharedWith.filter((_, i) => i !== index));
   };
 
+  const lockTestHandler = async (e) => {
+    e.preventDefault();
+    const confirmLocking = confirm("Are you sure to lock the sharing?");
+    console.log("CONFIRM LOCKING", confirmLocking);
+    if (!confirmLocking) {
+      alert("No Changes Happened!");
+      return;
+    }
+
+    const lockResponse = await lockSharedWithTestpaper({
+      variables: {
+        id: testpaperId,
+        lockShareWith: true,
+      },
+    });
+
+    console.log("LOCKSHAREDWITHTESTOAOER", lockResponse);
+
+    if (lockResponse?.data?.lockSharedWithTest === "SUCCESS") {
+      alert("Locked the Test Sharing!");
+    } else {
+      alert("OOPS! Some Error Occured while locking test paper!");
+    }
+  };
+
   return (
     <>
       <div className="flex flex-col md:flex-row items-center md:gap-4 lg:gap-6 mt-4">
         <Label
           htmlFor="share-to"
-          className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%] py-3"
+          className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%] py-3 flex gap-2 items-center"
         >
-          Share To
+          <span>Share To</span>{" "}
+          <button onClick={lockTestHandler}>
+            <LockOpen />
+          </button>
         </Label>
         <div className="w-full lg:w-[80%] md:w-[70%] flex flex-col md:gap-6 gap-2">
           <div className="flex gap-2 md:gap-6">

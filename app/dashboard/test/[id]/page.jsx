@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { dashboardNavLinks } from "@/constants";
 import { useLazyQuery, useMutation } from "@apollo/client";
-import { X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import {
   AlertDialog,
@@ -35,18 +34,8 @@ import {
   UPDATE_SHARED_WITH,
   UPDATE_TESTPAPER,
 } from "@/graphql/mutations/testPaper.mutation";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import TestShareDialog from "@/components/private/dashboard/TestShareDialog";
-import { set } from "date-fns";
+import { Lock } from "lucide-react";
 
 const page = () => {
   // if (true) {
@@ -88,6 +77,8 @@ const page = () => {
   const { data: testpaperData } = useSuspenseQuery(GET_TESTPAPER, {
     variables: { id: `${id}`, published: published },
   });
+
+  console.log("TESTPAPERDATA", testpaperData);
 
   // Mutation - Update Test Paper (If Draft), Share Test Paper (If Published), Delete Test Paper, Publish Paper
   const [updateTestPaper] = useMutation(UPDATE_TESTPAPER, {
@@ -298,96 +289,45 @@ const page = () => {
                   />
                 </div>
 
-                {published && !isPastDate && (
-                  <>
-                    <TestShareDialog
-                      sharedWith={sharedWith}
-                      setSharedWith={setSharedWith}
-                    />
+                {published &&
+                  !isPastDate &&
+                  !testpaperData?.testpaper?.lockShareWith && (
+                    <>
+                      <TestShareDialog
+                        sharedWith={sharedWith}
+                        setSharedWith={setSharedWith}
+                        testpaperId={id}
+                      />
+                    </>
+                  )}
 
-                    {/* <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 mt-4">
-                      <Label
-                        htmlFor="share-to"
-                        className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%] py-3"
-                      >
-                        Share To Email
-                      </Label>
-                      <div className="w-full lg:w-[80%] md:w-[70%] flex flex-col md:gap-6 gap-2">
-                        <div className="flex gap-2 md:gap-6">
-                          <input
-                            type="email"
-                            id="share-to"
-                            className="input-taking w-[74%]"
-                            placeholder="Enter Email..."
-                            value={shareInputEmail}
-                            onChange={(e) => setShareInputEmail(e.target.value)}
-                          />
-                          <Button
-                            className="w-[26%] md:mt-0 py-6"
-                            disabled={
-                              shareInputEmail === "" ||
-                              !shareInputEmail.includes("@") ||
-                              !shareInputEmail.includes(".") ||
-                              shareInputEmail.includes(" ") ||
-                              shareInputEmail.includes(",") ||
-                              shareInputEmail.includes(";") ||
-                              sharedWith.includes(shareInputEmail)
-                            }
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setSharedWith([...sharedWith, shareInputEmail]);
-                              setShareInputEmail("");
-                            }}
-                          >
-                            Share
-                          </Button>
-                        </div>
-                        <div className="flex flex-wrap gap-x-6 gap-y-4">
-                          {sharedWith?.map((email, index) => (
-                            <div
-                              key={index}
-                              className="bg-secondary text-primary flex gap-4 rounded px-4 py-2"
-                            >
-                              <span>{email}</span>
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  const updatedSharedWith = sharedWith.filter(
-                                    (e) => e !== email
-                                  );
-                                  setSharedWith(updatedSharedWith);
-                                }}
-                              >
-                                <X />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div> */}
-                  </>
-                )}
-
-                {published && isPastDate && (
+                {published && testpaperData?.testpaper?.lockShareWith && (
                   <div className="flex flex-col md:flex-row md:gap-4 lg:gap-6 mt-4">
                     <Label
                       htmlFor="share-to"
-                      className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%] py-3"
+                      className="text-xl text-secondary barlow-medium mb-2 lg:w-[20%] md:w-[30%] py-3 flex gap-2 items-center"
                     >
-                      Shared With
+                      <span>Shared To</span>{" "}
+                      {testpaperData?.testpaper?.lockShareWith && <Lock />}
                     </Label>
                     <div className="flex flex-wrap gap-x-6 gap-y-4 mt-4 w-full lg:w-[80%] md:w-[70%]">
                       {sharedWith?.length === 0 && (
                         <span className="text-secondary">
-                          No one has been shared with this test paper yet.
+                          No one was been shared with this test paper.
                         </span>
                       )}
-                      {sharedWith?.map((email, index) => (
+                      {sharedWith?.map((sharedWithInfo, index) => (
                         <div
                           key={index}
-                          className="bg-secondary text-primary flex gap-4 rounded px-4 py-2"
+                          className="border-2 border-black rounded-md px-4 py-2 flex gap-3 items-center"
                         >
-                          <span>{email}</span>
+                          <div>
+                            <p>AY: {sharedWithInfo.academicYear}</p>
+                            <p>Grade: {sharedWithInfo.grade}</p>
+                            {sharedWithInfo.batch !== "N/A" && (
+                              <p>Batch: {sharedWithInfo.batch}</p>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -401,23 +341,35 @@ const page = () => {
                   allowFullScreen
                 ></iframe>
 
-                {!isPastDate && (
+                {!isPastDate && !testpaperData?.testpaper?.lockShareWith && (
                   <div className="mt-10">
-                    <Button
-                      className="w-full"
-                      type="submit"
-                      onClick={updateTestPaperHandler}
-                    >
+                    <Button className="w-full" onClick={updateTestPaperHandler}>
                       Update Test
                     </Button>
                   </div>
                 )}
 
+                {sharedWith?.length !== 0 &&
+                  published &&
+                  testpaperData?.testpaper?.lockShareWith && (
+                    // Show Mark Attendance Button
+                    <div className="mt-6">
+                      <Button
+                        className="w-full bg-yellow-600 hover:bg-yellow-700 text-primary"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          router.push(`/dashboard/attendance/${id}`);
+                        }}
+                      >
+                        Mark Attendance
+                      </Button>
+                    </div>
+                  )}
+
                 {sharedWith?.length !== 0 && published && isPastDate && (
                   <div className="mt-6">
                     <Button
-                      className="w-full bg-yellow-600 hover:bg-yellow-700 text-primary"
-                      type="submit"
+                      className="w-full bg-sky-600 hover:bg-600 hover:bg-sky-700 text-primary"
                       onClick={(e) => {
                         e.preventDefault();
                         router.push(`/dashboard/test/${id}/marks`);

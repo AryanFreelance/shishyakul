@@ -55,6 +55,10 @@ export const GET_TESTPAPER = gql`
       url
       createdAt
       published
+      lockShareWith
+      present
+      absent
+      attendanceDate
     }
   }
 `;
@@ -143,6 +147,20 @@ export const GET_TESTPAPER_SHARED_USERS = gql`
       email
       phone
       grade
+    }
+  }
+`;
+
+export const GET_TESTPAPER_ATTENDANCE_STUDENTS = gql`
+  query TestpaperAttendanceStudents($id: ID!) {
+    testpaperAttendanceStudents(id: $id) {
+      userId
+      firstname
+      middlename
+      lastname
+      ay
+      grade
+      batch
     }
   }
 `;

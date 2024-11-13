@@ -54,7 +54,7 @@ const page = () => {
   const router = useRouter();
 
   // Queries
-  useSuspenseQuery(GET_TESTPAPERS);
+  // useSuspenseQuery(GET_TESTPAPERS);
 
   // Mutations
   const [createTest] = useMutation(CREATE_TEST, {
@@ -153,6 +153,8 @@ const page = () => {
               subject: formData.subject,
             },
           });
+
+          // await refetchQueries();
 
           toast.success("Test Paper Added Successfully!", {
             id: toastId,

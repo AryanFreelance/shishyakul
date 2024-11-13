@@ -54,6 +54,13 @@ export const UPDATE_SHARED_WITH = gql`
   }
 `;
 
+// Update lockShareWith for the test papers
+export const LOCK_SHARED_WITH_TESTPAPER = gql`
+  mutation LockSharedWithTest($id: ID!, $lockShareWith: Boolean!) {
+    lockSharedWithTest(id: $id, lockShareWith: $lockShareWith)
+  }
+`;
+
 // Delete a Test Paper
 export const DELETE_TESTPAPER = gql`
   mutation DeleteTest($id: ID!, $published: Boolean!) {
@@ -65,5 +72,22 @@ export const DELETE_TESTPAPER = gql`
 export const SAVE_TEST_MARKS = gql`
   mutation AddMarks($testId: ID!, $data: [MarksInput]) {
     addMarks(testId: $testId, data: $data)
+  }
+`;
+
+// Mark Test Paper Attendance
+export const MARK_TESTPAPER_ATTENDANCE = gql`
+  mutation TestAttendanceHandler(
+    $id: ID!
+    $date: String!
+    $present: [ID]
+    $absent: [ID]
+  ) {
+    testAttendanceHandler(
+      id: $id
+      date: $date
+      present: $present
+      absent: $absent
+    )
   }
 `;

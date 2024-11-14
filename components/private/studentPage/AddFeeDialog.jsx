@@ -125,7 +125,7 @@ const AddFeeDialog = ({ id, studData }) => {
           toast.error("Something went wrong!", {
             id: toastId,
           });
-          console.error(error);
+          // console.error(error);
           setIsFeeDialogOpen(false);
           return;
         });
@@ -179,7 +179,7 @@ const AddFeeDialog = ({ id, studData }) => {
         open={isFeeDialogOpen}
         onOpenChange={() => {
           setIsFeeDialogOpen(!isFeeDialogOpen);
-          console.log("ISFEEDIALOGOPEN", isFeeDialogOpen);
+          // console.log("ISFEEDIALOGOPEN", isFeeDialogOpen);
         }}
       >
         <DialogTrigger asChild>

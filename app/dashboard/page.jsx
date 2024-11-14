@@ -96,7 +96,7 @@ const DashboardPage = () => {
       variables: { ay: searchParameters.ay, grade: searchParameters.grade },
       onCompleted: (data) => {
         setStudents(data.students || []);
-        console.log("DATA", data);
+        // console.log("DATA", data);
       },
     }
   );
@@ -113,7 +113,7 @@ const DashboardPage = () => {
 
   const deleteStudentHandler = async (pay, pgrade, puserId) => {
     const toastId = toast.loading("Deleting Student...");
-    console.log("USERID", puserId);
+    // console.log("USERID", puserId);
     try {
       const response = await deleteStudent({
         variables: {
@@ -122,7 +122,7 @@ const DashboardPage = () => {
           userId: puserId,
         },
       });
-      console.log("RESPONSE", response);
+      // console.log("RESPONSE", response);
 
       if (response === "ERROR" || response === null) {
         toast.error("Failed to delete student!", {
@@ -139,7 +139,7 @@ const DashboardPage = () => {
         },
       });
 
-      console.log("DELETEUSERRESPONSE", deleteuserResponse);
+      // console.log("DELETEUSERRESPONSE", deleteuserResponse);
 
       if (deleteuserResponse.status !== 200) {
         toast.error("Failed to delete student from database!", {
@@ -152,7 +152,7 @@ const DashboardPage = () => {
         id: toastId,
       });
     } catch (error) {
-      console.log("ERROR", error);
+      // console.log("ERROR", error);
       toast.error("Failed to delete student!", {
         id: toastId,
       });
@@ -231,7 +231,7 @@ const DashboardPage = () => {
         setStudents(data.students || []);
         setFilteredStudents(data.students || []);
         setSelectedBatch("select-batch");
-        console.log("DATA", data);
+        // console.log("DATA", data);
       },
     });
 
@@ -258,7 +258,7 @@ const DashboardPage = () => {
         onCompleted: (data) => {
           setStudents(data.students || []);
           setFilteredStudents(data.students || []);
-          console.log("DATA", data);
+          // console.log("DATA", data);
         },
       });
     if (searchParameters.ay === "select-ay") setStudents([]);
@@ -274,7 +274,7 @@ const DashboardPage = () => {
         new Set(students.map((student) => student.batch).filter(Boolean))
       );
       setBatch(uniqueBatch);
-      console.log("UNIQUE BATCH", uniqueBatch);
+      // console.log("UNIQUE BATCH", uniqueBatch);
     } else {
       setBatch([]);
     }
@@ -289,9 +289,9 @@ const DashboardPage = () => {
       setOnePageStudent(slicedTempStudents);
       setPages(Math.ceil(filteredStudents.length / parseInt(pageSize)));
 
-      console.log("Sliced Temp Students", slicedTempStudents);
-      console.log("Pages", pages);
-      console.log("Current Page", currentPage);
+      // console.log("Sliced Temp Students", slicedTempStudents);
+      // console.log("Pages", pages);
+      // console.log("Current Page", currentPage);
     }
   }, [filteredStudents, currentPage, pageSize]);
 

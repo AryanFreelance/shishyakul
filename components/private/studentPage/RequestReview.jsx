@@ -34,7 +34,7 @@ const RequestReview = ({ name, email, ay, grade, userId, feeData }) => {
       return;
     }
 
-    console.log("FEEDATA", feeData);
+    // console.log("FEEDATA", feeData);
 
     const emailResp = await fetch("/api/review", {
       method: "POST",
@@ -53,7 +53,7 @@ const RequestReview = ({ name, email, ay, grade, userId, feeData }) => {
     });
 
     if (emailResp.status !== 200) {
-      console.log("EMAILRESP", emailResp);
+      // console.log("EMAILRESP", emailResp);
       toast.error("Failed to send message. Please try again.", {
         id: loading,
       });

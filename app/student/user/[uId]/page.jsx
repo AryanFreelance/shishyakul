@@ -17,14 +17,14 @@ const page = () => {
     },
   });
 
-  console.log("STUDINFO", uId, studData);
+  // console.log("STUDINFO", uId, studData);
 
   // Redirect to student/<ay>/<grade>/<id> if the studData is not null
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         const uid = user.uid;
-        console.log(user, uid);
+        // console.log(user, uid);
         setAuthStatus(true);
         // if (user.email !== "admin@shishyakul.in") {
         //   router.push(`/student/user/${uid}`);

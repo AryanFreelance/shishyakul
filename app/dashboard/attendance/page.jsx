@@ -92,7 +92,7 @@ const Page = () => {
       variables: { ay: searchParameters.ay, grade: searchParameters.grade },
       onCompleted: (data) => {
         setStudents(data?.gStudents || []);
-        console.log("DATA", data);
+        // console.log("DATA", data);
       },
     });
 
@@ -106,7 +106,7 @@ const Page = () => {
         timestamp: formattedDate.split("-").reverse().join("-"),
       },
       onCompleted: (data) => {
-        console.log("DATA", data);
+        // console.log("DATA", data);
       },
     }
   );
@@ -145,7 +145,7 @@ const Page = () => {
   useEffect(() => {
     setStudents(studentsData?.gStudents || []);
     setIsStudentDataLoading(studDataLoading);
-    console.log("STUDENTS", studentsData?.gStudents);
+    // console.log("STUDENTS", studentsData?.gStudents);
   }, [studentsData, studDataLoading]);
 
   // Update the formattedDate whenever the date changes
@@ -190,7 +190,7 @@ const Page = () => {
         onCompleted: (data) => {
           // setStudents(data?.gStudents || []);
           // setFilteredStudents(data.students || []);
-          console.log("DATA", data);
+          // console.log("DATA", data);
         },
       });
 
@@ -206,18 +206,18 @@ const Page = () => {
         onCompleted: (data) => {
           setStudents(data.gStudents || []);
           // setFilteredStudents(data.students || []);
-          console.log("DATA", data);
+          // console.log("DATA", data);
         },
       });
     }
     // if (searchParameters.ay === "select-ay") console.log("NO STUDENT");
-    console.log("SEARCHPARAMS", searchParameters);
+    // console.log("SEARCHPARAMS", searchParameters);
     setSelectedBatch("select-batch");
   }, [searchParameters]);
 
   useEffect(() => {
     if (selectedBatch && selectedBatch !== "select-batch") {
-      console.log("BATCH MODIFIED", selectedBatch);
+      // console.log("BATCH MODIFIED", selectedBatch);
       setStudents(
         studentsData?.gStudents?.filter(
           (student) => student.batch === selectedBatch
@@ -226,7 +226,7 @@ const Page = () => {
     } else {
       setStudents(studentsData?.gStudents || []);
     }
-    console.log("SELECTEDBATCH", selectedBatch);
+    // console.log("SELECTEDBATCH", selectedBatch);
   }, [selectedBatch]);
 
   // Update the present and absent arrays whenever the attendanceData changes
@@ -261,7 +261,7 @@ const Page = () => {
         )
       );
       setBatches(uniqueBatch);
-      console.log("UNIQUE BATCH", uniqueBatch);
+      // console.log("UNIQUE BATCH", uniqueBatch);
     } else {
       setBatches([]);
     }
@@ -337,7 +337,7 @@ const Page = () => {
     }
   };
 
-  console.log("FORMATTEDDATE", formattedDate);
+  // console.log("FORMATTEDDATE", formattedDate);
 
   return (
     <Container>

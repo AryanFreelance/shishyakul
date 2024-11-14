@@ -122,7 +122,7 @@ const page = () => {
   const [updateStudent] = useMutation(UPDATE_STUDENT, {
     // onCompleted: () => console.log("COMPLETED"),
     onCompleted: () => {
-      console.log("SUCCESS COMPLETED");
+      // console.log("SUCCESS COMPLETED");
       // toast.success("Updated Successfully");
     },
     refetchQueries: [
@@ -234,7 +234,7 @@ const page = () => {
     if (data?.student?.studentSection === null) {
       setIsStudentBasicInfoNull(true);
     }
-    console.log("DATA", data);
+    // console.log("DATA", data);
   }, [data]);
 
   const updateInformationHandler = async (e) => {
@@ -309,7 +309,7 @@ const page = () => {
       studentSection: studentSectionInformation,
     };
 
-    console.log("INFO", info);
+    // console.log("INFO", info);
 
     // Update Student Details
     const updateResp = await updateStudent({
@@ -332,10 +332,10 @@ const page = () => {
       },
     });
 
-    console.log("UPDATERESP", updateResp);
+    // console.log("UPDATERESP", updateResp);
 
     if (updateResp?.data.updateStudent === "SUCCESS") {
-      console.log("AY", ay, pAy, grade, pGrade);
+      // console.log("AY", ay, pAy, grade, pGrade);
 
       toast.success("Information Updated Successfully!", {
         id: toastId,

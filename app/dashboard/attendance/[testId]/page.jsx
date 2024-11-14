@@ -74,7 +74,7 @@ const TestpaperAttendance = () => {
     },
     onError: (error) => {
       toast.error("Error Saving attendance.");
-      console.log("ERROR", error);
+      // console.log("ERROR", error);
     },
     refetchQueries: [
       {
@@ -119,7 +119,7 @@ const TestpaperAttendance = () => {
       return updatedStudents;
     });
 
-    console.log("VALUE", value);
+    // console.log("VALUE", value);
   };
 
   const markAttendanceHandler = async (e) => {
@@ -138,9 +138,9 @@ const TestpaperAttendance = () => {
       (student) => student.attendance === "absent"
     );
 
-    console.log("PRESENT", presentStudents);
-    console.log("ABSENT", absentStudents);
-    console.log("ATTENDANCE", attendanceData);
+    // console.log("PRESENT", presentStudents);
+    // console.log("ABSENT", absentStudents);
+    // console.log("ATTENDANCE", attendanceData);
 
     await markTestpaperAttendance({
       variables: {
@@ -150,7 +150,7 @@ const TestpaperAttendance = () => {
         absent: absentStudents.map((student) => student.userId),
       },
     }).then((data) => {
-      console.log("DATA", data);
+      // console.log("DATA", data);
     });
   };
 
@@ -172,12 +172,12 @@ const TestpaperAttendance = () => {
     );
   };
 
-  console.log("TESTPAPERDATA", testpaperData);
-  console.log(
-    "testpaperStudentsAttendanceData",
-    testpaperStudentsAttendanceData
-  );
-  console.log("testpaperStudents", testpaperStudents);
+  // console.log("TESTPAPERDATA", testpaperData);
+  // console.log(
+  //   "testpaperStudentsAttendanceData",
+  //   testpaperStudentsAttendanceData
+  // );
+  // console.log("testpaperStudents", testpaperStudents);
 
   return (
     <Container>

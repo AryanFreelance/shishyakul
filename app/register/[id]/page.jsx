@@ -56,7 +56,7 @@ function Page() {
   }
 
   if (error) {
-    console.error(error);
+    // console.error(error);
     return (
       <div className="flex justify-center items-center h-[100svh] text-xl barlow-semibold">
         Error loading verification code.
@@ -184,7 +184,7 @@ function Page() {
     })
       .then((res) => {
         // router.push("/login");
-        console.log("RES", res);
+        // console.log("RES", res);
 
         if (res?.data?.createStudent === "SUCCESS") {
           toast.success("Student registered successfully!", {
@@ -198,7 +198,7 @@ function Page() {
         toast.error("Error registering student. Please try again.", {
           id: registeringToast,
         });
-        console.log(err);
+        // console.log(err);
       });
   };
 

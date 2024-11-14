@@ -74,9 +74,9 @@ const CheckFeeData = ({ isAdmin, studData, id }) => {
 
   const saveRemarkHandler = async (e, feeId) => {
     e.preventDefault();
-    console.log("REMARK", remark);
+    // console.log("REMARK", remark);
     const toasting = toast.loading("Updating Remark!");
-    console.log(id, feeId, remark);
+    // console.log(id, feeId, remark);
 
     await updateFee({
       variables: {
@@ -90,14 +90,14 @@ const CheckFeeData = ({ isAdmin, studData, id }) => {
         toast.success("Remark updated successfully!", {
           id: toasting,
         });
-        console.log("DATA", data);
+        // console.log("DATA", data);
       })
       .catch((error) => {
         // console.log(error);
         toast.error("There was an error updating remark!", {
           id: toasting,
         });
-        console.log("ERROR", error);
+        // console.log("ERROR", error);
       });
   };
 

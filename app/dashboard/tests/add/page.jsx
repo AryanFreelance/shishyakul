@@ -164,7 +164,7 @@ const page = () => {
           toast.error("Something went wrong!", {
             id: toastId,
           });
-          console.error(error);
+          // console.error(error);
         });
       router.push("/dashboard/tests");
 

@@ -94,7 +94,7 @@ const page = () => {
       </div>
     );
 
-  console.log("STUDDATA", studData);
+  // console.log("STUDDATA", studData);
 
   if (!studData?.student) {
     return (
@@ -359,11 +359,11 @@ const page = () => {
             )}
 
             {testPaperUsers?.testpaperUsers.map((test) => {
-              console.log(
-                "TEST",
-                test?.date.split("-").join(""),
-                new Date().toISOString().split("T")[0].split("-").join("")
-              );
+              // console.log(
+              //   "TEST",
+              //   test?.date.split("-").join(""),
+              //   new Date().toISOString().split("T")[0].split("-").join("")
+              // );
               if (
                 Number(test?.date.split("-").join("")) <
                 Number(

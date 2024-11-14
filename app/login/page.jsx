@@ -61,10 +61,10 @@ const Page = () => {
     try {
       await sendPasswordResetEmail(auth, resetEmail)
         .then(() => {
-          console.log("Password reset email sent successfully");
+          // console.log("Password reset email sent successfully");
         })
         .catch((error) => {
-          console.log("ERROR", error);
+          // console.log("ERROR", error);
         });
       toast.success("Password reset email sent successfully", { id: toastId });
     } catch (error) {

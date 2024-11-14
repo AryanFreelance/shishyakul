@@ -85,9 +85,9 @@ const TempStudentsComp = () => {
       setOnePageTempStudent(slicedTempStudents);
       setPages(Math.ceil(filteredTempStudents.length / pageSize));
 
-      console.log("Sliced Temp Students", slicedTempStudents);
-      console.log("Pages", pages);
-      console.log("Current Page", currentPage);
+      // console.log("Sliced Temp Students", slicedTempStudents);
+      // console.log("Pages", pages);
+      // console.log("Current Page", currentPage);
     }
   }, [filteredTempStudents, currentPage, pageSize]);
 

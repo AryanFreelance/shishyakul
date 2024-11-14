@@ -33,7 +33,7 @@ const TestShareDialog = ({ sharedWith, setSharedWith, testpaperId }) => {
   });
 
   const addShareInfo = (e) => {
-    console.log("SHAREDWITH", sharedWith);
+    // console.log("SHAREDWITH", sharedWith);
     e.preventDefault();
     // Add the students to the test shared Array
     setSharedWith([
@@ -45,14 +45,14 @@ const TestShareDialog = ({ sharedWith, setSharedWith, testpaperId }) => {
 
   const removeShareWithHandler = (e, index) => {
     e.preventDefault();
-    console.log("SHAREDWITH", sharedWith);
+    // console.log("SHAREDWITH", sharedWith);
     setSharedWith(sharedWith.filter((_, i) => i !== index));
   };
 
   const lockTestHandler = async (e) => {
     e.preventDefault();
     const confirmLocking = confirm("Are you sure to lock the sharing?");
-    console.log("CONFIRM LOCKING", confirmLocking);
+    // console.log("CONFIRM LOCKING", confirmLocking);
     if (!confirmLocking) {
       alert("No Changes Happened!");
       return;
@@ -65,7 +65,7 @@ const TestShareDialog = ({ sharedWith, setSharedWith, testpaperId }) => {
       },
     });
 
-    console.log("LOCKSHAREDWITHTESTOAOER", lockResponse);
+    // console.log("LOCKSHAREDWITHTESTOAOER", lockResponse);
 
     if (lockResponse?.data?.lockSharedWithTest === "SUCCESS") {
       alert("Locked the Test Sharing!");

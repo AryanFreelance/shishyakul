@@ -78,7 +78,7 @@ const page = () => {
     variables: { id: `${id}`, published: published },
   });
 
-  console.log("TESTPAPERDATA", testpaperData);
+  // console.log("TESTPAPERDATA", testpaperData);
 
   // Mutation - Update Test Paper (If Draft), Share Test Paper (If Published), Delete Test Paper, Publish Paper
   const [updateTestPaper] = useMutation(UPDATE_TESTPAPER, {

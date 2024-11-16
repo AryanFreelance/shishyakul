@@ -158,10 +158,10 @@ const ProfileStudentInformation = ({
                 Batch
               </Label>
               <input
-                type="number"
+                type="text"
                 id="batch"
-                min={1}
-                max={10}
+                // min={1}
+                // max={10}
                 className="input-taking w-full disabled:bg-black/10"
                 placeholder="Update Batch..."
                 value={batch}

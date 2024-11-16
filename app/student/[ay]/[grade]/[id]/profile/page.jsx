@@ -270,44 +270,44 @@ const page = () => {
     }
 
     // Check if all the parents and students field are filled or not
-    if (
-      parentSectionInformation.expectationsWithShishyakul === "" ||
-      parentSectionInformation.strengthAndWeakness === "" ||
-      parentSectionInformation.medicalAllergiesAndConcerns === "" ||
-      studentSectionInformation.describeYourself === "" ||
-      studentSectionInformation.passion === "" ||
-      studentSectionInformation.skills === "" ||
-      studentSectionInformation.hobbies === "" ||
-      studentSectionInformation.dreams === "" ||
-      studentSectionInformation.achievements === "" ||
-      studentSectionInformation.strength === "" ||
-      studentSectionInformation.weakness === "" ||
-      studentSectionInformation.thingsWantToImprove === "" ||
-      studentSectionInformation.anythingToShare === ""
-    ) {
-      toast.error("Please Fill Parents & Student Information First!", {
-        id: toastId,
-      });
-      return;
-    }
+    // if (
+    //   parentSectionInformation.expectationsWithShishyakul === "" ||
+    //   parentSectionInformation.strengthAndWeakness === "" ||
+    //   parentSectionInformation.medicalAllergiesAndConcerns === "" ||
+    //   studentSectionInformation.describeYourself === "" ||
+    //   studentSectionInformation.passion === "" ||
+    //   studentSectionInformation.skills === "" ||
+    //   studentSectionInformation.hobbies === "" ||
+    //   studentSectionInformation.dreams === "" ||
+    //   studentSectionInformation.achievements === "" ||
+    //   studentSectionInformation.strength === "" ||
+    //   studentSectionInformation.weakness === "" ||
+    //   studentSectionInformation.thingsWantToImprove === "" ||
+    //   studentSectionInformation.anythingToShare === ""
+    // ) {
+    //   toast.error("Please Fill Parents & Student Information First!", {
+    //     id: toastId,
+    //   });
+    //   return;
+    // }
 
-    const info = {
-      userId: id,
-      firstname: firstName,
-      middlename: middleName,
-      lastname: lastName,
-      phone: phone,
-      ay: pAy,
-      newAy: pAy === ay ? null : ay,
-      grade: pGrade,
-      newGrade: pGrade === grade ? null : grade,
-      batch: batch,
-      studentInformation: studentInformation,
-      guardianInformation: guardianInformation,
-      siblingInformation: siblingInformation,
-      parentSection: parentSectionInformation,
-      studentSection: studentSectionInformation,
-    };
+    // const info = {
+    //   userId: id,
+    //   firstname: firstName,
+    //   middlename: middleName,
+    //   lastname: lastName,
+    //   phone: phone,
+    //   ay: pAy,
+    //   newAy: pAy === ay ? null : ay,
+    //   grade: pGrade,
+    //   newGrade: pGrade === grade ? null : grade,
+    //   batch: batch,
+    //   studentInformation: studentInformation,
+    //   guardianInformation: guardianInformation,
+    //   siblingInformation: siblingInformation,
+    //   parentSection: parentSectionInformation,
+    //   studentSection: studentSectionInformation,
+    // };
 
     // console.log("INFO", info);
 

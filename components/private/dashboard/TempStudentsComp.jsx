@@ -91,13 +91,13 @@ const TempStudentsComp = () => {
         return [...prev, email]; // Add email if not selected
       }
     });
-    console.log("SELECTED", selectedEmails);
+    // console.log("SELECTED", selectedEmails);
   };
 
   const bulkDeleteVerifications = async (e) => {
     e.preventDefault();
     const loadingToast = toast.loading("Deleting Temp Student(s)...");
-    console.log("EMAILS", selectedEmails);
+    // console.log("EMAILS", selectedEmails);
 
     await bulkDeleteTempStudents({
       variables: {
@@ -144,7 +144,7 @@ const TempStudentsComp = () => {
       },
     });
 
-    console.log("INVITERESP", inviteResp);
+    // console.log("INVITERESP", inviteResp);
 
     if (inviteResp.status !== 200) {
       toast.error("Failed to resend invite. Please try again.", {

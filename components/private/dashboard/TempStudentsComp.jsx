@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -19,7 +20,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DELETE_TEMP_STUDENT } from "@/graphql/mutations/students.mutation";
+import {
+  DELETE_STUDENTS_IN_BULK,
+  DELETE_TEMP_STUDENT,
+} from "@/graphql/mutations/students.mutation";
 import { GET_TEMP_STUDENTS } from "@/graphql/queries/students.query";
 import { useMutation, useSuspenseQuery } from "@apollo/client";
 import { set } from "date-fns";
@@ -27,6 +31,7 @@ import {
   ArrowLeft,
   ArrowRight,
   RefreshCw,
+  Repeat,
   SearchIcon,
   Trash,
 } from "lucide-react";
@@ -41,11 +46,16 @@ const TempStudentsComp = () => {
 
   const [searchEmail, setSearchEmail] = useState("");
   const [filteredTempStudents, setFilteredTempStudents] = useState([]);
+  const [selectedEmails, setSelectedEmails] = useState([]);
   // const pageSize = 20;
 
   const { data: tempStudents } = useSuspenseQuery(GET_TEMP_STUDENTS);
 
   const [deleteTempStudent] = useMutation(DELETE_TEMP_STUDENT, {
+    refetchQueries: [{ query: GET_TEMP_STUDENTS }],
+  });
+
+  const [bulkDeleteTempStudents] = useMutation(DELETE_STUDENTS_IN_BULK, {
     refetchQueries: [{ query: GET_TEMP_STUDENTS }],
   });
 
@@ -72,6 +82,82 @@ const TempStudentsComp = () => {
   useEffect(() => {
     setFilteredTempStudents(tempStudents?.tempStudents);
   }, [tempStudents]);
+
+  const handleCheckboxChange = (email) => {
+    setSelectedEmails((prev) => {
+      if (prev.includes(email)) {
+        return prev.filter((e) => e !== email); // Remove email if already selected
+      } else {
+        return [...prev, email]; // Add email if not selected
+      }
+    });
+    console.log("SELECTED", selectedEmails);
+  };
+
+  const bulkDeleteVerifications = async (e) => {
+    e.preventDefault();
+    const loadingToast = toast.loading("Deleting Temp Student(s)...");
+    console.log("EMAILS", selectedEmails);
+
+    await bulkDeleteTempStudents({
+      variables: {
+        emails: selectedEmails,
+      },
+    })
+      .then((resp) => {
+        if (resp.bulkDeleteTempStudents === "SUCCESS") {
+          setSelectedEmails([]);
+          toast.success("Temp Student(s) Deleted Successfully!", {
+            id: loadingToast,
+          });
+        } else {
+          toast.error("There was an error deleting temp student(s)!", {
+            id: loadingToast,
+          });
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+        toast.error("There was an error deleting temp student(s)!", {
+          id: loadingToast,
+        });
+      });
+  };
+
+  const resendVerificationCode = async (e, studEmail, verificationCode) => {
+    e.preventDefault();
+    const loading = toast.loading(
+      "ReSending Verification Code to the Student..."
+    );
+
+    const domain = window.location.origin;
+
+    const inviteResp = await fetch("/api/invite", {
+      method: "POST",
+      body: JSON.stringify({
+        email: studEmail,
+        r_message: `Sign Up Link - ${domain}/register/${verificationCode}`,
+        r_code: verificationCode,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    console.log("INVITERESP", inviteResp);
+
+    if (inviteResp.status !== 200) {
+      toast.error("Failed to resend invite. Please try again.", {
+        id: loading,
+      });
+      // setOpenAddStudentDialog(false);
+      return;
+    }
+
+    toast.success("Invite Resend to the Student Successfully!", {
+      id: loading,
+    });
+  };
 
   useEffect(() => {
     if (filteredTempStudents) {
@@ -163,6 +249,14 @@ const TempStudentsComp = () => {
           </button>
         </div>
       </div>
+      <div className="flex justify-end my-2">
+        <Button
+          disabled={selectedEmails.length === 0}
+          onClick={bulkDeleteVerifications}
+        >
+          Bulk Delete
+        </Button>
+      </div>
       <div className="my-4">
         <Table>
           <TableHeader>
@@ -201,7 +295,15 @@ const TempStudentsComp = () => {
             {onePageTempStudent?.map((tempStudents, index) => (
               <TableRow key={index}>
                 <TableCell className="barlow-regular">
-                  {currentPage * pageSize + index + 1}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      onChange={() => handleCheckboxChange(tempStudents.email)}
+                      checked={selectedEmails.includes(tempStudents.email)}
+                      className="transform scale-150"
+                    />
+                    {currentPage * pageSize + index + 1}
+                  </div>
                 </TableCell>
                 <TableCell className="barlow-semibold">
                   {tempStudents.email}
@@ -235,6 +337,39 @@ const TempStudentsComp = () => {
                           }
                         >
                           Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button className="border-2 border-main rounded p-1">
+                        <Repeat />
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Share the verification code again?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          The code will be sent to the shishya's email once you
+                          confirm the operation.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={(e) =>
+                            resendVerificationCode(
+                              e,
+                              tempStudents.email,
+                              tempStudents.verificationCode
+                            )
+                          }
+                        >
+                          Resend
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>

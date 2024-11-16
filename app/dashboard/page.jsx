@@ -213,6 +213,7 @@ const DashboardPage = () => {
     });
 
     setOpenAddStudentDialog(false);
+    setStudEmail("");
   };
 
   const handleRefreshStudents = async (e) => {

@@ -8,6 +8,7 @@ export async function POST(request) {
   const { name, email, ay, grade, userId, feeData, additionalMessage } =
     await request.json();
   try {
+    // TODO: Remove personal email from here
     const { error } = await resend.emails.send({
       from: "Shishyakul <review@shishyakul.in>",
       to: ["shishyakul@gmail.com", "shindearyan179@gmail.com"],

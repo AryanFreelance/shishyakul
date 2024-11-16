@@ -99,14 +99,23 @@ const TempStudentsComp = () => {
     const loadingToast = toast.loading("Deleting Temp Student(s)...");
     // console.log("EMAILS", selectedEmails);
 
+    const confirmingDelete = confirm("Are you sure to delete the codes?");
+
+    if (!confirmingDelete) {
+      toast.info("No Data Deleted!", {
+        id: loadingToast,
+      });
+      return;
+    }
+
     await bulkDeleteTempStudents({
       variables: {
         emails: selectedEmails,
       },
     })
       .then((resp) => {
-        if (resp.bulkDeleteTempStudents === "SUCCESS") {
-          setSelectedEmails([]);
+        // console.log("RESP", resp);
+        if (resp.data.bulkDeleteTempStudents === "SUCCESS") {
           toast.success("Temp Student(s) Deleted Successfully!", {
             id: loadingToast,
           });
@@ -122,6 +131,7 @@ const TempStudentsComp = () => {
           id: loadingToast,
         });
       });
+    setSelectedEmails([]);
   };
 
   const resendVerificationCode = async (e, studEmail, verificationCode) => {
@@ -260,6 +270,15 @@ const TempStudentsComp = () => {
           onClick={bulkDeleteVerifications}
         >
           Bulk Delete
+        </Button>
+        <Button
+          disabled={selectedEmails.length === 0}
+          onClick={(e) => {
+            e.preventDefault();
+            setSelectedEmails([]);
+          }}
+        >
+          Clear Selected Emails
         </Button>
       </div>
       <div className="my-4">

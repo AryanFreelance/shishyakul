@@ -91,7 +91,11 @@ export const DELETE_STUDENT = gql`
 
 // Delete Students in Bulk
 export const DELETE_STUDENTS_IN_BULK = gql`
-  mutation DeleteStudentsInBulk($emails: [String]!) {
+  # mutation DeleteStudentsInBulk($emails: [String]!) {
+  #   bulkDeleteTempStudents(emails: $emails)
+  # }
+
+  mutation DeleteStudent($emails: [String!]) {
     bulkDeleteTempStudents(emails: $emails)
   }
 `;

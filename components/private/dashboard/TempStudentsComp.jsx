@@ -249,7 +249,12 @@ const TempStudentsComp = () => {
           </button>
         </div>
       </div>
-      <div className="flex justify-end my-2">
+      <div className="flex items-center gap-2 justify-end my-2">
+        {selectedEmails.length > 0 && (
+          <span className="text-lg">
+            {selectedEmails.length} Emails Selected!
+          </span>
+        )}
         <Button
           disabled={selectedEmails.length === 0}
           onClick={bulkDeleteVerifications}

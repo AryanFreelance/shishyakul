@@ -140,11 +140,7 @@
   }
 
   .testimonial-card-wrapper svg {
-    @apply text-main duration-300 ease-in-out;
-  }
-
-  .testimonial-card-wrapper:hover svg {
-    @apply text-[#000];
+    @apply duration-300 ease-in-out;
   }
 
   .contact-icon {

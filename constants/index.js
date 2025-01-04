@@ -38,4 +38,8 @@ export const dashboardNavLinks = [
     title: "Test Papers",
     href: "/dashboard/tests",
   },
+  {
+    title: "Content",
+    href: "/dashboard/content",
+  },
 ];

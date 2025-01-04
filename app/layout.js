@@ -9,6 +9,12 @@ export const metadata = {
     "Welcome to Shishyakul, where we educate students of grade 8 - 12 to be the best version of themselves.",
 };
 
+// Features pending:
+// - Role Based Access to multiple accounts.
+// - Analytical Dashboard for Admin.
+// - Fees to be collected from students for every student.
+// - Compare Testpapers with respect to the students.
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning={true}>

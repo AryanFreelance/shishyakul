@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import DropzoneComponent from "react-dropzone";
-import { errorToast } from "@/utils/toast";
 import { storage } from "@/firebase";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { useMutation } from "@apollo/client";
@@ -17,6 +16,7 @@ import { Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CREATE_TEST } from "@/graphql/mutations/testPaper.mutation";
 import { GET_TESTPAPERS } from "@/graphql/queries/testPaper.query";
+import toast from "react-hot-toast";
 
 export const dynamic = "force-dynamic";
 
@@ -70,9 +70,9 @@ const page = () => {
       const reader = new FileReader();
 
       reader.onabort = () => {
-        errorToast("File reading was aborted!");
+        toast.error("File reading was aborted!");
       };
-      reader.onerror = () => errorToast("File reading has failed!");
+      reader.onerror = () => toast.error("File reading has failed!");
       reader.onload = async () => await uploadPost(file);
       reader.readAsArrayBuffer(file);
     });

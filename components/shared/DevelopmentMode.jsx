@@ -13,10 +13,10 @@ const DevelopmentMode = () => {
         className="w-[250px] md:w-[400px] mb-8"
       />
       <h1 className="font-bold text-3xl lg:text-5xl barlow-bold text-center">
-        😉 Making the System more Better !!
+        😉 Page Under Development !!
       </h1>
       <h2 className="font-semibold text-xl md:text-2xl barlow-medium mt-4 text-center">
-        Please Wait, for a few more Moments !
+        You'll be notified once the page is ready !
       </h2>
     </div>
   );

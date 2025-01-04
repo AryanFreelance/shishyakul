@@ -16,7 +16,6 @@ import { Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CREATE_TEST } from "@/graphql/mutations/testPaper.mutation";
 import { GET_TESTPAPERS } from "@/graphql/queries/testPaper.query";
-import toast from "react-hot-toast";
 
 export const dynamic = "force-dynamic";
 

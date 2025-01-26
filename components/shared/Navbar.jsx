@@ -53,13 +53,13 @@ const Navbar = ({ navLinks, isHome }) => {
     <Container
       className={`sticky-header ${stickyTopClass ? "h-[90px]" : "h-[110px]"}`}
     >
-      <div className={`flex justify-between items-center`}>
+      <div className="flex justify-between items-center ">
         <div>
           <Link href="/">
             <Image
               src="/logo.png"
               alt="Logo Image"
-              className="h-[60px] w-full"
+              className="h-[60px] object-contain w-fit"
               width={1000}
               height={1000}
             />

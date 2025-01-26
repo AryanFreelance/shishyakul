@@ -143,6 +143,14 @@
     @apply duration-300 ease-in-out;
   }
 
+  .testimonial-card-wrapper .star {
+    @apply text-main;
+  }
+
+  .testimonial-card-wrapper:hover .star {
+    @apply text-white;
+  }
+
   .contact-icon {
     @apply w-10 h-10 p-2 rounded-lg duration-300 ease-in-out bg-main;
   }

@@ -2,13 +2,13 @@ import Container from "@/components/shared/Container";
 import Navbar from "@/components/shared/Navbar";
 import { dashboardNavLinks } from "@/constants";
 import React from "react";
-import AddContentButton from "@/components/private/dashboard/AddContentButton";
 import mentorsImg from "@/assets/banners/mentor.png";
 import Image from "next/image";
 import { Pencil, Trash } from "lucide-react";
 import ActionButtonTeachers from "@/components/private/dashboard/content/ActionButtonTeachers";
 import { FaStar } from "react-icons/fa";
 import DevelopmentMode from "@/components/shared/DevelopmentMode";
+import AddContentButton from "@/components/private/dashboard/content/AddContentButton";
 
 const teachers = [
   {
@@ -92,9 +92,9 @@ const ContentPage = () => {
                 className="flex flex-col border-2 border-main hover:bg-main rounded-lg px-[1rem] py-[2rem] duration-300 ease-in-out testimonial-card-wrapper"
               >
                 <div className="flex items-center gap-4 mb-4">
-                  <FaStar className="text-[22px] text-main" />
-                  <FaStar className="text-[22px] text-main" />
-                  <FaStar className="text-[22px] text-main" />
+                  <FaStar className="text-[22px] star" />
+                  <FaStar className="text-[22px] star" />
+                  <FaStar className="text-[22px] star" />
                   <FaStar className="text-[22px]" />
                   <FaStar className="text-[22px]" />
                 </div>

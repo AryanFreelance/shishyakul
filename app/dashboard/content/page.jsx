@@ -1,34 +1,79 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
 import Container from "@/components/shared/Container";
 import Navbar from "@/components/shared/Navbar";
 import { dashboardNavLinks } from "@/constants";
-import React from "react";
-import mentorsImg from "@/assets/banners/mentor.png";
 import Image from "next/image";
-import { Pencil, Trash } from "lucide-react";
-import ActionButtonTeachers from "@/components/private/dashboard/content/ActionButtonTeachers";
 import { FaStar } from "react-icons/fa";
+import { db } from "@/firebase"; // Ensure Firebase is correctly configured
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import ActionButtonTeachers from "@/components/private/dashboard/content/ActionButtonTeachers";
 import DevelopmentMode from "@/components/shared/DevelopmentMode";
 import AddContentButton from "@/components/private/dashboard/content/AddContentButton";
 
-const teachers = [
-  {
-    profileImg: mentorsImg,
-    name: "Demo Mentor 1",
-    subject: "Maths",
-  },
-  {
-    profileImg: mentorsImg,
-    name: "Demo Mentor 2",
-    subject: "Physics",
-  },
-  {
-    profileImg: mentorsImg,
-    name: "Demo Mentor",
-    subject: "Science",
-  },
-];
-
 const ContentPage = () => {
+  const [teachers, setTeachers] = useState([]);
+  const [testimonials, setTestimonials] = useState([]);
+  const [loadingTeachers, setLoadingTeachers] = useState(true);
+  const [loadingTestimonials, setLoadingTestimonials] = useState(true);
+  const [errorTeachers, setErrorTeachers] = useState(null);
+  const [errorTestimonials, setErrorTestimonials] = useState(null);
+
+  useEffect(() => {
+    /**
+     * Subscribes to real-time updates for teachers from Firestore.
+     */
+    const teachersRef = collection(db, "teachers");
+    const teachersQuery = query(teachersRef, orderBy("name", "asc")); // Optional: Order by name
+    const unsubscribeTeachers = onSnapshot(
+      teachersQuery,
+      (querySnapshot) => {
+        const teachersData = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        console.log("teachersData", teachersData);
+        setTeachers(teachersData);
+        setLoadingTeachers(false);
+      },
+      (error) => {
+        console.error("Error fetching teachers:", error);
+        setErrorTeachers("Failed to load teachers.");
+        setLoadingTeachers(false);
+      }
+    );
+
+    /**
+     * Subscribes to real-time updates for testimonials from Firestore.
+     */
+    const testimonialsRef = collection(db, "testimonials");
+    const testimonialsQuery = query(testimonialsRef, orderBy("rating", "desc")); // Optional: Order by creation date
+    const unsubscribeTestimonials = onSnapshot(
+      testimonialsQuery,
+      (querySnapshot) => {
+        const testimonialsData = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        console.log("testimonialsData", testimonialsData);
+        setTestimonials(testimonialsData);
+        setLoadingTestimonials(false);
+      },
+      (error) => {
+        console.error("Error fetching testimonials:", error);
+        setErrorTestimonials("Failed to load testimonials.");
+        setLoadingTestimonials(false);
+      }
+    );
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      unsubscribeTeachers();
+      unsubscribeTestimonials();
+    };
+  }, []);
+
   if (process.env.ENVIRONMENT === "production") {
     return (
       <Container>
@@ -41,7 +86,8 @@ const ContentPage = () => {
   return (
     <Container>
       <Navbar navLinks={dashboardNavLinks} isHome={false} />
-      {/* Teachers */}
+
+      {/* Teachers Section */}
       <div className="mb-10">
         <div className="flex justify-between items-center flex-col md:flex-row gap-4 mb-6">
           <div>
@@ -50,30 +96,49 @@ const ContentPage = () => {
           <AddContentButton type="teacher" />
         </div>
         <div>
-          <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-10">
-            {/* Teachers Cards */}
-            {teachers.map((teacher, index) => (
-              <div
-                key={index}
-                className="border-2 border-secondary p-6 md:p-8 text-center rounded-2xl hover:border-main transition-all duration-300 ease-in-out"
-              >
-                <Image
-                  src={teacher.profileImg}
-                  alt={teacher.name}
-                  className="rounded-lg mb-4 border-2 border-main"
-                  width={1000}
-                  height={1000}
-                />
-                <h3 className="text-[20px] barlow-semibold">{teacher.name}</h3>
-                <p className="text-[18px] barlow-regular">{teacher.subject}</p>
-                <ActionButtonTeachers type="teacher" />
-              </div>
-            ))}
-          </div>
+          {loadingTeachers ? (
+            <p>Loading teachers...</p>
+          ) : errorTeachers ? (
+            <p className="text-red-500">{errorTeachers}</p>
+          ) : teachers.length === 0 ? (
+            <div className="text-center">
+              <p>No teachers available.</p>
+              <AddContentButton type="teacher" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-10">
+              {/* Teachers Cards */}
+              {teachers.map((teacher) => (
+                <div
+                  key={teacher.id}
+                  className="border-2 border-secondary p-6 md:p-8 text-center rounded-2xl hover:border-main transition-all duration-300 ease-in-out"
+                >
+                  <Image
+                    src={teacher.profileUrl}
+                    alt={teacher.name}
+                    className="rounded-lg mb-4 border-2 border-main"
+                    width={1000}
+                    height={1000}
+                  />
+                  <h3 className="text-[20px] barlow-semibold">
+                    {teacher.name}
+                  </h3>
+                  <p className="text-[18px] barlow-regular">
+                    {teacher.subject}
+                  </p>
+                  <ActionButtonTeachers
+                    type="teacher"
+                    id={teacher.id}
+                    data={teacher}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Testimonials */}
+      {/* Testimonials Section */}
       <div className="mb-10">
         <div className="flex justify-between items-center flex-col md:flex-row gap-4 mb-6">
           <div>
@@ -84,35 +149,56 @@ const ContentPage = () => {
           <AddContentButton type="testimonial" />
         </div>
         <div>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
-            {/* Testimonials Cards */}
-            {Array.from({ length: 5 }).map((_, index) => (
-              <div
-                key={index}
-                className="flex flex-col border-2 border-main hover:bg-main rounded-lg px-[1rem] py-[2rem] duration-300 ease-in-out testimonial-card-wrapper"
-              >
-                <div className="flex items-center gap-4 mb-4">
-                  <FaStar className="text-[22px] star" />
-                  <FaStar className="text-[22px] star" />
-                  <FaStar className="text-[22px] star" />
-                  <FaStar className="text-[22px]" />
-                  <FaStar className="text-[22px]" />
+          {loadingTestimonials ? (
+            <p>Loading testimonials...</p>
+          ) : errorTestimonials ? (
+            <p className="text-red-500">{errorTestimonials}</p>
+          ) : testimonials.length === 0 ? (
+            <div className="text-center">
+              <p>No testimonials available.</p>
+              <AddContentButton type="testimonial" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
+              {/* Testimonials Cards */}
+              {testimonials.map((testimonial) => (
+                <div
+                  key={testimonial.id}
+                  className="flex flex-col border-2 border-main hover:bg-main rounded-lg px-[1rem] py-[2rem] duration-300 ease-in-out testimonial-card-wrapper"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <FaStar
+                        key={index}
+                        className={`text-[22px] ${
+                          index < (testimonial.rating || 0) ? "star" : ""
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-[18px] barlow-regular mb-6">
+                    {testimonial.description ||
+                      "No testimonial message provided."}
+                  </p>
+                  <h3 className="text-[18px] barlow-semibold">
+                    {testimonial.name || "Anonymous"}
+                  </h3>
+                  <span className="text-[16px] text-secondary barlow-regular">
+                    {testimonial.designation || "Ex-Student"}
+                  </span>
+                  <span className="text-[16px] barlow-regular">
+                    {testimonial.grade || "Grade N/A"} Grade -{" "}
+                    {testimonial.percentage || "N/A"}%
+                  </span>
+                  <ActionButtonTeachers
+                    type="testimonial"
+                    id={testimonial.id}
+                    data={testimonial}
+                  />
                 </div>
-                <p className="text-[18px] barlow-regular mb-6">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                  Quisquam, voluptate.
-                </p>
-                <h3 className="text-[18px] barlow-semibold">Student Name</h3>
-                <span className="text-[16px] text-secondary barlow-regular">
-                  Ex-Student
-                </span>
-                <span className="text-[16px] barlow-regular">
-                  10<sup>th</sup> Grade - 96%
-                </span>
-                <ActionButtonTeachers type="testimonial" />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </Container>

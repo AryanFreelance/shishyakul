@@ -13,47 +13,77 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pencil, Plus } from "lucide-react";
-import { addTeacher, addTestimonial } from "@/actions/dashboard/addContent";
+import { Pencil } from "lucide-react";
+import { db } from "@/firebase";
+import { doc, updateDoc } from "firebase/firestore";
+import toast from "react-hot-toast";
 
-const EditContentButton = ({ type, id }) => {
-  // Input Fields for type:
-  // teacher - name, subject, profileImg
-  // testimonial - rating, description, name, designation, grade, percentage
-
+const EditContentButton = ({ type, id, data }) => {
   // Teacher Field States
-  const [profileImg, setProfileImg] = useState(null);
-  const [teacherName, setTeacherName] = useState("");
-  const [subject, setSubject] = useState("");
+  const [teacherName, setTeacherName] = useState(
+    type === "teacher" ? data.name : ""
+  );
+  const [subject, setSubject] = useState(
+    type === "teacher" ? data.subject : ""
+  );
 
   // Testimonial Field States
-  const [rating, setRating] = useState(0);
-  const [description, setDescription] = useState("");
-  const [studentName, setStudentName] = useState("");
-  const [designation, setDesignation] = useState("");
-  const [grade, setGrade] = useState("");
-  const [percentage, setPercentage] = useState(0);
+  const [rating, setRating] = useState(
+    type === "testimonial" ? data.rating : 0
+  );
+  const [description, setDescription] = useState(
+    type === "testimonial" ? data.description : ""
+  );
+  const [studentName, setStudentName] = useState(
+    type === "testimonial" ? data.name : ""
+  );
+  const [designation, setDesignation] = useState(
+    type === "testimonial" ? data.designation : ""
+  );
+  const [grade, setGrade] = useState(type === "testimonial" ? data.grade : "");
+  const [percentage, setPercentage] = useState(
+    type === "testimonial" ? data.percentage : 0
+  );
 
-  const editContentHandler = () => {
-    if (type === "teacher") {
-      addTeacher({ profileImg, name: teacherName, subject });
-      console.log("TEACHER ADDED SUCCESSFULLY");
-    }
-    if (type === "testimonial") {
-      addTestimonial({
-        rating,
-        description,
-        name: studentName,
-        designation,
-        grade,
-        percentage,
-      });
-      console.log("TESTIMONIAL ADDED SUCCESSFULLY");
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const editContentHandler = async () => {
+    setLoading(true);
+    try {
+      if (type === "teacher") {
+        const teacherRef = doc(db, "teachers", id);
+        await updateDoc(teacherRef, {
+          name: teacherName,
+          subject: subject,
+        });
+        console.log("TEACHER Edited SUCCESSFULLY");
+        toast.success("Teacher edited successfully");
+      }
+      if (type === "testimonial") {
+        const testimonialRef = doc(db, "testimonials", id);
+        await updateDoc(testimonialRef, {
+          rating: rating,
+          description: description,
+          studentName: studentName,
+          designation: designation,
+          grade: grade,
+          percentage: percentage,
+        });
+        console.log("TESTIMONIAL Edited SUCCESSFULLY");
+        toast.success("Testimonial edited successfully");
+      }
+      setOpen(false);
+    } catch (error) {
+      toast.error("Failed to edit content");
+      console.error("Error editing content: ", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
           variant="ghost"
@@ -91,18 +121,6 @@ const EditContentButton = ({ type, id }) => {
                   className="col-span-3"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="profile" className="text-right">
-                  Profile
-                </Label>
-                <Input
-                  id="profile"
-                  type="file"
-                  className="col-span-3"
-                  accept="image/png, image/jpeg, image/jpg, image/webp"
-                  onChange={(e) => setProfileImg(e.target.files[0])}
                 />
               </div>
             </>
@@ -185,8 +203,8 @@ const EditContentButton = ({ type, id }) => {
           <DialogClose asChild>
             <Button variant="ghost">Cancel</Button>
           </DialogClose>
-          <Button type="submit" onClick={editContentHandler}>
-            Save Changes
+          <Button type="submit" onClick={editContentHandler} disabled={loading}>
+            {loading ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>
       </DialogContent>

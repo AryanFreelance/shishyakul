@@ -13,10 +13,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { addTeacher, addTestimonial } from "@/actions/dashboard/addContent";
+import { toast } from "react-hot-toast";
 
 const AddContentButton = ({ type }) => {
+  // Dialog control state
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Loading state
+  const [isLoading, setIsLoading] = useState(false);
+
   // Input Fields for type:
   // teacher - name, subject, profileImg
   // testimonial - rating, description, name, designation, grade, percentage
@@ -34,13 +41,49 @@ const AddContentButton = ({ type }) => {
   const [grade, setGrade] = useState("");
   const [percentage, setPercentage] = useState(0);
 
-  const addContentHandler = () => {
+  const addContentHandler = async () => {
+    setIsLoading(true); // Start loading
+    let success = false;
+
+    // Basic validation
     if (type === "teacher") {
-      addTeacher({ profileImg, name: teacherName, subject });
-      console.log("TEACHER ADDED SUCCESSFULLY");
+      if (!teacherName || !subject || !profileImg) {
+        toast.error("Please fill in all fields for teacher.");
+        setIsLoading(false); // End loading
+        return;
+      }
+      success = await addTeacher({ profileImg, name: teacherName, subject });
+      if (success) {
+        toast.success("Teacher added successfully");
+      } else {
+        toast.error("Failed to add teacher");
+      }
+      console.log(
+        success ? "TEACHER ADDED SUCCESSFULLY" : "FAILED TO ADD TEACHER"
+      );
     }
+
     if (type === "testimonial") {
-      addTestimonial({
+      if (
+        !rating ||
+        !description ||
+        !studentName ||
+        !designation ||
+        !grade ||
+        percentage < 40
+      ) {
+        toast.error(
+          "Please fill in all fields with valid inputs for testimonial."
+        );
+        setIsLoading(false);
+        return;
+      }
+      if (rating > 5 || rating < 1) {
+        toast.error("Rating must be between 1 and 5.");
+        setIsLoading(false);
+        return;
+      }
+      success = await addTestimonial({
         rating,
         description,
         name: studentName,
@@ -48,16 +91,47 @@ const AddContentButton = ({ type }) => {
         grade,
         percentage,
       });
-      console.log("TESTIMONIAL ADDED SUCCESSFULLY");
+      if (success) {
+        toast.success("Testimonial added successfully");
+      } else {
+        toast.error("Failed to add testimonial");
+      }
+      console.log(
+        success ? "TESTIMONIAL ADDED SUCCESSFULLY" : "FAILED TO ADD TESTIMONIAL"
+      );
+    }
+
+    setIsLoading(false); // End loading
+
+    if (success) {
+      setIsOpen(false); // Close the dialog on success
+      // Optionally, reset form fields here
+      resetFields();
     }
   };
 
+  const resetFields = () => {
+    // Reset Teacher Fields
+    setProfileImg(null);
+    setTeacherName("");
+    setSubject("");
+
+    // Reset Testimonial Fields
+    setRating(0);
+    setDescription("");
+    setStudentName("");
+    setDesignation("");
+    setGrade("");
+    setPercentage(0);
+  };
+
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
           variant="outline"
           className="flex items-center justify-center gap-2"
+          onClick={() => setIsOpen(true)}
         >
           Add {type.charAt(0).toUpperCase() + type.slice(1)} <Plus />
         </Button>
@@ -119,6 +193,8 @@ const AddContentButton = ({ type }) => {
                   className="col-span-3"
                   value={rating}
                   defaultValue="5"
+                  min="1"
+                  max="5"
                   onChange={(e) => setRating(e.target.value)}
                 />
               </div>
@@ -183,9 +259,17 @@ const AddContentButton = ({ type }) => {
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="ghost">Cancel</Button>
+            <Button variant="ghost" disabled={isLoading}>
+              Cancel
+            </Button>
           </DialogClose>
-          <Button type="submit" onClick={addContentHandler}>
+          <Button
+            type="submit"
+            onClick={addContentHandler}
+            disabled={isLoading}
+            className="flex items-center justify-center gap-2"
+          >
+            {isLoading && <Loader2 className="animate-spin" />}
             Save Changes
           </Button>
         </DialogFooter>

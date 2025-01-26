@@ -57,9 +57,9 @@ const Navbar = ({ navLinks, isHome }) => {
         <div>
           <Link href="/">
             <Image
-              src="/logo.png"
+              src="/logofull.png"
               alt="Logo Image"
-              className="h-[60px] object-contain w-fit"
+              className="h-[80px] object-contain w-fit"
               width={1000}
               height={1000}
             />
@@ -88,9 +88,9 @@ const Navbar = ({ navLinks, isHome }) => {
               <SheetContent>
                 <SheetHeader className="mt-6">
                   <Image
-                    src="/logo.png"
+                    src="/logofull.png"
                     alt="Logo"
-                    className="w-full h-[100px] object-contain"
+                    className="w-full"
                     width={1000}
                     height={1000}
                   />

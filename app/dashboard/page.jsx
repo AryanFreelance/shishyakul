@@ -462,12 +462,9 @@ const DashboardPage = () => {
           {students?.length !== 0 && (
             <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-4">
               {/* <div className="flex item-center justify-end"> */}
-              <Button
-                variant="ghost"
-                onClick={() => setShowColumnSettings(true)}
-              >
+              <button onClick={() => setShowColumnSettings(true)}>
                 <Bolt />
-              </Button>
+              </button>
               {/* </div> */}
 
               {showColumnSettings && (
@@ -481,13 +478,14 @@ const DashboardPage = () => {
                     </DialogHeader>
                     <div>
                       {Object.keys(columnVisibility).map((column) => (
-                        <div key={column}>
+                        <div key={column} className="flex gap-2 ">
                           <input
                             type="checkbox"
                             checked={columnVisibility[column]}
+                            id={column}
                             onChange={() => toggleColumnVisibility(column)}
                           />
-                          <label>
+                          <label htmlFor={column}>
                             {column.charAt(0).toUpperCase() + column.slice(1)}
                           </label>
                         </div>

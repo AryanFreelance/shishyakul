@@ -72,61 +72,176 @@ const CheckFeeData = ({ isAdmin, studData, id }) => {
     if (!open) setRemark("");
   }, [open]);
 
-  const saveRemarkHandler = async (e, feeId) => {
-    e.preventDefault();
-    // console.log("REMARK", remark);
-    const toasting = toast.loading("Updating Remark!");
-    // console.log(id, feeId, remark);
-
-    await updateFee({
-      variables: {
-        id: feeId,
-        userId: id,
-        remark: remark,
-      },
-    })
-      .then((data) => {
-        // console.log(data);
-        toast.success("Remark updated successfully!", {
-          id: toasting,
-        });
-        // console.log("DATA", data);
-      })
-      .catch((error) => {
-        // console.log(error);
-        toast.error("There was an error updating remark!", {
-          id: toasting,
-        });
-        // console.log("ERROR", error);
-      });
+  const handleMutation = async (
+    mutationFn,
+    variables,
+    loadingMessage,
+    successMessage,
+    errorMessage
+  ) => {
+    const toastId = toast.loading(loadingMessage);
+    try {
+      await mutationFn({ variables });
+      toast.success(successMessage, { id: toastId });
+    } catch {
+      toast.error(errorMessage, { id: toastId });
+    }
   };
 
-  const deleteFeeHandler = async (e, feeid) => {
+  const saveRemarkHandler = (e, feeId) => {
     e.preventDefault();
+    handleMutation(
+      updateFee,
+      { id: feeId, userId: id, remark },
+      "Updating Remark!",
+      "Remark updated successfully!",
+      "There was an error updating remark!"
+    );
+  };
 
-    // console.log("Fee Deleting");
-    // console.log("FEEID", feeid, id);
+  const deleteFeeHandler = (e, feeid) => {
+    e.preventDefault();
+    handleMutation(
+      deleteFee,
+      { userId: id, deleteFeeId: feeid },
+      "Deleting Fee...",
+      "Fee deleted successfully!",
+      "There was an error deleting fee!"
+    );
+  };
 
-    const toastId = toast.loading("Deleting Fee...");
+  const dialogOpenChangeHandler = (fee) => {
+    setOpen(!open);
+    setRemark(fee.remark || "");
+  };
 
-    await deleteFee({
-      variables: {
-        userId: id,
-        deleteFeeId: feeid,
-      },
-    })
-      .then((data) => {
-        // console.log(data);
-        toast.success("Fee deleted successfully!", {
-          id: toastId,
-        });
-      })
-      .catch((error) => {
-        // console.log(error);
-        toast.error("There was an error deleting fee!", {
-          id: toastId,
-        });
-      });
+  const renderTableRows = () => {
+    if (!studData || studData?.student.fees.length === 0) {
+      return (
+        <TableRow>
+          <TableCell
+            className="barlow-medium text-center"
+            colSpan={isAdmin ? 5 : 4}
+          >
+            No Fees Paid
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    return studData?.student.fees.map((fee) => (
+      <TableRow key={fee.id}>
+        <TableCell className="barlow-medium">
+          <AlertDialog>
+            <AlertDialogTrigger>₹{fee.feesPaid}</AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Fee Information</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Details of the student fee.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="flex flex-col justify-start gap-4">
+                <span className="barlow-regular">
+                  Fees Paid - ₹{fee.feesPaid}
+                </span>
+                <span className="barlow-regular">Paid On - {fee.paidOn}</span>
+                <span className="barlow-regular">
+                  Month - {fee.month}, {fee.year}
+                </span>
+                <span className="barlow-regular">
+                  Mode - {fee.mode.charAt(0).toUpperCase() + fee.mode.slice(1)}
+                </span>
+                <span className="barlow-regular">
+                  Fee Added On - {fee.createdAt.split(",")[0]}
+                </span>
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </TableCell>
+        <TableCell className="barlow-regular">{fee.paidOn}</TableCell>
+        <TableCell className="barlow-regular">
+          {fee.mode === "cash" ? (
+            `${fee.mode.charAt(0).toUpperCase() + fee.mode.slice(1)}`
+          ) : (
+            <Link
+              href={fee.mode === "upi" ? fee.upiImgUrl : fee.chequeImgUrl}
+              target="_blank"
+              className="barlow-bold"
+            >
+              {fee.mode.charAt(0).toUpperCase() + fee.mode.slice(1)}
+            </Link>
+          )}
+        </TableCell>
+        <TableCell className="barlow-regular">
+          {fee.month}, {fee.year}
+        </TableCell>
+        {isAdmin && (
+          <TableCell className="flex items-center justify-center gap-2">
+            <AlertDialog>
+              <AlertDialogTrigger>
+                <Button variant="outline">
+                  <Trash />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Fee</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this fee?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <Button onClick={(e) => deleteFeeHandler(e, fee.id)}>
+                    Delete
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Dialog
+              open={open}
+              onOpenChange={() => dialogOpenChangeHandler(fee)}
+            >
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <MessageCirclePlus />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add Remark</DialogTitle>
+                  <DialogDescription>
+                    Add remark of the fee below.
+                  </DialogDescription>
+                </DialogHeader>
+                <div>
+                  <Label htmlFor="remark">Remark</Label>
+                  <Textarea
+                    id="remark"
+                    placeholder="Fee Remark Here..."
+                    rows={8}
+                    value={remark}
+                    onChange={(e) => setRemark(e.target.value)}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="submit"
+                    onClick={(e) => saveRemarkHandler(e, fee.id)}
+                  >
+                    Save changes
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </TableCell>
+        )}
+      </TableRow>
+    ));
   };
 
   return (
@@ -145,136 +260,7 @@ const CheckFeeData = ({ isAdmin, studData, id }) => {
             )}
           </TableRow>
         </TableHeader>
-        <TableBody>
-          {studData && studData?.student.fees.length === 0 && (
-            <TableRow>
-              <TableCell className="barlow-medium text-center" colSpan="3">
-                No Fees Paid
-              </TableCell>
-            </TableRow>
-          )}
-          {studData &&
-            studData?.student.fees.length !== 0 &&
-            studData?.student.fees.map((fee) => (
-              <TableRow key={fee.id}>
-                <TableCell className="barlow-medium">
-                  <AlertDialog>
-                    <AlertDialogTrigger>₹{fee.feesPaid}</AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Fee Information</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Details of the student fee.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <div className="flex flex-col justify-start gap-4">
-                        <span className="barlow-regular">
-                          Fees Paid - ₹{fee.feesPaid}
-                        </span>
-                        <span className="barlow-regular">
-                          Paid On - {fee.paidOn}
-                        </span>
-                        <span className="barlow-regular">
-                          Month - {fee.month}, {fee.year}
-                        </span>
-                        <span className="barlow-regular">
-                          Mode -{" "}
-                          {fee.mode.charAt(0).toUpperCase() + fee.mode.slice(1)}
-                        </span>
-                        <span className="barlow-regular">
-                          Fee Added On - {fee.createdAt.split(",")[0]}
-                        </span>
-                      </div>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </TableCell>
-                <TableCell className="barlow-regular">{fee.paidOn}</TableCell>
-                <TableCell className="barlow-regular">
-                  {fee.mode === "cash" ? (
-                    `${fee.mode.charAt(0).toUpperCase() + fee.mode.slice(1)}`
-                  ) : (
-                    <Link
-                      href={
-                        fee.mode === "upi" ? fee.upiImgUrl : fee.chequeImgUrl
-                      }
-                      target="_blank"
-                      className="barlow-bold"
-                    >
-                      {fee.mode.charAt(0).toUpperCase() + fee.mode.slice(1)}
-                    </Link>
-                  )}
-                </TableCell>
-                <TableCell className="barlow-regular">
-                  {fee.month}, {fee.year}
-                </TableCell>
-                {isAdmin && (
-                  <>
-                    <TableCell className="flex items-center justify-center gap-2">
-                      <AlertDialog>
-                        <AlertDialogTrigger>
-                          <Button variant="outline">
-                            <Trash />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Fee</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete this fee?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <Button
-                              onClick={(e) => deleteFeeHandler(e, fee.id)}
-                            >
-                              Delete
-                            </Button>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                      <Dialog open={open} onOpenChange={setOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="outline">
-                            <MessageCirclePlus />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
-                          <DialogHeader>
-                            <DialogTitle>Add Remark</DialogTitle>
-                            <DialogDescription>
-                              Add remark of the fee below.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div>
-                            <Label htmlFor="remark">Remark</Label>
-                            <Textarea
-                              id="remark"
-                              placeholder="Fee Remark Here..."
-                              rows={8}
-                              defaultValue={fee?.remark}
-                              onChange={(e) => setRemark(e.target.value)}
-                            />
-                          </div>
-                          <DialogFooter>
-                            <Button
-                              type="submit"
-                              onClick={(e) => saveRemarkHandler(e, fee.id)}
-                            >
-                              Save changes
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </TableCell>
-                  </>
-                )}
-              </TableRow>
-            ))}
-        </TableBody>
+        <TableBody>{renderTableRows()}</TableBody>
       </Table>
     </div>
   );

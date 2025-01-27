@@ -1,5 +1,4 @@
 "use client";
-
 import Navbar from "@/components/shared/Navbar";
 import { dashboardNavLinks } from "@/constants";
 import Container from "@/components/shared/Container";
@@ -7,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
   ArrowRight,
+  Bolt,
   Eye,
+  Pencil,
   Plus,
   RefreshCw,
   SearchIcon,
@@ -42,12 +43,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Link from "next/link";
-
-export const dynamic = "force-dynamic";
-
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 import { useLazyQuery, useMutation } from "@apollo/client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import toast from "react-hot-toast";
 import {
   DELETE_STUDENT,
@@ -67,6 +65,9 @@ import {
 } from "@/components/ui/select";
 import TempStudentsComp from "@/components/private/dashboard/TempStudentsComp";
 import SearchBarStudent from "@/components/private/dashboard/SearchBarStudent";
+import { getDoc, doc, setDoc } from "firebase/firestore";
+import { v4 as uuidv4 } from "uuid";
+import { db } from "@/firebase";
 
 const DashboardPage = () => {
   const [studEmail, setStudEmail] = useState("");
@@ -85,10 +86,20 @@ const DashboardPage = () => {
   const [pages, setPages] = useState(0);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [onePageStudents, setOnePageStudent] = useState([]);
+  const [columnVisibility, setColumnVisibility] = useState({
+    srNo: true,
+    name: true,
+    email: true,
+    phone: true,
+    grade: true,
+    batch: true,
+    attendance: true,
+    actions: true,
+  });
+  const [showColumnSettings, setShowColumnSettings] = useState(false);
 
   // Queries - GET_ACADEMIC_YEARS, GET_TEMP_STUDENTS, DASHBOARD_GET_STUDENT
   const { data: ay } = useSuspenseQuery(GET_ACADEMIC_YEARS);
-
   const [fetchStudents, { data: dStudents }] = useLazyQuery(
     DASHBOARD_GET_STUDENT,
     {
@@ -96,24 +107,20 @@ const DashboardPage = () => {
       variables: { ay: searchParameters.ay, grade: searchParameters.grade },
       onCompleted: (data) => {
         setStudents(data.students || []);
-        // console.log("DATA", data);
       },
     }
   );
-
-  // console.log("DSTUDENTS", dStudents);
+  const [fetchTempStudents] = useLazyQuery(GET_TEMP_STUDENTS, {
+    fetchPolicy: "network-only",
+  });
 
   // Mutations - INITIALIZE_STUDENT, DELETE_STUDENT, DELETE_TEMP_STUDENT
-  const [initializeStudent] = useMutation(INITIALIZE_STUDENT, {
-    refetchQueries: [{ query: GET_TEMP_STUDENTS }],
-  });
   const [deleteStudent] = useMutation(DELETE_STUDENT, {
     refetchQueries: [{ query: DASHBOARD_GET_STUDENT }],
   });
 
   const deleteStudentHandler = async (pay, pgrade, puserId) => {
     const toastId = toast.loading("Deleting Student...");
-    // console.log("USERID", puserId);
     try {
       const response = await deleteStudent({
         variables: {
@@ -122,15 +129,12 @@ const DashboardPage = () => {
           userId: puserId,
         },
       });
-      // console.log("RESPONSE", response);
-
       if (response === "ERROR" || response === null) {
         toast.error("Failed to delete student!", {
           id: toastId,
         });
         return;
       }
-
       const deleteuserResponse = await fetch("/api/user", {
         method: "DELETE",
         body: JSON.stringify({ uid: puserId }),
@@ -138,21 +142,16 @@ const DashboardPage = () => {
           "Content-Type": "application/json",
         },
       });
-
-      // console.log("DELETEUSERRESPONSE", deleteuserResponse);
-
       if (deleteuserResponse.status !== 200) {
         toast.error("Failed to delete student from database!", {
           id: toastId,
         });
         return;
       }
-
       toast.success("Student Deleted Successfully!", {
         id: toastId,
       });
     } catch (error) {
-      // console.log("ERROR", error);
       toast.error("Failed to delete student!", {
         id: toastId,
       });
@@ -162,7 +161,6 @@ const DashboardPage = () => {
   const addStudentHandler = async (e) => {
     e.preventDefault();
     const toastId = toast.loading("Adding Student...");
-
     if (
       !studEmail ||
       !studEmail.includes("@") ||
@@ -174,32 +172,52 @@ const DashboardPage = () => {
       });
       return;
     }
-
-    const response = await initializeStudent({
-      variables: { email: studEmail },
-    });
-
-    if (response === "ERROR" || response === null) {
-      toast.error("Failed to add student!", {
+    const tempStudent = await getDoc(doc(db, "tempstudents", studEmail));
+    const tempStudentData = tempStudent.data();
+    let verification = {};
+    if (tempStudentData) {
+      verification = {
+        verificationCode: tempStudentData.verificationCode,
+        studentEmail: studEmail,
+      };
+    } else {
+      verification = {
+        verificationCode: uuidv4(),
+        studentEmail: studEmail,
+      };
+    }
+    await setDoc(doc(db, "verifications", verification.verificationCode), {
+      ...verification,
+    }).catch((error) => {
+      toast.error("Failed to create verification code!", {
         id: toastId,
       });
       return;
-    }
-
+    });
+    const tempstudent = {
+      email: studEmail,
+      verificationCode: verification.verificationCode,
+    };
+    await setDoc(doc(db, "tempstudents", tempstudent.email), {
+      ...tempstudent,
+    }).catch((error) => {
+      toast.error("Failed to add student to temp students!", {
+        id: toastId,
+      });
+      return;
+    });
     const domain = window.location.origin;
-
     const inviteResp = await fetch("/api/invite", {
       method: "POST",
       body: JSON.stringify({
         email: studEmail,
-        r_message: `Sign Up Link - ${domain}/register/${response?.data.initializeStudent}`,
-        r_code: response?.data.initializeStudent,
+        r_message: `Sign Up Link - ${domain}/register/${verification.verificationCode}`,
+        r_code: verification.verificationCode,
       }),
       headers: {
         "Content-Type": "application/json",
       },
     });
-
     if (inviteResp.status !== 200) {
       toast.error("Failed to send invite. Please try again.", {
         id: toastId,
@@ -207,18 +225,18 @@ const DashboardPage = () => {
       setOpenAddStudentDialog(false);
       return;
     }
-
+    await fetchTempStudents({
+      fetchPolicy: "network-only",
+    });
     toast.success("Student Added Successfully!", {
       id: toastId,
     });
-
     setOpenAddStudentDialog(false);
     setStudEmail("");
   };
 
   const handleRefreshStudents = async (e) => {
     e.preventDefault();
-
     await fetchStudents({
       fetchPolicy: "network-only",
       variables: {
@@ -232,14 +250,11 @@ const DashboardPage = () => {
         setStudents(data.students || []);
         setFilteredStudents(data.students || []);
         setSelectedBatch("select-batch");
-        // console.log("DATA", data);
       },
     });
-
     toast.success("Students Refreshed Successfully!");
   };
 
-  // Update the localStorage whenever the search parameters change
   useEffect(() => {
     localStorage.setItem("grade", searchParameters.grade);
     localStorage.setItem("ay", searchParameters.ay);
@@ -259,7 +274,6 @@ const DashboardPage = () => {
         onCompleted: (data) => {
           setStudents(data.students || []);
           setFilteredStudents(data.students || []);
-          // console.log("DATA", data);
         },
       });
     if (searchParameters.ay === "select-ay") setStudents([]);
@@ -275,7 +289,6 @@ const DashboardPage = () => {
         new Set(students.map((student) => student.batch).filter(Boolean))
       );
       setBatch(uniqueBatch);
-      // console.log("UNIQUE BATCH", uniqueBatch);
     } else {
       setBatch([]);
     }
@@ -286,13 +299,8 @@ const DashboardPage = () => {
       const startIndex = currentPage * parseInt(pageSize);
       const endIndex = startIndex + parseInt(pageSize);
       const slicedTempStudents = filteredStudents.slice(startIndex, endIndex);
-
       setOnePageStudent(slicedTempStudents);
       setPages(Math.ceil(filteredStudents.length / parseInt(pageSize)));
-
-      // console.log("Sliced Temp Students", slicedTempStudents);
-      // console.log("Pages", pages);
-      // console.log("Current Page", currentPage);
     }
   }, [filteredStudents, currentPage, pageSize]);
 
@@ -323,13 +331,19 @@ const DashboardPage = () => {
     if (studentName.length === 0) setFilteredStudents(dStudents?.students);
   }, [studentName]);
 
+  const toggleColumnVisibility = (column) => {
+    setColumnVisibility((prev) => ({
+      ...prev,
+      [column]: !prev[column],
+    }));
+  };
+
   return (
     <Container>
       <Navbar navLinks={dashboardNavLinks} isHome={false} />
       <div className="pb-10">
         <div className="flex justify-between items-center">
           <h2 className="subheading">Manage Shishya</h2>
-          {/* Add Student Dialog Box */}
           <Dialog
             open={openAddStudentDialog}
             onOpenChange={setOpenAddStudentDialog}
@@ -369,7 +383,6 @@ const DashboardPage = () => {
         </div>
         <div className="mt-8">
           <div className="flex justify-between items-center flex-wrap w-full md:w-[40%] gap-2 mb-2">
-            {/* Academic Year Dropdown */}
             <div className="w-[48%]">
               <Select
                 onValueChange={(value) => {
@@ -391,7 +404,6 @@ const DashboardPage = () => {
                 </SelectContent>
               </Select>
             </div>
-            {/* Standard Dropdown */}
             <div className="w-full md:w-[48%]">
               <Select
                 onValueChange={(value) =>
@@ -415,26 +427,12 @@ const DashboardPage = () => {
             </div>
           </div>
           <div className="flex justify-between items-center flex-wrap w-full gap-2 mb-6">
-            {/* Searchbar */}
             <div className=" w-full md:w-[58%]">
-              {/* <form className="flex items-center gap-2 border-2 rounded-full md:rounded-r-none px-4 py-2 border-main md:border-r-slate-600">
-                <button type="submit" className="border-none outline-none">
-                  <SearchIcon />
-                </button>
-                <input
-                  type="text"
-                  placeholder="Enter Student Name..."
-                  className="w-full py-1 bg-transparent outline-none border-none text-secondary"
-                  value={studentName}
-                  onChange={(e) => setStudentName(e.target.value)}
-                />
-              </form> */}
               <SearchBarStudent
                 studentName={studentName}
                 setStudentName={setStudentName}
               />
             </div>
-            {/* Batch Dropdown */}
             <div className="w-[40%]">
               <Select
                 onValueChange={(value) => setSelectedBatch(value)}
@@ -461,11 +459,46 @@ const DashboardPage = () => {
               <RefreshCw />
             </button>
           </span>
-
-          {/* Pagination */}
           {students?.length !== 0 && (
             <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-4">
-              {/* Set the value of the input in the pageSize when the input focus changes */}
+              {/* <div className="flex item-center justify-end"> */}
+              <Button
+                variant="ghost"
+                onClick={() => setShowColumnSettings(true)}
+              >
+                <Bolt />
+              </Button>
+              {/* </div> */}
+
+              {showColumnSettings && (
+                <Dialog
+                  open={showColumnSettings}
+                  onOpenChange={setShowColumnSettings}
+                >
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Customize Columns</DialogTitle>
+                    </DialogHeader>
+                    <div>
+                      {Object.keys(columnVisibility).map((column) => (
+                        <div key={column}>
+                          <input
+                            type="checkbox"
+                            checked={columnVisibility[column]}
+                            onChange={() => toggleColumnVisibility(column)}
+                          />
+                          <label>
+                            {column.charAt(0).toUpperCase() + column.slice(1)}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                    <Button onClick={() => setShowColumnSettings(false)}>
+                      Close
+                    </Button>
+                  </DialogContent>
+                </Dialog>
+              )}
               <select
                 value={pageSize}
                 onChange={(e) => {
@@ -516,19 +549,36 @@ const DashboardPage = () => {
               </div>
             </div>
           )}
+
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="barlow-semibold w-[100px]">
-                  SR No.
-                </TableHead>
-                <TableHead className="barlow-semibold">Name</TableHead>
-                <TableHead className="barlow-semibold">Email</TableHead>
-                <TableHead className="barlow-semibold">Phone</TableHead>
-                <TableHead className="barlow-semibold">Grade</TableHead>
-                <TableHead className="barlow-semibold">Batch</TableHead>
-                <TableHead className="barlow-semibold">Attendance</TableHead>
-                <TableHead className="barlow-semibold">Actions</TableHead>
+                {columnVisibility.srNo && (
+                  <TableHead className="barlow-semibold w-[100px]">
+                    SR No.
+                  </TableHead>
+                )}
+                {columnVisibility.name && (
+                  <TableHead className="barlow-semibold">Name</TableHead>
+                )}
+                {columnVisibility.email && (
+                  <TableHead className="barlow-semibold">Email</TableHead>
+                )}
+                {columnVisibility.phone && (
+                  <TableHead className="barlow-semibold">Phone</TableHead>
+                )}
+                {columnVisibility.grade && (
+                  <TableHead className="barlow-semibold">Grade</TableHead>
+                )}
+                {columnVisibility.batch && (
+                  <TableHead className="barlow-semibold">Batch</TableHead>
+                )}
+                {columnVisibility.attendance && (
+                  <TableHead className="barlow-semibold">Attendance</TableHead>
+                )}
+                {columnVisibility.actions && (
+                  <TableHead className="barlow-semibold">Actions</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -546,100 +596,105 @@ const DashboardPage = () => {
                 onePageStudents?.length > 0 &&
                 onePageStudents?.map((student, index) => (
                   <TableRow key={index}>
-                    <TableCell className="barlow-semibold">
-                      {currentPage * pageSize + index + 1}
-                    </TableCell>
-                    <TableCell className="barlow-regular">
-                      {student.firstname} {student.lastname}
-                    </TableCell>
-                    <TableCell className="barlow-regular">
-                      {student.email}
-                    </TableCell>
-                    <TableCell className="barlow-regular">
-                      {student.phone}
-                    </TableCell>
-                    <TableCell className="barlow-regular">
-                      {student.grade}
-                    </TableCell>
-                    <TableCell className="barlow-regular">
-                      {student?.batch ? student?.batch : "N/A"}
-                    </TableCell>
-                    <TableCell className="barlow-regular">
-                      {student.attendance.present +
-                        student.attendance.absent ===
-                      0
-                        ? "N/A"
-                        : `${Math.round(
-                            (student.attendance.present /
-                              (student.attendance.present +
-                                student.attendance.absent)) *
-                              100
-                          )} %`}
-                    </TableCell>
-                    <TableCell className="barlow-regular flex items-center gap-4">
-                      <Link
-                        href={`/student/${student.ay}/${student.grade}/${student.userId}`}
-                        className="border-2 border-main rounded p-1"
-                      >
-                        <Eye />
-                      </Link>
-
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <button className="border-2 border-main rounded p-1">
-                            <Trash />
-                          </button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Are you absolutely sure?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will
-                              permanently delete your account and remove your
-                              data from our servers.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() =>
-                                deleteStudentHandler(
-                                  student.ay,
-                                  student.grade,
-                                  student.userId
-                                )
-                              }
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
+                    {columnVisibility.srNo && (
+                      <TableCell className="barlow-semibold">
+                        {currentPage * pageSize + index + 1}
+                      </TableCell>
+                    )}
+                    {columnVisibility.name && (
+                      <TableCell className="barlow-regular">
+                        {student.firstname} {student.lastname}
+                      </TableCell>
+                    )}
+                    {columnVisibility.email && (
+                      <TableCell className="barlow-regular">
+                        {student.email}
+                      </TableCell>
+                    )}
+                    {columnVisibility.phone && (
+                      <TableCell className="barlow-regular">
+                        {student.phone}
+                      </TableCell>
+                    )}
+                    {columnVisibility.grade && (
+                      <TableCell className="barlow-regular">
+                        {student.grade}
+                      </TableCell>
+                    )}
+                    {columnVisibility.batch && (
+                      <TableCell className="barlow-regular">
+                        {student?.batch ? student?.batch : "N/A"}
+                      </TableCell>
+                    )}
+                    {columnVisibility.attendance && (
+                      <TableCell className="barlow-regular">
+                        {student.attendance.present +
+                          student.attendance.absent ===
+                        0
+                          ? "N/A"
+                          : `${Math.round(
+                              (student.attendance.present /
+                                (student.attendance.present +
+                                  student.attendance.absent)) *
+                                100
+                            )} %`}
+                      </TableCell>
+                    )}
+                    {columnVisibility.actions && (
+                      <TableCell className="barlow-regular flex items-center gap-4">
+                        <Link
+                          href={`/student/${student.ay}/${student.grade}/${student.userId}`}
+                          className="border-2 border-main rounded p-1"
+                        >
+                          <Eye />
+                        </Link>
+                        <Link
+                          href={`/student/${student.ay}/${student.grade}/${student.userId}/profile`}
+                          className="border-2 border-main rounded p-1"
+                        >
+                          <Pencil />
+                        </Link>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button className="border-2 border-main rounded p-1">
+                              <Trash />
+                            </button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Are you absolutely sure?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will
+                                permanently delete your account and remove your
+                                data from our servers.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() =>
+                                  deleteStudentHandler(
+                                    student.ay,
+                                    student.grade,
+                                    student.userId
+                                  )
+                                }
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
             </TableBody>
           </Table>
-
-          {/* Pagination */}
           {students?.length !== 0 && (
             <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-4">
-              {/* Set the value of the input in the pageSize when the input focus changes */}
-              <select
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(e.target.value);
-                  setCurrentPage(0);
-                }}
-                className="border-2 border-main bg-transparent px-3 py-1 rounded"
-              >
-                <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-                <option value="200">200</option>
-              </select>
               <div className="flex justify-center items-center gap-4 mt-4 md:mt-0">
                 <button
                   onClick={() =>
@@ -679,7 +734,6 @@ const DashboardPage = () => {
           )}
         </div>
       </div>
-
       <div className="pb-10">
         <TempStudentsComp />
       </div>

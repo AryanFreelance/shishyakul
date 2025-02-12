@@ -174,8 +174,8 @@ const page = () => {
   return (
     <Container>
       <div className="py-10 flex gap-8 flex-col">
-        <div className="flex gap-10 lg:items-center flex-col lg:flex-row">
-          <div className="lg:w-[50%]">
+        <div className="flex flex-col gap-10 lg:items-center w-full">
+          <div className="w-full">
             <div>
               {isAdmin && (
                 <Link
@@ -208,21 +208,34 @@ const page = () => {
               <h3 className="subsubheading text-secondary mb-4">
                 Student Details
               </h3>
-              <div className="flex flex-col gap-4 ml-6">
-                <span>
-                  Student Name - {studData?.student?.firstname}{" "}
-                  {studData?.student?.middlename} {studData?.student?.lastname}
-                </span>
-                <span>Student Email - {studData?.student?.email}</span>
-                <span>Student Phone - {studData?.student?.phone}</span>
-                <span>Student Grade - {studData?.student?.grade}</span>
-                <span>Student A.Y. - {studData?.student?.ay}</span>
-                <span>
-                  Student Batch - {studData?.student?.batch || "Not Assigned"}
-                </span>
+              <div className="flex flex-col md:flex-row gap-4 w-full items-start">
+                <div className="flex flex-col gap-4 md:w-1/2 w-full">
+                  <span>
+                    Student Name - {studData?.student?.firstname}{" "}
+                    {studData?.student?.middlename}{" "}
+                    {studData?.student?.lastname}
+                  </span>
+                  <span>Student Email - {studData?.student?.email}</span>
+                  <span>Student Phone - {studData?.student?.phone}</span>
+                  <span>Student Grade - {studData?.student?.grade}</span>
+                  <span>Student A.Y. - {studData?.student?.ay}</span>
+                  <span>
+                    Student Batch - {studData?.student?.batch || "Not Assigned"}
+                  </span>
+                </div>
+                <div className="lg:flex flex-col gap-4 md:w-1/2 w-full hidden">
+                  <span>School Name -</span>
+                  <span>Board -</span>
+                  <span>Medium -</span>
+                  <span>DOB -</span>
+                  <span>Siblings -</span>
+                </div>
               </div>
             </div>
-            <div>
+          </div>
+
+          <div className="w-full flex flex-col-reverse lg:flex-row gap-10 justify-between items-center">
+            <div className="lg:w-[70%] w-full">
               <div className="flex justify-between items-center w-full">
                 <h3 className="subsubheading text-secondary mb-4">
                   Fees Information
@@ -241,24 +254,22 @@ const page = () => {
               </div>
               <CheckFeeData isAdmin={isAdmin} studData={studData} id={id} />
             </div>
-          </div>
-
-          <Separator className="my-4 lg:hidden" />
-
-          <div className="lg:w-[50%]">
-            {studData?.student.attendance.present === 0 &&
-            studData?.student.attendance.absent === 0 ? (
-              <div className="flex items-center justify-center text-secondary gap-6 px-6 py-4 rounded">
-                <div>
-                  <h4 className="smallheading text-secondary flex gap-2 items-center">
-                    <InfoIcon />
-                    No Attendance Available
-                  </h4>
+            <Separator className="my-4 lg:hidden" />
+            <div className="w-full lg:w-[30%] flex items-center justify-center">
+              {studData?.student.attendance.present === 0 &&
+              studData?.student.attendance.absent === 0 ? (
+                <div className="flex items-center justify-center text-secondary gap-6 px-6 py-4 rounded">
+                  <div>
+                    <h4 className="smallheading text-secondary flex gap-2 items-center">
+                      <InfoIcon />
+                      No Attendance Available
+                    </h4>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <Pie data={chartData} />
-            )}
+              ) : (
+                <Pie data={chartData} />
+              )}
+            </div>
           </div>
         </div>
         <div>

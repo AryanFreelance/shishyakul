@@ -154,7 +154,7 @@ const Page = () => {
     const formattedDate =
       date && `${sDate[2]}-${getMonthNumber(sDate[1])}-${sDate[3]}`;
     setFormattedDate(date ? formattedDate : "(select a date)");
-    if (formattedDate) {
+    if (formattedDate !== "(select a date)" && formattedDate) {
       fetchAttendance({
         variables: {
           ay: searchParameters.ay,
@@ -511,7 +511,7 @@ const Page = () => {
                           onChange={(e) =>
                             radioInputChangeHandler(e, item.userId)
                           }
-                          checked={present.includes(item.userId)}
+                          checked={present?.includes(item.userId)}
                         />
                         <label htmlFor={`present-${item.userId}`}>
                           Present
@@ -523,7 +523,7 @@ const Page = () => {
                           id={`absent-${item.userId}`}
                           name={item.userId}
                           value="absent"
-                          checked={absent.includes(item.userId)}
+                          checked={absent?.includes(item.userId)}
                           onChange={(e) =>
                             radioInputChangeHandler(e, item.userId)
                           }

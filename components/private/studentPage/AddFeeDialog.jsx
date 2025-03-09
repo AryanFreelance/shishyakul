@@ -85,11 +85,13 @@ const AddFeeDialog = ({ id, studData }) => {
       return;
     }
     let today = new Date();
-    let feeid = `${today.getFullYear()}${
+    let feeid = `${today.getFullYear()}-${
+      today.getMonth() + 1
+    }-${today.getDate()}_${
       today.getHours() < 10 ? "0" + today.getHours() : today.getHours()
-    }${
+    }:${
       today.getMinutes() < 10 ? "0" + today.getMinutes() : today.getMinutes()
-    }${
+    }:${
       today.getSeconds() < 10 ? "0" + today.getSeconds() : today.getSeconds()
     }`;
 

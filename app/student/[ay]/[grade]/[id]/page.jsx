@@ -31,6 +31,7 @@ import { Separator } from "@/components/ui/separator";
 import AddFeeDialog from "@/components/private/studentPage/AddFeeDialog";
 import CheckFeeData from "@/components/private/studentPage/CheckFeeData";
 import RequestReview from "@/components/private/studentPage/RequestReview";
+import StudentFeesInfoDialog from "@/components/private/studentPage/StudentFeesInfoDialog";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -240,7 +241,12 @@ const page = () => {
                 <h3 className="subsubheading text-secondary mb-4">
                   Fees Information
                 </h3>
-                {isAdmin && <AddFeeDialog id={id} studData={studData} />}
+                {isAdmin && (
+                  <div className="flex gap-4 items-center">
+                    <AddFeeDialog id={id} studData={studData} />
+                    <StudentFeesInfoDialog />
+                  </div>
+                )}
                 {!isAdmin && (
                   <RequestReview
                     name={`${studData?.student?.firstname} ${studData?.student?.lastname}`}

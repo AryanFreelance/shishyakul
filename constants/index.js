@@ -42,4 +42,8 @@ export const dashboardNavLinks = [
     title: "Content",
     href: "/dashboard/content",
   },
+  {
+    title: "Members",
+    href: "/dashboard/members",
+  },
 ];

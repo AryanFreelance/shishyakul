@@ -111,7 +111,7 @@ const Page = () => {
     }
   );
 
-  const { data: ay } = useSuspenseQuery(GET_ACADEMIC_YEARS);
+  const { data: ay, loading: ayLoading } = useSuspenseQuery(GET_ACADEMIC_YEARS);
 
   // Mutations - Create Attendance, Update Attendance
   const [attendanceHandler] = useMutation(ATTENDANCE_HANDLER, {
@@ -232,24 +232,27 @@ const Page = () => {
   // Update the present and absent arrays whenever the attendanceData changes
   useEffect(() => {
     if (attendanceData?.attendance) {
-      setPresent(attendanceData.attendance.present);
-      setAbsent(attendanceData.attendance.absent);
+      setPresent(attendanceData.attendance.present || []);
+      setAbsent(attendanceData.attendance.absent || []);
 
-      // console.log("STUD DATA", studentsData);
-
-      setAbsentEmails(
-        students
-          .filter((student) =>
-            attendanceData.attendance.absent.includes(student.userId)
-          )
-          .map((student) => student.email)
-      );
-      // console.log("ATTENDANCE DATA", attendanceData);
+      // Only try to set absentEmails if students array is populated
+      if (students && students.length > 0) {
+        setAbsentEmails(
+          students
+            .filter((student) =>
+              attendanceData.attendance.absent?.includes(student.userId)
+            )
+            .map((student) => student.email)
+        );
+      } else {
+        setAbsentEmails([]);
+      }
     } else {
       setPresent([]);
       setAbsent([]);
+      setAbsentEmails([]);
     }
-  }, [attendanceData]);
+  }, [attendanceData, students]);
 
   useEffect(() => {
     if (studentsData?.gStudents?.length > 0) {
@@ -290,27 +293,6 @@ const Page = () => {
         date: formattedDate,
       },
     });
-
-    // if (!attendanceData?.attendance) {
-    //   await createAttendance({
-    //     variables: {
-    //       ay: searchParameters.ay,
-    //       grade: searchParameters.grade,
-    //       timestamp: formattedDate.split("-").reverse().join("-"),
-    //       present: present,
-    //       absent: absent,
-    //       date: formattedDate,
-    //     },
-    //   });
-    // } else {
-    //   await updateAttendance({
-    //     variables: {
-    //       present: present,
-    //       absent: absent,
-    //       timestamp: formattedDate.split("-").reverse().join("-"),
-    //     },
-    //   });
-    // }
     toast.dismiss(toastId);
   };
 
@@ -437,11 +419,15 @@ const Page = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="select-ay">Select A.Y.</SelectItem>
-                      {Array.from(ay?.academicYears)?.map((acay, index) => (
-                        <SelectItem key={index} value={acay}>
-                          {acay}
-                        </SelectItem>
-                      ))}
+                      {ayLoading ? (
+                        <SelectItem value="loading">Loading...</SelectItem>
+                      ) : (
+                        Array.from(ay?.academicYears)?.map((acay, index) => (
+                          <SelectItem key={index} value={acay}>
+                            {acay}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>

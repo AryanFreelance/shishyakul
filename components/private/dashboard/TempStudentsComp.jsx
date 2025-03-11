@@ -73,15 +73,34 @@ const TempStudentsComp = () => {
   const handleSearchTempStudent = (e) => {
     const value = e.target.value;
     setSearchEmail(value);
-    const filteredTempStudents = tempStudents?.tempStudents.filter((student) =>
-      student.email.toLowerCase().includes(value.toLowerCase())
-    );
+    const filteredTempStudents = tempStudents?.tempStudents
+      ? tempStudents.tempStudents.filter((student) =>
+          student.email.toLowerCase().includes(value.toLowerCase())
+        )
+      : [];
     setFilteredTempStudents(filteredTempStudents);
   };
 
   useEffect(() => {
-    setFilteredTempStudents(tempStudents?.tempStudents);
+    setFilteredTempStudents(tempStudents?.tempStudents || []);
   }, [tempStudents]);
+
+  useEffect(() => {
+    if (filteredTempStudents && Array.isArray(filteredTempStudents)) {
+      const startIndex = currentPage * pageSize;
+      const endIndex = startIndex + pageSize;
+      const slicedTempStudents = filteredTempStudents.slice(
+        startIndex,
+        endIndex
+      );
+
+      setOnePageTempStudent(slicedTempStudents);
+      setPages(Math.ceil(filteredTempStudents.length / pageSize));
+    } else {
+      setOnePageTempStudent([]);
+      setPages(0);
+    }
+  }, [filteredTempStudents, currentPage, pageSize]);
 
   const handleCheckboxChange = (email) => {
     setSelectedEmails((prev) => {
@@ -169,31 +188,18 @@ const TempStudentsComp = () => {
     });
   };
 
-  useEffect(() => {
-    if (filteredTempStudents) {
-      const startIndex = currentPage * pageSize;
-      const endIndex = startIndex + pageSize;
-      const slicedTempStudents = filteredTempStudents.slice(
-        startIndex,
-        endIndex
-      );
-
-      setOnePageTempStudent(slicedTempStudents);
-      setPages(Math.ceil(filteredTempStudents.length / pageSize));
-
-      // console.log("Sliced Temp Students", slicedTempStudents);
-      // console.log("Pages", pages);
-      // console.log("Current Page", currentPage);
-    }
-  }, [filteredTempStudents, currentPage, pageSize]);
-
   return (
     <div>
       <div className="flex justify-between items-center">
         <h2 className="subheading">Students Pending</h2>
       </div>
       <div className="my-4 mb-6 text-lg">
-        <span>{filteredTempStudents.length} Students Found.</span>
+        <span>
+          {filteredTempStudents && Array.isArray(filteredTempStudents)
+            ? filteredTempStudents.length
+            : 0}{" "}
+          Students Found.
+        </span>
       </div>
       {/* Searchbar */}
       <div className="flex justify-center items-center w-full">
@@ -260,19 +266,19 @@ const TempStudentsComp = () => {
         </div>
       </div>
       <div className="flex items-center gap-2 justify-end my-2">
-        {selectedEmails.length > 0 && (
+        {selectedEmails && selectedEmails.length > 0 && (
           <span className="text-lg">
             {selectedEmails.length} Emails Selected!
           </span>
         )}
         <Button
-          disabled={selectedEmails.length === 0}
+          disabled={!selectedEmails || selectedEmails.length === 0}
           onClick={bulkDeleteVerifications}
         >
           Bulk Delete
         </Button>
         <Button
-          disabled={selectedEmails.length === 0}
+          disabled={!selectedEmails || selectedEmails.length === 0}
           onClick={(e) => {
             e.preventDefault();
             setSelectedEmails([]);
@@ -294,113 +300,102 @@ const TempStudentsComp = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tempStudents?.tempStudents.length === 0 &&
-              filteredTempStudents?.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan="4"
-                    className="barlow-semibold text-center"
-                  >
-                    No pending students
-                  </TableCell>
-                </TableRow>
-              )}
-            {filteredTempStudents?.length === 0 &&
-              tempStudents?.tempStudents.length > 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan="4"
-                    className="barlow-semibold text-center"
-                  >
-                    No students found
-                  </TableCell>
-                </TableRow>
-              )}
-            {onePageTempStudent?.map((tempStudents, index) => (
-              <TableRow key={index}>
-                <TableCell className="barlow-regular">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      onChange={() => handleCheckboxChange(tempStudents.email)}
-                      checked={selectedEmails.includes(tempStudents.email)}
-                      className="transform scale-150"
-                    />
-                    {currentPage * pageSize + index + 1}
-                  </div>
-                </TableCell>
-                <TableCell className="barlow-semibold">
-                  {tempStudents.email}
-                </TableCell>
-                <TableCell className="barlow-regular">
-                  {tempStudents.verificationCode}
-                </TableCell>
-                <TableCell className="barlow-regular flex items-center gap-4">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <button className="border-2 border-main rounded p-1">
-                        <Trash />
-                      </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          Are you absolutely sure?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently
-                          delete your account and remove your data from our
-                          servers.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() =>
-                            deleteTempStudentHandler(tempStudents.email)
-                          }
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <button className="border-2 border-main rounded p-1">
-                        <Repeat />
-                      </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          Share the verification code again?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          The code will be sent to the shishya's email once you
-                          confirm the operation.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={(e) =>
-                            resendVerificationCode(
-                              e,
-                              tempStudents.email,
-                              tempStudents.verificationCode
-                            )
-                          }
-                        >
-                          Resend
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+            {(!onePageTempStudent ||
+              !Array.isArray(onePageTempStudent) ||
+              onePageTempStudent.length === 0) && (
+              <TableRow>
+                <TableCell colSpan="4" className="barlow-semibold text-center">
+                  No pending students
                 </TableCell>
               </TableRow>
-            ))}
+            )}
+            {onePageTempStudent &&
+              Array.isArray(onePageTempStudent) &&
+              onePageTempStudent.map((tempStudent, index) => (
+                <TableRow key={index}>
+                  <TableCell className="barlow-regular">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        onChange={() => handleCheckboxChange(tempStudent.email)}
+                        checked={selectedEmails.includes(tempStudent.email)}
+                        className="transform scale-150"
+                      />
+                      {currentPage * pageSize + index + 1}
+                    </div>
+                  </TableCell>
+                  <TableCell className="barlow-semibold">
+                    {tempStudent.email}
+                  </TableCell>
+                  <TableCell className="barlow-regular">
+                    {tempStudent.verificationCode}
+                  </TableCell>
+                  <TableCell className="barlow-regular flex items-center gap-4">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button className="border-2 border-main rounded p-1">
+                          <Trash />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Are you absolutely sure?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently
+                            delete your account and remove your data from our
+                            servers.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() =>
+                              deleteTempStudentHandler(tempStudent.email)
+                            }
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button className="border-2 border-main rounded p-1">
+                          <Repeat />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Share the verification code again?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            The code will be sent to the shishya's email once
+                            you confirm the operation.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={(e) =>
+                              resendVerificationCode(
+                                e,
+                                tempStudent.email,
+                                tempStudent.verificationCode
+                              )
+                            }
+                          >
+                            Resend
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
       </div>

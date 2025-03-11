@@ -99,14 +99,14 @@ const DashboardPage = () => {
   const [showColumnSettings, setShowColumnSettings] = useState(false);
 
   // Queries - GET_ACADEMIC_YEARS, GET_TEMP_STUDENTS, DASHBOARD_GET_STUDENT
-  const { data: ay } = useSuspenseQuery(GET_ACADEMIC_YEARS);
+  const { data: ay, loading: ayLoading } = useSuspenseQuery(GET_ACADEMIC_YEARS);
   const [fetchStudents, { data: dStudents }] = useLazyQuery(
     DASHBOARD_GET_STUDENT,
     {
       fetchPolicy: "network-only",
       variables: { ay: searchParameters.ay, grade: searchParameters.grade },
       onCompleted: (data) => {
-        setStudents(data.students || []);
+        setStudents(data?.students || []);
       },
     }
   );
@@ -272,21 +272,24 @@ const DashboardPage = () => {
               : searchParameters.grade,
         },
         onCompleted: (data) => {
-          setStudents(data.students || []);
-          setFilteredStudents(data.students || []);
+          setStudents(data?.students || []);
+          setFilteredStudents(data?.students || []);
         },
       });
-    if (searchParameters.ay === "select-ay") setStudents([]);
+    if (searchParameters.ay === "select-ay") {
+      setStudents([]);
+      setFilteredStudents([]);
+    }
   }, [searchParameters]);
 
   useEffect(() => {
-    setFilteredStudents(students);
+    setFilteredStudents(students || []);
   }, [students]);
 
   useEffect(() => {
     if (students?.length > 0) {
       const uniqueBatch = Array.from(
-        new Set(students.map((student) => student.batch).filter(Boolean))
+        new Set(students.map((student) => student?.batch).filter(Boolean))
       );
       setBatch(uniqueBatch);
     } else {
@@ -301,6 +304,9 @@ const DashboardPage = () => {
       const slicedTempStudents = filteredStudents.slice(startIndex, endIndex);
       setOnePageStudent(slicedTempStudents);
       setPages(Math.ceil(filteredStudents.length / parseInt(pageSize)));
+    } else {
+      setOnePageStudent([]);
+      setPages(0);
     }
   }, [filteredStudents, currentPage, pageSize]);
 
@@ -311,25 +317,25 @@ const DashboardPage = () => {
       selectedBatch !== "select-batch"
     ) {
       const selectedBatchStudents = students.filter(
-        (student) => student.batch === selectedBatch
+        (student) => student?.batch === selectedBatch
       );
       setFilteredStudents(selectedBatchStudents);
     }
     if (selectedBatch === "select-batch" || !selectedBatch)
-      setFilteredStudents(dStudents?.students);
-  }, [selectedBatch]);
+      setFilteredStudents(students || []);
+  }, [selectedBatch, students]);
 
   useEffect(() => {
-    if (studentName.length > 0) {
+    if (studentName.length > 0 && students?.length > 0) {
       let filteredStudents = students.filter((student) =>
-        `${student.firstname} ${student.lastname}`
+        `${student?.firstname || ""} ${student?.lastname || ""}`
           .toLowerCase()
           .includes(studentName.toLowerCase())
       );
       setFilteredStudents(filteredStudents);
     }
-    if (studentName.length === 0) setFilteredStudents(dStudents?.students);
-  }, [studentName]);
+    if (studentName.length === 0) setFilteredStudents(students || []);
+  }, [studentName, students]);
 
   const toggleColumnVisibility = (column) => {
     setColumnVisibility((prev) => ({
@@ -396,11 +402,17 @@ const DashboardPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="select-ay">Select A.Y.</SelectItem>
-                  {Array.from(ay.academicYears).map((acay, index) => (
-                    <SelectItem key={index} value={acay}>
-                      {acay}
-                    </SelectItem>
-                  ))}
+                  {ayLoading ? (
+                    <SelectItem value="loading">Loading...</SelectItem>
+                  ) : (
+                    (ay?.academicYears ? Array.from(ay.academicYears) : []).map(
+                      (acay, index) => (
+                        <SelectItem key={index} value={acay}>
+                          {acay}
+                        </SelectItem>
+                      )
+                    )
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -444,7 +456,7 @@ const DashboardPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="select-batch">Select Batch</SelectItem>
-                  {Array.from(batch).map((bth, index) => (
+                  {(batch ? Array.from(batch) : []).map((bth, index) => (
                     <SelectItem key={index} value={bth || index}>
                       {bth}
                     </SelectItem>
@@ -626,16 +638,18 @@ const DashboardPage = () => {
                     )}
                     {columnVisibility.attendance && (
                       <TableCell className="barlow-regular">
-                        {student.attendance.present +
-                          student.attendance.absent ===
-                        0
-                          ? "N/A"
-                          : `${Math.round(
-                              (student.attendance.present /
-                                (student.attendance.present +
-                                  student.attendance.absent)) *
-                                100
-                            )} %`}
+                        {student?.attendance
+                          ? student.attendance.present +
+                              student.attendance.absent ===
+                            0
+                            ? "N/A"
+                            : `${Math.round(
+                                (student.attendance.present /
+                                  (student.attendance.present +
+                                    student.attendance.absent)) *
+                                  100
+                              )} %`
+                          : "N/A"}
                       </TableCell>
                     )}
                     {columnVisibility.actions && (

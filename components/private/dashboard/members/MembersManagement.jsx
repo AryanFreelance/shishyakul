@@ -77,11 +77,25 @@ export function MembersManagement() {
     setIsDialogOpen(true);
   };
 
+  const handleAddMemberClick = () => {
+    setEditingMember(null);
+    setIsDialogOpen(true);
+  };
+
+  // Function to handle dialog closing (either via save or cancel)
+  const handleDialogClose = (isOpen) => {
+    setIsDialogOpen(isOpen);
+    if (!isOpen) {
+      // Reset the editing member when dialog closes
+      setEditingMember(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <h2 className="text-xl font-semibold">Team Members</h2>
-        <Button onClick={() => setIsDialogOpen(true)} disabled={isLoading}>
+        <Button onClick={handleAddMemberClick} disabled={isLoading}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Add Member
         </Button>
@@ -95,7 +109,7 @@ export function MembersManagement() {
 
       <MemberDialog
         open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        onOpenChange={handleDialogClose}
         onSave={editingMember ? handleUpdateMember : handleAddMember}
         member={editingMember}
         isLoading={isLoading}

@@ -8,14 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import DropzoneComponent from "react-dropzone";
-import { storage } from "@/firebase";
+import { storage, db } from "@/firebase";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { useMutation } from "@apollo/client";
 import toast from "react-hot-toast";
 import { Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { CREATE_TEST } from "@/graphql/mutations/testPaper.mutation";
-import { GET_TESTPAPERS } from "@/graphql/queries/testPaper.query";
+import { getAuth } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +40,12 @@ const page = () => {
   });
   const [loading, setLoading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
+
+  // Move these state declarations to the top before they're used
+  const [userEmail, setUserEmail] = useState("");
+  const [userName, setUserName] = useState("");
+  const [isFaculty, setIsFaculty] = useState(false);
+
   const today = new Date();
   const todayDate = `${today.getFullYear()}-${
     today.getMonth() + 1 < 10
@@ -55,10 +60,26 @@ const page = () => {
   // Queries
   // useSuspenseQuery(GET_TESTPAPERS);
 
-  // Mutations
-  const [createTest] = useMutation(CREATE_TEST, {
-    refetchQueries: [{ query: GET_TESTPAPERS }],
-  });
+  // Get current user information
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        setUserEmail(user.email);
+        console.log("User email set:", user.email);
+
+        // Get user name and role from members collection
+        const memberDoc = await getDoc(doc(db, "members", user.email));
+        if (memberDoc.exists()) {
+          setUserName(memberDoc.data().name || "");
+          // Check if user has Faculty role
+          setIsFaculty(memberDoc.data().roles?.Faculty || false);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     // console.log(isFormLoading);
@@ -108,6 +129,11 @@ const page = () => {
     e.preventDefault();
     setIsFormLoading(true);
     const toastId = toast.loading("Uploading Test Paper...");
+
+    // Log the current email state for debugging
+    console.log("Current user email:", userEmail);
+    console.log("Current user name:", userName);
+
     if (!uploaded) {
       toast.error("Please upload the test paper!", {
         id: toastId,
@@ -117,9 +143,10 @@ const page = () => {
       formData.test_name === "" ||
       formData.subject === "" ||
       formData.date === "" ||
-      formData.total_marks === ""
+      formData.total_marks === "" ||
+      !userEmail
     ) {
-      toast.error("Please fill all the fields!", {
+      toast.error("Please fill all the fields and ensure you're logged in!", {
         id: toastId,
       });
       setIsFormLoading(false);
@@ -136,39 +163,84 @@ const page = () => {
       const storageRef = ref(storage, `test_papers/${fileid}`);
 
       // Upload the file
-      await uploadBytes(storageRef, formData.question_paper)
-        .then(async (snapshot) => {
-          const downloadUrl = await getDownloadURL(storageRef);
-          // console.log("SNAPSHOT", snapshot);
-          // console.log("DOWNLOAD", downloadUrl);
+      try {
+        const snapshot = await uploadBytes(storageRef, formData.question_paper);
+        const downloadUrl = await getDownloadURL(storageRef);
 
-          await createTest({
-            variables: {
-              id: fileid,
-              title: formData.test_name,
-              date: formData.date,
-              totalMarks: parseInt(formData.total_marks),
-              url: downloadUrl,
-              subject: formData.subject,
-            },
+        console.log("Creating test paper with email:", userEmail);
+
+        // Ensure valid data for all fields
+        const testData = {
+          id: fileid,
+          title: formData.test_name.trim(),
+          subject: formData.subject.trim(),
+          date: formData.date,
+          totalMarks: parseInt(formData.total_marks) || 0, // Ensure valid integer
+          url: downloadUrl,
+          createdBy: userEmail.trim(),
+          creatorName: userName.trim() || "Faculty", // Provide default if empty
+          createdAt: new Date().toISOString(),
+          published: false, // Draft by default
+          sharedWith: [], // Empty shared list by default
+        };
+
+        // Validate required fields again
+        if (
+          !testData.id ||
+          !testData.title ||
+          !testData.subject ||
+          !testData.date ||
+          !testData.url
+        ) {
+          console.error("Missing required fields:", testData);
+          toast.error("Missing required fields for test paper creation", {
+            id: toastId,
           });
+          setIsFormLoading(false);
+          return;
+        }
 
-          // await refetchQueries();
+        console.log("Test paper data:", testData);
+
+        try {
+          // Save to the testPapersDraft collection
+          await setDoc(doc(db, "testPapersDraft", fileid), testData);
+
+          console.log(
+            "Test paper created successfully, redirecting to appropriate page"
+          );
 
           toast.success("Test Paper Added Successfully!", {
             id: toastId,
           });
-        })
-        .catch((error) => {
-          toast.error("Something went wrong!", {
-            id: toastId,
-          });
-          // console.error(error);
-        });
-      router.push("/dashboard/tests");
 
-      // console.log(formData.question_paper);
-      // console.log(formData);
+          // Redirect to the appropriate page based on user role
+          if (isFaculty && userEmail !== "admin@shishyakul.in") {
+            router.push("/dashboard/tests/faculty");
+          } else {
+            router.push("/dashboard/tests");
+          }
+        } catch (error) {
+          console.error("Exception caught during test paper creation:", error);
+          toast.error(
+            "Failed to create test paper: " +
+              (error.message || "Unknown error"),
+            {
+              id: toastId,
+            }
+          );
+          setIsFormLoading(false);
+        }
+      } catch (error) {
+        console.error("Error uploading file:", error);
+        toast.error(
+          "Failed to upload file: " + (error.message || "Unknown error"),
+          {
+            id: toastId,
+          }
+        );
+        setIsFormLoading(false);
+      }
     }
   };
 

@@ -90,6 +90,18 @@ export async function DELETE(req, res) {
             return Response.json({ message: "UID not found in member document" }, { status: 400 });
         }
 
+        // Delete faculty assignments if member has a Faculty role
+        if (memberData.roles?.Faculty) {
+            try {
+                // Delete faculty document
+                await db.collection('faculties').doc(uid).delete();
+                console.log(`Deleted faculty document for user ${email} with UID ${uid}`);
+            } catch (facultyError) {
+                console.error("Error deleting faculty document:", facultyError);
+                // Continue with deletion even if faculty cleanup fails
+            }
+        }
+
         // Delete user authentication record using the uid from Firestore
         await getAuth().deleteUser(uid);
 

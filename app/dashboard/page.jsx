@@ -68,6 +68,7 @@ import SearchBarStudent from "@/components/private/dashboard/SearchBarStudent";
 import { getDoc, doc, setDoc } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "@/firebase";
+import { usePermission } from "@/app/context/PermissionContext";
 
 const DashboardPage = () => {
   const [studEmail, setStudEmail] = useState("");
@@ -97,6 +98,11 @@ const DashboardPage = () => {
     actions: true,
   });
   const [showColumnSettings, setShowColumnSettings] = useState(false);
+
+  const { permissions, getFacultyAssignments } = usePermission();
+  const isFaculty = permissions.roles.Faculty;
+  const isAdmin = permissions.isAdmin;
+  const facultyAssignments = getFacultyAssignments();
 
   // Queries - GET_ACADEMIC_YEARS, GET_TEMP_STUDENTS, DASHBOARD_GET_STUDENT
   const { data: ay, loading: ayLoading } = useSuspenseQuery(GET_ACADEMIC_YEARS);
@@ -282,9 +288,110 @@ const DashboardPage = () => {
     }
   }, [searchParameters]);
 
+  // Filter students based on faculty assignments
   useEffect(() => {
-    setFilteredStudents(students || []);
-  }, [students]);
+    if (isFaculty && !isAdmin && students.length > 0) {
+      // Only show students that match faculty assignments
+      const assignedStudents = students.filter((student) => {
+        // Check if this student matches any of the faculty's assignments
+        return facultyAssignments.some((assignment) => {
+          // Match academic year
+          const matchesAY = assignment.academicYear === student.ay;
+          if (!matchesAY) return false;
+
+          // Match grade if specified
+          if (assignment.grade && assignment.grade !== "all") {
+            const matchesGrade = assignment.grade === student.grade;
+            if (!matchesGrade) return false;
+          }
+
+          // Match batch if specified
+          if (assignment.batch && assignment.batch !== "all") {
+            const matchesBatch = assignment.batch === student.batch;
+            if (!matchesBatch) return false;
+          }
+
+          return true;
+        });
+      });
+
+      setFilteredStudents(assignedStudents);
+    } else {
+      // Admin or non-faculty sees all students
+      setFilteredStudents(students);
+    }
+  }, [students, isFaculty, isAdmin, facultyAssignments]);
+
+  // Filter academic years dropdown based on faculty assignments
+  const filteredAcademicYears = useMemo(() => {
+    if (isFaculty && !isAdmin && facultyAssignments.length > 0) {
+      // Extract unique academic years from faculty assignments
+      return Array.from(
+        new Set(facultyAssignments.map((assignment) => assignment.academicYear))
+      ).sort((a, b) => b.localeCompare(a)); // Sort in descending order
+    }
+
+    // Admin or non-faculty sees all academic years
+    return ay?.academicYears || [];
+  }, [ay, isFaculty, isAdmin, facultyAssignments]);
+
+  // Filter grades dropdown based on selected academic year and faculty assignments
+  const filteredGrades = useMemo(() => {
+    if (
+      isFaculty &&
+      !isAdmin &&
+      facultyAssignments.length > 0 &&
+      searchParameters.ay !== "select-ay"
+    ) {
+      // Filter assignments by selected academic year
+      const assignmentsForYear = facultyAssignments.filter(
+        (assignment) => assignment.academicYear === searchParameters.ay
+      );
+
+      // Extract unique grades from filtered assignments
+      return Array.from(
+        new Set(assignmentsForYear.map((assignment) => assignment.grade))
+      ).sort();
+    }
+
+    // Admin or non-faculty sees all grades
+    return grades;
+  }, [grades, searchParameters.ay, isFaculty, isAdmin, facultyAssignments]);
+
+  // Filter batches dropdown based on selected academic year, grade, and faculty assignments
+  const filteredBatches = useMemo(() => {
+    if (
+      isFaculty &&
+      !isAdmin &&
+      facultyAssignments.length > 0 &&
+      searchParameters.ay !== "select-ay" &&
+      searchParameters.grade !== "select-grade"
+    ) {
+      // Filter assignments by selected academic year and grade
+      const assignmentsForYearAndGrade = facultyAssignments.filter(
+        (assignment) =>
+          assignment.academicYear === searchParameters.ay &&
+          assignment.grade === searchParameters.grade
+      );
+
+      // Extract unique batches from filtered assignments
+      return Array.from(
+        new Set(
+          assignmentsForYearAndGrade.map((assignment) => assignment.batch)
+        )
+      ).sort();
+    }
+
+    // Use the batches from students if not faculty or no assignments match
+    return batch ? Array.from(batch) : [];
+  }, [
+    batch,
+    searchParameters.ay,
+    searchParameters.grade,
+    isFaculty,
+    isAdmin,
+    facultyAssignments,
+  ]);
 
   useEffect(() => {
     if (students?.length > 0) {
@@ -405,13 +512,11 @@ const DashboardPage = () => {
                   {ayLoading ? (
                     <SelectItem value="loading">Loading...</SelectItem>
                   ) : (
-                    (ay?.academicYears ? Array.from(ay.academicYears) : []).map(
-                      (acay, index) => (
-                        <SelectItem key={index} value={acay}>
-                          {acay}
-                        </SelectItem>
-                      )
-                    )
+                    filteredAcademicYears.map((acay, index) => (
+                      <SelectItem key={index} value={acay}>
+                        {acay}
+                      </SelectItem>
+                    ))
                   )}
                 </SelectContent>
               </Select>
@@ -429,7 +534,7 @@ const DashboardPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="select-grade">Select Grade</SelectItem>
-                  {grades.map((grd, index) => (
+                  {filteredGrades.map((grd, index) => (
                     <SelectItem key={index} value={grd || index}>
                       {grd}
                     </SelectItem>
@@ -456,7 +561,7 @@ const DashboardPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="select-batch">Select Batch</SelectItem>
-                  {(batch ? Array.from(batch) : []).map((bth, index) => (
+                  {filteredBatches.map((bth, index) => (
                     <SelectItem key={index} value={bth || index}>
                       {bth}
                     </SelectItem>

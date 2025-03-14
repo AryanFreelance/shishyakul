@@ -9,19 +9,81 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { useMutation } from "@apollo/client";
+import { UPDATE_STUDENT_TOTAL_FEES } from "@/graphql/mutations/fees.mutation";
+import { GET_STUDENT_DETAILS } from "@/graphql/queries/students.query";
+import toast from "react-hot-toast";
 
-const StudentFeesInfoDialog = () => {
+const StudentFeesInfoDialog = ({ id, studData }) => {
   const [totalFees, setTotalFees] = useState(0);
+  const [open, setOpen] = useState(false);
 
-  const saveFeeInfoHandler = () => {
-    console.log("TOTAL FEES", totalFees);
+  // Initialize with existing total fees if available
+  useEffect(() => {
+    if (studData?.student?.totalFees) {
+      setTotalFees(studData.student.totalFees);
+    }
+  }, [studData]);
+
+  // Note: This mutation needs to be implemented on the backend
+  // If the mutation is not available, this will fail gracefully
+  const [updateStudentTotalFees, { loading }] = useMutation(
+    UPDATE_STUDENT_TOTAL_FEES,
+    {
+      refetchQueries: [
+        {
+          query: GET_STUDENT_DETAILS,
+          variables: {
+            ay: studData?.student?.ay,
+            grade: studData?.student?.grade,
+            userId: id,
+          },
+        },
+      ],
+      onError: (error) => {
+        console.error("GraphQL Error:", error);
+      },
+    }
+  );
+
+  const saveFeeInfoHandler = async () => {
+    const toastId = toast.loading("Updating total fees...");
+    try {
+      // Attempt to use the mutation
+      await updateStudentTotalFees({
+        variables: {
+          userId: id,
+          totalFees: parseInt(totalFees),
+        },
+      });
+      toast.success("Total fees updated successfully!", {
+        id: toastId,
+      });
+      setOpen(false);
+    } catch (error) {
+      console.error("Error updating total fees:", error);
+
+      // If the mutation fails, show a more informative message
+      toast.error(
+        "There was an error updating total fees. The backend may need to be updated to support this feature.",
+        { id: toastId }
+      );
+
+      // Log the required backend changes to the console for developers
+      console.info(`
+        Backend Changes Required:
+        1. Add 'totalFees' field to the Student schema
+        2. Implement 'updateStudentTotalFees' mutation resolver
+        3. Update the GraphQL schema to include the new mutation
+      `);
+    }
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="border-2">
           Edit Fee Details
@@ -36,12 +98,15 @@ const StudentFeesInfoDialog = () => {
           <Input
             id="total-fees"
             placeholder="1000"
+            type="number"
             value={totalFees}
             onChange={(e) => setTotalFees(e.target.value)}
           />
         </div>
         <DialogFooter>
-          <Button onClick={saveFeeInfoHandler}>Save Changes</Button>
+          <Button onClick={saveFeeInfoHandler} disabled={loading}>
+            {loading ? "Saving..." : "Save Changes"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

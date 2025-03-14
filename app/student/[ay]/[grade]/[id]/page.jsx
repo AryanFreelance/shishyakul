@@ -2,8 +2,17 @@
 
 import Container from "@/components/shared/Container";
 import React, { useEffect, useState } from "react";
-import { Pie } from "react-chartjs-2";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { Pie, Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+} from "chart.js";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +30,13 @@ import toast from "react-hot-toast";
 import { useParams, useRouter } from "next/navigation";
 import { auth } from "@/firebase";
 import { Circle, CircleCheck, InfoIcon } from "lucide-react";
+import { getAuth } from "firebase/auth";
+import { getDoc, doc } from "firebase/firestore";
+import { db } from "@/firebase";
+import AddFeeDialog from "@/components/private/studentPage/AddFeeDialog";
+import CheckFeeData from "@/components/private/studentPage/CheckFeeData";
+import RequestReview from "@/components/private/studentPage/RequestReview";
+import StudentFeesInfoDialog from "@/components/private/studentPage/StudentFeesInfoDialog";
 
 export const dynamic = "force-dynamic";
 
@@ -28,18 +44,23 @@ import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 import { GET_STUDENT_DETAILS } from "@/graphql/queries/students.query";
 import { GET_PUBLISHED_TESTPAPERS_USERS } from "@/graphql/queries/testPaper.query";
 import { Separator } from "@/components/ui/separator";
-import AddFeeDialog from "@/components/private/studentPage/AddFeeDialog";
-import CheckFeeData from "@/components/private/studentPage/CheckFeeData";
-import RequestReview from "@/components/private/studentPage/RequestReview";
-import StudentFeesInfoDialog from "@/components/private/studentPage/StudentFeesInfoDialog";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title
+);
 
 const page = () => {
   const { ay, grade, id } = useParams();
   const router = useRouter();
   const [authStatus, setAuthStatus] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isFaculty, setIsFaculty] = useState(false);
   const [chartData, setChartData] = useState({
     labels: ["Present", "Absent"],
     datasets: [
@@ -52,17 +73,42 @@ const page = () => {
       },
     ],
   });
+  const [paymentMethodsData, setPaymentMethodsData] = useState({
+    labels: [],
+    datasets: [
+      {
+        label: "Amount Paid",
+        data: [],
+        backgroundColor: [
+          "rgba(54, 162, 235, 0.6)",
+          "rgba(255, 99, 132, 0.6)",
+          "rgba(255, 206, 86, 0.6)",
+          "rgba(75, 192, 192, 0.6)",
+        ],
+        borderColor: [
+          "rgba(54, 162, 235, 1)",
+          "rgba(255, 99, 132, 1)",
+          "rgba(255, 206, 86, 1)",
+          "rgba(75, 192, 192, 1)",
+        ],
+        borderWidth: 1,
+      },
+    ],
+  });
 
   // Details needed for Student Fees:
   // Fees Paid
   // Paid On
   // Paid For (Month & Year)
-  // Paid Via [Cash | Cheque | UPI)
+  // Paid Via [Cash | Cheque | UPI | NEFT]
   //   If (Cheque)
   //     Cheque Reference Number
   //     Cheque Image
   //   If (UPI)
   //     UPI ID
+  //     Payment Screenshot
+  //   If (NEFT)
+  //     NEFT Reference Number
   //     Payment Screenshot
 
   // Queries - Get Student, Get Published Papers
@@ -129,6 +175,44 @@ const page = () => {
           ],
         });
 
+        // Process payment methods data for bar chart
+        if (studData?.student?.fees && studData.student.fees.length > 0) {
+          const paymentMethods = {};
+
+          // Group payments by method and sum amounts
+          studData.student.fees.forEach((fee) => {
+            const method = fee.mode.charAt(0).toUpperCase() + fee.mode.slice(1);
+            if (!paymentMethods[method]) {
+              paymentMethods[method] = 0;
+            }
+            paymentMethods[method] += fee.feesPaid;
+          });
+
+          // Convert to chart data format
+          setPaymentMethodsData({
+            labels: Object.keys(paymentMethods),
+            datasets: [
+              {
+                label: "Amount Paid",
+                data: Object.values(paymentMethods),
+                backgroundColor: [
+                  "rgba(54, 162, 235, 0.6)",
+                  "rgba(255, 99, 132, 0.6)",
+                  "rgba(255, 206, 86, 0.6)",
+                  "rgba(75, 192, 192, 0.6)",
+                ],
+                borderColor: [
+                  "rgba(54, 162, 235, 1)",
+                  "rgba(255, 99, 132, 1)",
+                  "rgba(255, 206, 86, 1)",
+                  "rgba(75, 192, 192, 1)",
+                ],
+                borderWidth: 1,
+              },
+            ],
+          });
+        }
+
         setAuthStatus(true);
       } else {
         setAuthStatus(false);
@@ -137,6 +221,23 @@ const page = () => {
     });
 
     return () => unsubscribe();
+  }, [studData]);
+
+  useEffect(() => {
+    // Check if the user is a faculty member
+    const checkUserRole = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (user) {
+        const memberDoc = await getDoc(doc(db, "members", user.email));
+        if (memberDoc.exists() && memberDoc.data().roles?.Faculty) {
+          setIsFaculty(true);
+        }
+      }
+    };
+
+    checkUserRole();
   }, []);
 
   if (authStatus === null) {
@@ -172,20 +273,52 @@ const page = () => {
       });
   };
 
+  // Calculate total fees paid
+  const calculateTotalFeesPaid = () => {
+    if (!studData?.student?.fees || studData.student.fees.length === 0) {
+      return 0;
+    }
+
+    return studData.student.fees.reduce(
+      (total, fee) => total + fee.feesPaid,
+      0
+    );
+  };
+
+  // Get total fees (from database or calculate from existing data)
+  const getTotalFees = () => {
+    // If totalFees is set in the database, use that value
+    if (studData?.student?.totalFees) {
+      return studData.student.totalFees;
+    }
+
+    // Fallback: Calculate an estimate based on existing fee data
+    // This is just a placeholder until the backend is updated
+    // You may want to adjust this logic based on your business rules
+    const totalPaid = calculateTotalFeesPaid();
+
+    // Assuming fees are paid monthly and there are 12 months in a year
+    // This is just an example - adjust based on your actual fee structure
+    const estimatedMonthlyFee =
+      totalPaid > 0 && studData?.student?.fees.length > 0
+        ? Math.round(totalPaid / studData.student.fees.length)
+        : 0;
+
+    return Math.max(totalPaid, estimatedMonthlyFee * 12);
+  };
+
   return (
     <Container>
       <div className="py-10 flex gap-8 flex-col">
         <div className="flex flex-col gap-10 lg:items-center w-full">
           <div className="w-full">
             <div>
-              {isAdmin && (
-                <Link
-                  href="/dashboard"
-                  className="text-[16px] mb-8 mr-10 text-center border-2 border-main rounded px-4 py-2"
-                >
-                  Go Back
-                </Link>
-              )}
+              <Link
+                href="/dashboard"
+                className="text-[16px] mb-8 mr-10 text-center border-2 border-main rounded px-4 py-2"
+              >
+                Go Back
+              </Link>
               <Button
                 onClick={logoutHandler}
                 className="text-[16px] filled-button mb-8"
@@ -241,13 +374,13 @@ const page = () => {
                 <h3 className="subsubheading text-secondary mb-4">
                   Fees Information
                 </h3>
-                {isAdmin && (
+                {isAdmin && !isFaculty && (
                   <div className="flex gap-4 items-center">
                     <AddFeeDialog id={id} studData={studData} />
-                    <StudentFeesInfoDialog />
+                    <StudentFeesInfoDialog id={id} studData={studData} />
                   </div>
                 )}
-                {!isAdmin && (
+                {!isAdmin && !isFaculty && (
                   <RequestReview
                     name={`${studData?.student?.firstname} ${studData?.student?.lastname}`}
                     email={studData?.student?.email}
@@ -258,6 +391,73 @@ const page = () => {
                   />
                 )}
               </div>
+
+              {/* Fee Summary */}
+              <div className="mb-6 p-4 bg-secondary/10 rounded-md">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex flex-col">
+                    <span className="text-sm text-muted-foreground">
+                      Total Fees
+                    </span>
+                    <span className="text-2xl font-bold">
+                      ₹{getTotalFees()}
+                    </span>
+                    {!studData?.student?.totalFees && (
+                      <span className="text-xs text-muted-foreground mt-1">
+                        (Estimated - Set actual value in Fee Details)
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-muted-foreground">
+                      Fees Paid
+                    </span>
+                    <span className="text-2xl font-bold">
+                      ₹{calculateTotalFeesPaid()}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-muted-foreground">
+                      Balance
+                    </span>
+                    <span className="text-2xl font-bold">
+                      ₹{getTotalFees() - calculateTotalFeesPaid()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Methods Chart */}
+              {studData?.student?.fees && studData.student.fees.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-lg font-medium mb-2">Payment Methods</h4>
+                  <div className="h-64">
+                    <Bar
+                      data={paymentMethodsData}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            title: {
+                              display: true,
+                              text: "Amount (₹)",
+                            },
+                          },
+                          x: {
+                            title: {
+                              display: true,
+                              text: "Payment Method",
+                            },
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
               <CheckFeeData isAdmin={isAdmin} studData={studData} id={id} />
             </div>
             <Separator className="my-4 lg:hidden" />

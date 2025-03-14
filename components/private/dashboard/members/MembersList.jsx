@@ -57,13 +57,19 @@ export function MembersList({ members, onEdit, onDelete, onUpdateRoles }) {
                       "Attendance",
                       "Tests",
                       "Fees",
-                      "Manage Students",
+                      "Students",
                       "Content",
+                      "Members",
+                      "Faculty",
                     ].map((role) =>
-                      member.roles[role] ? (
+                      member.roles && member.roles[role] ? (
                         <span
                           key={`${member.id}-${role}`}
-                          className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold"
+                          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                            role === "Faculty"
+                              ? "bg-blue-100 text-blue-800 border-blue-200"
+                              : ""
+                          }`}
                         >
                           {role}
                         </span>
@@ -85,7 +91,7 @@ export function MembersList({ members, onEdit, onDelete, onUpdateRoles }) {
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => onDelete(member.id)}
+                        onClick={() => onDelete(member.email)}
                         className="text-destructive focus:text-destructive"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
@@ -128,7 +134,7 @@ export function MembersList({ members, onEdit, onDelete, onUpdateRoles }) {
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => onDelete(member.id)}
+                      onClick={() => onDelete(member.email)}
                       className="text-destructive focus:text-destructive"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
@@ -144,13 +150,19 @@ export function MembersList({ members, onEdit, onDelete, onUpdateRoles }) {
                     "Attendance",
                     "Tests",
                     "Fees",
-                    "Manage Students",
+                    "Students",
                     "Content",
+                    "Members",
+                    "Faculty",
                   ].map((role) =>
-                    member.roles[role] ? (
+                    member.roles && member.roles[role] ? (
                       <span
                         key={`${member.id}-${role}`}
-                        className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold"
+                        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                          role === "Faculty"
+                            ? "bg-blue-100 text-blue-800 border-blue-200"
+                            : ""
+                        }`}
                       >
                         {role}
                       </span>

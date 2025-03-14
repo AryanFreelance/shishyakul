@@ -164,7 +164,7 @@ const CheckFeeData = ({ isAdmin, studData, id }) => {
         </TableCell>
         <TableCell className="barlow-regular">{fee.paidOn}</TableCell>
         <TableCell className="barlow-regular">
-          {fee.mode === "cash" ? (
+          {fee.mode === "cash" || fee.mode === "neft" ? (
             `${fee.mode.charAt(0).toUpperCase() + fee.mode.slice(1)}`
           ) : (
             <Link

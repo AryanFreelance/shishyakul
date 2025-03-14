@@ -39,11 +39,23 @@ export const dashboardNavLinks = [
     href: "/dashboard/tests",
   },
   {
+    title: "Faculty Tests",
+    href: "/dashboard/tests/faculty",
+    role: "Faculty",
+  },
+  {
+    title: "All Faculty Tests",
+    href: "/dashboard/tests/all-faculty",
+    role: "Admin",
+  },
+  {
     title: "Content",
     href: "/dashboard/content",
+    restrictFor: ["Faculty"],
   },
   {
     title: "Members",
     href: "/dashboard/members",
+    restrictFor: ["Faculty"],
   },
 ];

@@ -34,6 +34,7 @@ const AddFeeDialog = ({ id, studData }) => {
     chequeImgUrl: "",
     upiId: "",
     upiImgUrl: "",
+    neftRefNo: "",
   });
 
   const [createFee] = useMutation(CREATE_FEE, {
@@ -78,6 +79,13 @@ const AddFeeDialog = ({ id, studData }) => {
       return;
     }
     if (feeData.mode === "upi" && (!feeData.upiId || !feeData.upiImgUrl)) {
+      toast.error("Please fill all the fields!", {
+        id: toastId,
+      });
+      setIsFeeDialogOpen(false);
+      return;
+    }
+    if (feeData.mode === "neft" && !feeData.neftRefNo) {
       toast.error("Please fill all the fields!", {
         id: toastId,
       });
@@ -147,6 +155,7 @@ const AddFeeDialog = ({ id, studData }) => {
         chequeImgUrl: feeData.chequeImgUrl || "",
         upiId: feeData.upiId || "",
         upiImgUrl: feeData.upiImgUrl || "",
+        neftRefNo: feeData.neftRefNo || "",
       },
     })
       .then((data) => {
@@ -172,6 +181,7 @@ const AddFeeDialog = ({ id, studData }) => {
       chequeImgUrl: "",
       upiId: "",
       upiImgUrl: "",
+      neftRefNo: "",
     });
     setIsFeeDialogOpen(false);
   };
@@ -285,6 +295,10 @@ const AddFeeDialog = ({ id, studData }) => {
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="upi" id="upi" />
                   <Label htmlFor="upi">UPI</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="neft" id="neft" />
+                  <Label htmlFor="neft">NEFT</Label>
                 </div>
               </RadioGroup>
             </div>
@@ -424,6 +438,27 @@ const AddFeeDialog = ({ id, studData }) => {
                     )}
                   </div>
                 </>
+              )
+            }
+            {
+              // NEFT Details
+              feeData.mode === "neft" && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="neftRefNo" className="text-right">
+                    NEFT Ref No.
+                  </Label>
+                  <Input
+                    id="neftRefNo"
+                    className="col-span-3"
+                    value={feeData.neftRefNo}
+                    onChange={(e) => {
+                      setFeeData({
+                        ...feeData,
+                        neftRefNo: e.target.value,
+                      });
+                    }}
+                  />
+                </div>
               )
             }
           </div>

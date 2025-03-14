@@ -65,6 +65,7 @@ export const GET_STUDENT_DETAILS = gql`
       ay
       grade
       batch
+      totalFees
       attendance {
         present
         absent

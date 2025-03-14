@@ -29,7 +29,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import toast from "react-hot-toast";
 import { useParams, useRouter } from "next/navigation";
 import { auth } from "@/firebase";
-import { Circle, CircleCheck, InfoIcon } from "lucide-react";
+import { Circle, CircleCheck, InfoIcon, AlertTriangle } from "lucide-react";
 import { getAuth } from "firebase/auth";
 import { getDoc, doc } from "firebase/firestore";
 import { db } from "@/firebase";
@@ -37,13 +37,23 @@ import AddFeeDialog from "@/components/private/studentPage/AddFeeDialog";
 import CheckFeeData from "@/components/private/studentPage/CheckFeeData";
 import RequestReview from "@/components/private/studentPage/RequestReview";
 import StudentFeesInfoDialog from "@/components/private/studentPage/StudentFeesInfoDialog";
-
-export const dynamic = "force-dynamic";
-
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
-import { GET_STUDENT_DETAILS } from "@/graphql/queries/students.query";
+import {
+  GET_STUDENT_DETAILS,
+  GET_STUDENT_PROFILE,
+} from "@/graphql/queries/students.query";
 import { GET_PUBLISHED_TESTPAPERS_USERS } from "@/graphql/queries/testPaper.query";
 import { Separator } from "@/components/ui/separator";
+import ProfileCompletionStatus from "@/components/private/studentPage/ProfileCompletionStatus";
+import { Progress } from "@/components/ui/progress";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ChevronDown, ChevronUp } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 ChartJS.register(
   ArcElement,
@@ -54,6 +64,159 @@ ChartJS.register(
   BarElement,
   Title
 );
+
+// Utility functions to calculate profile completion
+const calculateStudentInfoCompletion = (studentInfo) => {
+  if (!studentInfo) return { percentage: 0, missingFields: [] };
+
+  const requiredFields = [
+    { key: "dob", label: "Date of Birth" },
+    { key: "age", label: "Age" },
+    { key: "gender", label: "Gender" },
+    { key: "adhaar", label: "Adhaar Number" },
+    { key: "address", label: "Address" },
+    { key: "school", label: "School" },
+    { key: "board", label: "Board" },
+    { key: "medium", label: "Medium" },
+  ];
+
+  const missingFields = requiredFields.filter(
+    (field) =>
+      !studentInfo[field.key] ||
+      studentInfo[field.key] === "" ||
+      (typeof studentInfo[field.key] === "number" &&
+        studentInfo[field.key] === 0)
+  );
+
+  const percentage = Math.round(
+    ((requiredFields.length - missingFields.length) / requiredFields.length) *
+      100
+  );
+
+  return { percentage, missingFields };
+};
+
+const calculateGuardianInfoCompletion = (guardianInfo) => {
+  if (!guardianInfo) return { percentage: 0, missingFields: [] };
+
+  const requiredFields = [
+    { key: "motherFirstName", label: "Mother's First Name" },
+    { key: "motherLastName", label: "Mother's Last Name" },
+    { key: "motherOccupation", label: "Mother's Occupation" },
+    { key: "motherContactNumber", label: "Mother's Contact Number" },
+    { key: "fatherFirstName", label: "Father's First Name" },
+    { key: "fatherLastName", label: "Father's Last Name" },
+    { key: "fatherOccupation", label: "Father's Occupation" },
+    { key: "fatherContactNumber", label: "Father's Contact Number" },
+  ];
+
+  const missingFields = requiredFields.filter(
+    (field) => !guardianInfo[field.key] || guardianInfo[field.key] === ""
+  );
+
+  const percentage = Math.round(
+    ((requiredFields.length - missingFields.length) / requiredFields.length) *
+      100
+  );
+
+  return { percentage, missingFields };
+};
+
+const calculateSiblingInfoCompletion = (siblingInfo) => {
+  // Sibling information is optional, so if there's no sibling, it's considered complete
+  if (!siblingInfo || siblingInfo.length === 0)
+    return { percentage: 100, missingFields: [] };
+
+  let totalFields = 0;
+  let completedFields = 0;
+  const missingFields = [];
+
+  siblingInfo.forEach((sibling, index) => {
+    const requiredFields = [
+      { key: "siblingName", label: `Sibling ${index + 1} Name` },
+      { key: "age", label: `Sibling ${index + 1} Age` },
+      { key: "status", label: `Sibling ${index + 1} Status` },
+      { key: "organization", label: `Sibling ${index + 1} Organization` },
+    ];
+
+    totalFields += requiredFields.length;
+
+    requiredFields.forEach((field) => {
+      if (
+        sibling[field.key] &&
+        sibling[field.key] !== "" &&
+        !(typeof sibling[field.key] === "number" && sibling[field.key] === 0)
+      ) {
+        completedFields++;
+      } else {
+        missingFields.push(field.label);
+      }
+    });
+  });
+
+  const percentage =
+    totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 100;
+
+  return { percentage, missingFields };
+};
+
+const calculateParentSectionCompletion = (parentSection) => {
+  if (!parentSection) return { percentage: 0, missingFields: [] };
+
+  const requiredFields = [
+    {
+      key: "expectationsWithShishyakul",
+      label: "Expectations with Shishyakul",
+    },
+    { key: "strengthAndWeakness", label: "Strength and Weakness" },
+    {
+      key: "medicalAllergiesAndConcerns",
+      label: "Medical Allergies and Concerns",
+    },
+  ];
+
+  const missingFields = requiredFields.filter(
+    (field) => !parentSection[field.key] || parentSection[field.key] === ""
+  );
+
+  const percentage = Math.round(
+    ((requiredFields.length - missingFields.length) / requiredFields.length) *
+      100
+  );
+
+  return { percentage, missingFields };
+};
+
+const calculateStudentSectionCompletion = (studentSection) => {
+  if (!studentSection) return { percentage: 0, missingFields: [] };
+
+  const requiredFields = [
+    { key: "describeYourself", label: "Describe Yourself" },
+    { key: "passion", label: "Passion" },
+    { key: "skills", label: "Skills" },
+    { key: "hobbies", label: "Hobbies" },
+    { key: "dreams", label: "Dreams" },
+    { key: "achievements", label: "Achievements" },
+    { key: "strength", label: "Strength" },
+    { key: "weakness", label: "Weakness" },
+    { key: "thingsWantToImprove", label: "Things to Improve" },
+    {
+      key: "expectationsWithShishyakul",
+      label: "Expectations with Shishyakul",
+    },
+  ];
+
+  const missingFields = requiredFields.filter(
+    (field) => !studentSection[field.key] || studentSection[field.key] === ""
+  );
+
+  const percentage = Math.round(
+    ((requiredFields.length - missingFields.length) / requiredFields.length) *
+      100
+  );
+
+  return { percentage, missingFields };
+};
 
 const page = () => {
   const { ay, grade, id } = useParams();
@@ -95,6 +258,15 @@ const page = () => {
       },
     ],
   });
+  const [profileCompletionData, setProfileCompletionData] = useState({
+    studentInfo: { percentage: 0, missingFields: [] },
+    guardianInfo: { percentage: 0, missingFields: [] },
+    siblingInfo: { percentage: 0, missingFields: [] },
+    parentSection: { percentage: 0, missingFields: [] },
+    studentSection: { percentage: 0, missingFields: [] },
+    overall: 0,
+  });
+  const [isProfileStatusOpen, setIsProfileStatusOpen] = useState(true);
 
   // Details needed for Student Fees:
   // Fees Paid
@@ -119,6 +291,18 @@ const page = () => {
       userId: id,
     },
   });
+
+  // Query to get profile data for completion calculation
+  const { data: profileData, refetch: refetchProfile } = useSuspenseQuery(
+    GET_STUDENT_PROFILE,
+    {
+      variables: {
+        ay,
+        grade,
+        userId: id,
+      },
+    }
+  );
 
   const { data: testPaperUsers } = useSuspenseQuery(
     GET_PUBLISHED_TESTPAPERS_USERS,
@@ -181,6 +365,7 @@ const page = () => {
 
           // Group payments by method and sum amounts
           studData.student.fees.forEach((fee) => {
+            // Capitalize first letter of payment method
             const method = fee.mode.charAt(0).toUpperCase() + fee.mode.slice(1);
             if (!paymentMethods[method]) {
               paymentMethods[method] = 0;
@@ -190,25 +375,33 @@ const page = () => {
 
           // Convert to chart data format
           setPaymentMethodsData({
-            labels: Object.keys(paymentMethods),
+            labels: ["Payment Methods"],
             datasets: [
-              {
-                label: "Amount Paid",
-                data: Object.values(paymentMethods),
-                backgroundColor: [
-                  "rgba(54, 162, 235, 0.6)",
-                  "rgba(255, 99, 132, 0.6)",
-                  "rgba(255, 206, 86, 0.6)",
-                  "rgba(75, 192, 192, 0.6)",
-                ],
-                borderColor: [
-                  "rgba(54, 162, 235, 1)",
-                  "rgba(255, 99, 132, 1)",
-                  "rgba(255, 206, 86, 1)",
-                  "rgba(75, 192, 192, 1)",
-                ],
-                borderWidth: 1,
-              },
+              ...Object.entries(paymentMethods).map(
+                ([method, amount], index) => ({
+                  label: method,
+                  data: [amount],
+                  backgroundColor: [
+                    index === 0
+                      ? "rgba(54, 162, 235, 0.6)" // Cash
+                      : index === 1
+                      ? "rgba(255, 99, 132, 0.6)" // UPI
+                      : index === 2
+                      ? "rgba(255, 206, 86, 0.6)" // NEFT
+                      : "rgba(75, 192, 192, 0.6)", // Cheque
+                  ],
+                  borderColor: [
+                    index === 0
+                      ? "rgba(54, 162, 235, 1)"
+                      : index === 1
+                      ? "rgba(255, 99, 132, 1)"
+                      : index === 2
+                      ? "rgba(255, 206, 86, 1)"
+                      : "rgba(75, 192, 192, 1)",
+                  ],
+                  borderWidth: 1,
+                })
+              ),
             ],
           });
         }
@@ -239,6 +432,64 @@ const page = () => {
 
     checkUserRole();
   }, []);
+
+  useEffect(() => {
+    // Calculate profile completion percentages when profile data is available
+    if (profileData?.student) {
+      const studentInfo = calculateStudentInfoCompletion(
+        profileData.student.studentInformation
+      );
+      const guardianInfo = calculateGuardianInfoCompletion(
+        profileData.student.guardianInformation
+      );
+      const siblingInfo = calculateSiblingInfoCompletion(
+        profileData.student.siblingInformation
+      );
+      const parentSection = calculateParentSectionCompletion(
+        profileData.student.parentSection
+      );
+      const studentSection = calculateStudentSectionCompletion(
+        profileData.student.studentSection
+      );
+
+      // Calculate overall completion percentage
+      const sections = [
+        studentInfo,
+        guardianInfo,
+        siblingInfo,
+        parentSection,
+        studentSection,
+      ];
+      const overall = Math.round(
+        sections.reduce((sum, section) => sum + section.percentage, 0) /
+          sections.length
+      );
+
+      setProfileCompletionData({
+        studentInfo,
+        guardianInfo,
+        siblingInfo,
+        parentSection,
+        studentSection,
+        overall,
+      });
+    }
+  }, [profileData]);
+
+  useEffect(() => {
+    // Refetch profile data when component mounts or when returning from profile page
+    const handleFocus = () => {
+      refetchProfile();
+    };
+
+    // Add event listener for when the window regains focus
+    window.addEventListener("focus", handleFocus);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [refetchProfile]);
 
   if (authStatus === null) {
     return (
@@ -358,19 +609,131 @@ const page = () => {
                   </span>
                 </div>
                 <div className="lg:flex flex-col gap-4 md:w-1/2 w-full hidden">
-                  <span>School Name -</span>
-                  <span>Board -</span>
-                  <span>Medium -</span>
-                  <span>DOB -</span>
-                  <span>Siblings -</span>
+                  <span>
+                    School Name -{" "}
+                    {profileData?.student?.studentInformation?.school ||
+                      "Not Provided"}
+                  </span>
+                  <span>
+                    Board -{" "}
+                    {profileData?.student?.studentInformation?.board.toUpperCase() ||
+                      "Not Provided"}
+                  </span>
+                  <span>
+                    Medium -{" "}
+                    {profileData?.student?.studentInformation?.medium ||
+                      "Not Provided"}
+                  </span>
+                  <span>
+                    DOB -{" "}
+                    {profileData?.student?.studentInformation?.dob
+                      ? new Date(
+                          profileData.student.studentInformation.dob
+                        ).toLocaleDateString("en-IN")
+                      : "Not Provided"}
+                  </span>
+                  <span>
+                    Siblings -{" "}
+                    {profileData?.student?.siblingInformation?.length || 0}{" "}
+                    {profileData?.student?.siblingInformation?.length === 1
+                      ? "Sibling"
+                      : "Siblings"}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Profile Completion Status */}
+          <Collapsible
+            open={isProfileStatusOpen}
+            onOpenChange={() => setIsProfileStatusOpen(!isProfileStatusOpen)}
+            className="w-full bg-gray-200 p-4 rounded-md"
+          >
+            <CollapsibleTrigger className="flex w-full items-center justify-between gap-3 md:gap-6 md:flex-row flex-col">
+              <h3 className="subsubheading text-secondary mb-4 w-full text-left">
+                Profile Completion Status
+              </h3>
+              <div className="mb-4 w-full">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-lg font-medium">
+                    Overall Completion
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold">
+                      {profileCompletionData.overall}%
+                    </span>
+                    {isProfileStatusOpen ? <ChevronUp /> : <ChevronDown />}
+                  </div>
+                </div>
+                <Progress
+                  value={profileCompletionData.overall}
+                  className="h-3"
+                />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <ProfileCompletionStatus
+                  sectionName="Student Information"
+                  percentage={profileCompletionData.studentInfo.percentage}
+                  missingFields={
+                    profileCompletionData.studentInfo.missingFields
+                  }
+                  ay={ay}
+                  grade={grade}
+                  id={id}
+                />
+                <ProfileCompletionStatus
+                  sectionName="Guardian Information"
+                  percentage={profileCompletionData.guardianInfo.percentage}
+                  missingFields={
+                    profileCompletionData.guardianInfo.missingFields
+                  }
+                  ay={ay}
+                  grade={grade}
+                  id={id}
+                />
+                <ProfileCompletionStatus
+                  sectionName="Sibling Information"
+                  percentage={profileCompletionData.siblingInfo.percentage}
+                  missingFields={
+                    profileCompletionData.siblingInfo.missingFields
+                  }
+                  ay={ay}
+                  grade={grade}
+                  id={id}
+                  siblingCount={
+                    profileData?.student?.siblingInformation?.length || 0
+                  }
+                />
+                <ProfileCompletionStatus
+                  sectionName="Parent Section"
+                  percentage={profileCompletionData.parentSection.percentage}
+                  missingFields={
+                    profileCompletionData.parentSection.missingFields
+                  }
+                  ay={ay}
+                  grade={grade}
+                  id={id}
+                />
+                <ProfileCompletionStatus
+                  sectionName="Student Section"
+                  percentage={profileCompletionData.studentSection.percentage}
+                  missingFields={
+                    profileCompletionData.studentSection.missingFields
+                  }
+                  ay={ay}
+                  grade={grade}
+                  id={id}
+                />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
           <div className="w-full flex flex-col-reverse lg:flex-row gap-10 justify-between items-center">
             <div className="lg:w-[70%] w-full">
-              <div className="flex justify-between items-center w-full">
+              <div className="flex justify-between items-center flex-col md:flex-row gap-2 w-full">
                 <h3 className="subsubheading text-secondary mb-4">
                   Fees Information
                 </h3>
@@ -437,6 +800,12 @@ const page = () => {
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            display: true,
+                            position: "top",
+                          },
+                        },
                         scales: {
                           y: {
                             beginAtZero: true,
@@ -446,10 +815,9 @@ const page = () => {
                             },
                           },
                           x: {
-                            title: {
-                              display: true,
-                              text: "Payment Method",
-                            },
+                            // display: false, // Hide x-axis labels since we're using the legend
+                            display: true,
+                            text: "Payment Methods",
                           },
                         },
                       }}

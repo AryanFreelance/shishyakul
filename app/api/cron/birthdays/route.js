@@ -11,7 +11,7 @@ export const maxDuration = 300;
 
 // Create a new Apollo Client instance for serverless environment
 const httpLink = new HttpLink({
-    uri: process.env.NEXT_PUBLIC_GRAPHQL_URL || "http://localhost:4000/graphql",
+    uri: process.env.NEXT_PUBLIC_GRAPHQL_URL || "https://api.shishyakul.in/",
     fetch: fetch,
 });
 
@@ -47,7 +47,7 @@ export async function GET() {
         }
 
         // Send email notification with the list of birthday students
-        const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/birthday`, {
+        const emailResponse = await fetch(`${"https://shishyakul.in"}/api/birthday`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

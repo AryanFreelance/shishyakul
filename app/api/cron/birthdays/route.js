@@ -29,8 +29,32 @@ const client = new ApolloClient({
     cache: new InMemoryCache(),
 });
 
-export async function GET() {
+export async function GET(request) {
     try {
+        // Check for authentication
+        const apiSecret = process.env.CRON_API_SECRET || "shishyakul-cron-secret";
+
+        // Get authorization from header or query parameter
+        const authHeader = request.headers.get("authorization");
+        const url = new URL(request.url);
+        const authParam = url.searchParams.get("auth");
+
+        // Check if either the header or query param matches the secret
+        const isAuthorized =
+            (authHeader && authHeader === `Bearer ${apiSecret}`) ||
+            (authParam && authParam === apiSecret);
+
+        // For Vercel's own cron system, no auth is required
+        const isVercelCron = request.headers.get("x-vercel-cron") === "1";
+
+        if (!isAuthorized && !isVercelCron) {
+            console.log("Unauthorized access attempt to cron API");
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
         // Fetch today's birthdays
         const { data } = await client.query({
             query: GET_TODAYS_BIRTHDAYS,

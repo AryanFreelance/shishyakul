@@ -45,6 +45,7 @@ export async function GET() {
                 message: "No birthdays today",
             });
         }
+        console.log("TODAYS BIRTHDAYS", todaysBirthdays)
 
         // Send email notification with the list of birthday students
         const emailResponse = await fetch(`${"https://shishyakul.in"}/api/birthday`, {

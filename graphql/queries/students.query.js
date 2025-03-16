@@ -30,6 +30,11 @@ export const DASHBOARD_GET_STUDENT = gql`
       ay
       grade
       batch
+      studentInformation {
+        school
+        board
+        medium
+      }
       attendance {
         present
         absent

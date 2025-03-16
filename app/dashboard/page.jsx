@@ -75,15 +75,30 @@ const DashboardPage = () => {
   const [openAddStudentDialog, setOpenAddStudentDialog] = useState(false);
   const [grades, setGrades] = useState(["8", "9", "10", "11", "12"]);
   const [batch, setBatch] = useState(new Set());
-  const [selectedBatch, setSelectedBatch] = useState("select-batch");
+  const [selectedBatch, setSelectedBatch] = useState(
+    sessionStorage.getItem("selectedBatch") || "select-batch"
+  );
   const [students, setStudents] = useState([]);
-  const [studentName, setStudentName] = useState("");
+  const [studentName, setStudentName] = useState(
+    sessionStorage.getItem("studentName") || ""
+  );
+  const [schoolName, setSchoolName] = useState(
+    sessionStorage.getItem("schoolName") || ""
+  );
   const [searchParameters, setSearchParameters] = useState({
-    grade: localStorage.getItem("grade") || "select-grade",
-    ay: localStorage.getItem("ay") || "select-ay",
+    grade: sessionStorage.getItem("grade") || "select-grade",
+    ay: sessionStorage.getItem("ay") || "select-ay",
+    school: sessionStorage.getItem("school") || "",
   });
-  const [pageSize, setPageSize] = useState("20");
-  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(
+    sessionStorage.getItem("pageSize") || "20"
+  );
+  const [currentPage, setCurrentPage] = useState(
+    parseInt(sessionStorage.getItem("currentPage") || "0")
+  );
+  const [tempCurrentPage, setTempCurrentPage] = useState(
+    parseInt(sessionStorage.getItem("tempCurrentPage") || "0")
+  );
   const [pages, setPages] = useState(0);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [onePageStudents, setOnePageStudent] = useState([]);
@@ -94,6 +109,7 @@ const DashboardPage = () => {
     phone: true,
     grade: true,
     batch: true,
+    school: true,
     attendance: true,
     actions: true,
   });
@@ -112,6 +128,7 @@ const DashboardPage = () => {
       fetchPolicy: "network-only",
       variables: { ay: searchParameters.ay, grade: searchParameters.grade },
       onCompleted: (data) => {
+        console.log("STUDENTS", data?.students);
         setStudents(data?.students || []);
       },
     }
@@ -255,16 +272,48 @@ const DashboardPage = () => {
       onCompleted: (data) => {
         setStudents(data.students || []);
         setFilteredStudents(data.students || []);
+
+        // Reset filters
         setSelectedBatch("select-batch");
+        sessionStorage.setItem("selectedBatch", "select-batch");
+
+        setSchoolName("");
+        sessionStorage.setItem("schoolName", "");
+
+        setStudentName("");
+
+        setCurrentPage(0);
+        sessionStorage.setItem("currentPage", "0");
       },
     });
     toast.success("Students Refreshed Successfully!");
   };
 
   useEffect(() => {
-    localStorage.setItem("grade", searchParameters.grade);
-    localStorage.setItem("ay", searchParameters.ay);
+    sessionStorage.setItem("grade", searchParameters.grade);
+    sessionStorage.setItem("ay", searchParameters.ay);
+    sessionStorage.setItem("school", searchParameters.school || "");
   }, [searchParameters]);
+
+  useEffect(() => {
+    sessionStorage.setItem("currentPage", currentPage.toString());
+  }, [currentPage]);
+
+  useEffect(() => {
+    sessionStorage.setItem("tempCurrentPage", tempCurrentPage.toString());
+  }, [tempCurrentPage]);
+
+  useEffect(() => {
+    sessionStorage.setItem("pageSize", pageSize);
+  }, [pageSize]);
+
+  useEffect(() => {
+    sessionStorage.setItem("selectedBatch", selectedBatch);
+  }, [selectedBatch]);
+
+  useEffect(() => {
+    sessionStorage.setItem("schoolName", schoolName);
+  }, [schoolName]);
 
   useEffect(() => {
     if (searchParameters.ay && searchParameters.ay !== "select-ay")
@@ -280,6 +329,17 @@ const DashboardPage = () => {
         onCompleted: (data) => {
           setStudents(data?.students || []);
           setFilteredStudents(data?.students || []);
+
+          // Apply school filter if it exists
+          if (schoolName) {
+            const filteredBySchool =
+              data?.students?.filter((student) =>
+                student?.studentInformation?.school
+                  ?.toLowerCase()
+                  .includes(schoolName.toLowerCase())
+              ) || [];
+            setFilteredStudents(filteredBySchool);
+          }
         },
       });
     if (searchParameters.ay === "select-ay") {
@@ -315,12 +375,31 @@ const DashboardPage = () => {
         });
       });
 
-      setFilteredStudents(assignedStudents);
+      // Apply school filter if it exists
+      if (schoolName) {
+        const filteredBySchool = assignedStudents.filter((student) =>
+          student?.studentInformation?.school
+            ?.toLowerCase()
+            .includes(schoolName.toLowerCase())
+        );
+        setFilteredStudents(filteredBySchool);
+      } else {
+        setFilteredStudents(assignedStudents);
+      }
     } else {
       // Admin or non-faculty sees all students
-      setFilteredStudents(students);
+      if (schoolName) {
+        const filteredBySchool = students.filter((student) =>
+          student?.studentInformation?.school
+            ?.toLowerCase()
+            .includes(schoolName.toLowerCase())
+        );
+        setFilteredStudents(filteredBySchool);
+      } else {
+        setFilteredStudents(students);
+      }
     }
-  }, [students, isFaculty, isAdmin, facultyAssignments]);
+  }, [students, isFaculty, isAdmin, facultyAssignments, schoolName]);
 
   // Filter academic years dropdown based on faculty assignments
   const filteredAcademicYears = useMemo(() => {
@@ -427,22 +506,132 @@ const DashboardPage = () => {
         (student) => student?.batch === selectedBatch
       );
       setFilteredStudents(selectedBatchStudents);
-    }
-    if (selectedBatch === "select-batch" || !selectedBatch)
+    } else if (schoolName && students?.length > 0) {
+      const filteredBySchool = students.filter((student) =>
+        student?.studentInformation?.school
+          ?.toLowerCase()
+          .includes(schoolName.toLowerCase())
+      );
+      setFilteredStudents(filteredBySchool);
+    } else {
       setFilteredStudents(students || []);
-  }, [selectedBatch, students]);
+    }
+  }, [selectedBatch, students, schoolName]);
 
   useEffect(() => {
     if (studentName.length > 0 && students?.length > 0) {
-      let filteredStudents = students.filter((student) =>
+      let studentsFiltered = students.filter((student) =>
         `${student?.firstname || ""} ${student?.lastname || ""}`
           .toLowerCase()
           .includes(studentName.toLowerCase())
       );
-      setFilteredStudents(filteredStudents);
+
+      // Apply school filter if present
+      if (schoolName) {
+        studentsFiltered = studentsFiltered.filter((student) =>
+          student?.studentInformation?.school
+            ?.toLowerCase()
+            .includes(schoolName.toLowerCase())
+        );
+      }
+
+      // Apply batch filter if selected
+      if (selectedBatch && selectedBatch !== "select-batch") {
+        studentsFiltered = studentsFiltered.filter(
+          (student) => student?.batch === selectedBatch
+        );
+      }
+
+      setFilteredStudents(studentsFiltered);
+    } else if (studentName.length === 0) {
+      // Apply other filters if name search is empty
+      let studentsFiltered = [...students] || [];
+
+      // Apply school filter if present
+      if (schoolName) {
+        studentsFiltered = studentsFiltered.filter((student) =>
+          student?.studentInformation?.school
+            ?.toLowerCase()
+            .includes(schoolName.toLowerCase())
+        );
+      }
+
+      // Apply batch filter if selected
+      if (selectedBatch && selectedBatch !== "select-batch") {
+        studentsFiltered = studentsFiltered.filter(
+          (student) => student?.batch === selectedBatch
+        );
+      }
+
+      setFilteredStudents(studentsFiltered);
     }
-    if (studentName.length === 0) setFilteredStudents(students || []);
-  }, [studentName, students]);
+  }, [studentName, students, schoolName, selectedBatch]);
+
+  // Apply filters when school name changes
+  useEffect(() => {
+    if (students?.length > 0) {
+      let filtered = [...students];
+
+      // Apply faculty filters if applicable
+      if (isFaculty && !isAdmin) {
+        filtered = filtered.filter((student) => {
+          return facultyAssignments.some((assignment) => {
+            const matchesAY = assignment.academicYear === student.ay;
+            if (!matchesAY) return false;
+
+            if (assignment.grade && assignment.grade !== "all") {
+              const matchesGrade = assignment.grade === student.grade;
+              if (!matchesGrade) return false;
+            }
+
+            if (assignment.batch && assignment.batch !== "all") {
+              const matchesBatch = assignment.batch === student.batch;
+              if (!matchesBatch) return false;
+            }
+
+            return true;
+          });
+        });
+      }
+
+      // Apply batch filter
+      if (selectedBatch && selectedBatch !== "select-batch") {
+        filtered = filtered.filter(
+          (student) => student?.batch === selectedBatch
+        );
+      }
+
+      // Apply school filter
+      if (schoolName) {
+        filtered = filtered.filter((student) =>
+          student?.studentInformation?.school
+            ?.toLowerCase()
+            .includes(schoolName.toLowerCase())
+        );
+      }
+
+      // Apply name filter
+      if (studentName) {
+        filtered = filtered.filter((student) =>
+          `${student?.firstname || ""} ${student?.lastname || ""}`
+            .toLowerCase()
+            .includes(studentName.toLowerCase())
+        );
+      }
+
+      setFilteredStudents(filtered);
+    } else {
+      setFilteredStudents([]);
+    }
+  }, [
+    students,
+    selectedBatch,
+    schoolName,
+    studentName,
+    isFaculty,
+    isAdmin,
+    facultyAssignments,
+  ]);
 
   const toggleColumnVisibility = (column) => {
     setColumnVisibility((prev) => ({
@@ -544,13 +733,25 @@ const DashboardPage = () => {
             </div>
           </div>
           <div className="flex justify-between items-center flex-wrap w-full gap-2 mb-6">
-            <div className=" w-full md:w-[58%]">
+            <div className="w-full md:w-[30%]">
               <SearchBarStudent
                 studentName={studentName}
                 setStudentName={setStudentName}
               />
             </div>
-            <div className="w-[40%]">
+            <div className="w-full md:w-[30%]">
+              <div className="flex items-center gap-2 border-2 rounded-full px-4 py-2 border-main">
+                <SearchIcon className="h-5 w-5 text-secondary" />
+                <input
+                  type="text"
+                  placeholder="Search by School Name..."
+                  className="w-full py-1 bg-transparent outline-none border-none text-secondary barlow-regular"
+                  value={schoolName}
+                  onChange={(e) => setSchoolName(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="w-full md:w-[30%]">
               <Select
                 onValueChange={(value) => setSelectedBatch(value)}
                 value={selectedBatch}
@@ -617,8 +818,11 @@ const DashboardPage = () => {
               <select
                 value={pageSize}
                 onChange={(e) => {
-                  setPageSize(e.target.value);
+                  const newPageSize = e.target.value;
+                  setPageSize(newPageSize);
                   setCurrentPage(0);
+                  sessionStorage.setItem("pageSize", newPageSize);
+                  sessionStorage.setItem("currentPage", "0");
                 }}
                 className="border-2 border-main bg-transparent px-3 py-1 rounded"
               >
@@ -629,9 +833,13 @@ const DashboardPage = () => {
               </select>
               <div className="flex justify-center items-center gap-4 mt-4 md:mt-0">
                 <button
-                  onClick={() =>
-                    currentPage !== 0 && setCurrentPage(currentPage - 1)
-                  }
+                  onClick={() => {
+                    if (currentPage !== 0) {
+                      const newPage = currentPage - 1;
+                      setCurrentPage(newPage);
+                      sessionStorage.setItem("currentPage", newPage.toString());
+                    }
+                  }}
                   className="border-2 px-3 py-1 rounded border-black/50 hover:border-black disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-black/50"
                   disabled={currentPage === 0}
                 >
@@ -646,16 +854,23 @@ const DashboardPage = () => {
                           ? "text-black border-main"
                           : "border-black/50 hover:border-black"
                       }`}
-                      onClick={() => setCurrentPage(index)}
+                      onClick={() => {
+                        setCurrentPage(index);
+                        sessionStorage.setItem("currentPage", index.toString());
+                      }}
                     >
                       {index + 1}
                     </button>
                   ))}
                 </div>
                 <button
-                  onClick={() =>
-                    currentPage !== pages - 1 && setCurrentPage(currentPage + 1)
-                  }
+                  onClick={() => {
+                    if (currentPage !== pages - 1) {
+                      const newPage = currentPage + 1;
+                      setCurrentPage(newPage);
+                      sessionStorage.setItem("currentPage", newPage.toString());
+                    }
+                  }}
                   className="border-2 px-3 py-1 rounded border-black/50 hover:border-black disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-black/50"
                   disabled={currentPage === pages - 1}
                 >
@@ -688,6 +903,9 @@ const DashboardPage = () => {
                 {columnVisibility.batch && (
                   <TableHead className="barlow-semibold">Batch</TableHead>
                 )}
+                {columnVisibility.school && (
+                  <TableHead className="barlow-semibold">School</TableHead>
+                )}
                 {columnVisibility.attendance && (
                   <TableHead className="barlow-semibold">Attendance</TableHead>
                 )}
@@ -700,7 +918,7 @@ const DashboardPage = () => {
               {students?.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan="7"
+                    colSpan="9"
                     className="barlow-semibold text-center"
                   >
                     No students found
@@ -739,6 +957,13 @@ const DashboardPage = () => {
                     {columnVisibility.batch && (
                       <TableCell className="barlow-regular">
                         {student?.batch ? student?.batch : "N/A"}
+                      </TableCell>
+                    )}
+                    {columnVisibility.school && (
+                      <TableCell className="barlow-regular">
+                        {student?.studentInformation?.school
+                          ? student?.studentInformation?.school
+                          : "N/A"}
                       </TableCell>
                     )}
                     {columnVisibility.attendance && (
@@ -814,9 +1039,13 @@ const DashboardPage = () => {
             <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-4">
               <div className="flex justify-center items-center gap-4 mt-4 md:mt-0">
                 <button
-                  onClick={() =>
-                    currentPage !== 0 && setCurrentPage(currentPage - 1)
-                  }
+                  onClick={() => {
+                    if (currentPage !== 0) {
+                      const newPage = currentPage - 1;
+                      setCurrentPage(newPage);
+                      sessionStorage.setItem("currentPage", newPage.toString());
+                    }
+                  }}
                   className="border-2 px-3 py-1 rounded border-black/50 hover:border-black disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-black/50"
                   disabled={currentPage === 0}
                 >
@@ -831,16 +1060,23 @@ const DashboardPage = () => {
                           ? "text-black border-main"
                           : "border-black/50 hover:border-black"
                       }`}
-                      onClick={() => setCurrentPage(index)}
+                      onClick={() => {
+                        setCurrentPage(index);
+                        sessionStorage.setItem("currentPage", index.toString());
+                      }}
                     >
                       {index + 1}
                     </button>
                   ))}
                 </div>
                 <button
-                  onClick={() =>
-                    currentPage !== pages - 1 && setCurrentPage(currentPage + 1)
-                  }
+                  onClick={() => {
+                    if (currentPage !== pages - 1) {
+                      const newPage = currentPage + 1;
+                      setCurrentPage(newPage);
+                      sessionStorage.setItem("currentPage", newPage.toString());
+                    }
+                  }}
                   className="border-2 px-3 py-1 rounded border-black/50 hover:border-black disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-black/50"
                   disabled={currentPage === pages - 1}
                 >
@@ -852,7 +1088,10 @@ const DashboardPage = () => {
         </div>
       </div>
       <div className="pb-10">
-        <TempStudentsComp />
+        <TempStudentsComp
+          tempCurrentPage={tempCurrentPage}
+          setTempCurrentPage={setTempCurrentPage}
+        />
       </div>
     </Container>
   );

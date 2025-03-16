@@ -1,10 +1,19 @@
 import { SearchIcon } from "lucide-react";
-import React from "react";
+import React, { useEffect } from "react";
 
 const SearchBarStudent = ({ studentName, setStudentName }) => {
+  // Update sessionStorage when studentName changes
+  useEffect(() => {
+    if (studentName) {
+      sessionStorage.setItem("studentName", studentName);
+    } else {
+      sessionStorage.removeItem("studentName");
+    }
+  }, [studentName]);
+
   return (
     <form className="flex items-center gap-2 border-2 rounded-full md:rounded-r-none px-4 py-2 border-main md:border-r-slate-600">
-      <button t Fype="submit" className="border-none outline-none">
+      <button type="submit" className="border-none outline-none">
         <SearchIcon />
       </button>
       <input

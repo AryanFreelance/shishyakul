@@ -543,19 +543,8 @@ const page = () => {
       return studData.student.totalFees;
     }
 
-    // Fallback: Calculate an estimate based on existing fee data
-    // This is just a placeholder until the backend is updated
-    // You may want to adjust this logic based on your business rules
-    const totalPaid = calculateTotalFeesPaid();
-
-    // Assuming fees are paid monthly and there are 12 months in a year
-    // This is just an example - adjust based on your actual fee structure
-    const estimatedMonthlyFee =
-      totalPaid > 0 && studData?.student?.fees.length > 0
-        ? Math.round(totalPaid / studData.student.fees.length)
-        : 0;
-
-    return Math.max(totalPaid, estimatedMonthlyFee * 12);
+    // Return default total fees of 60000 if not set
+    return 60000;
   };
 
   return (

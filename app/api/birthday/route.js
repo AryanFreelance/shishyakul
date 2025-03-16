@@ -11,7 +11,7 @@ export async function POST(request) {
         // Send email to admin
         const { error } = await resend.emails.send({
             from: "Shishyakul <birthday@shishyakul.in>",
-            to: ["admin@shishyakul.in"],
+            to: ["admin@shishyakul.in", "shindearyan179@gmail.com"],
             subject: `Birthday Notifications for ${currentDate.toLocaleDateString()}`,
             react: BirthdayTemplate({
                 birthdayStudents,

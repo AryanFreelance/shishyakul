@@ -76,6 +76,7 @@ export async function GET() {
                 },
             });
         }
+        console.log("ADDEd NOTIFICATION")
 
         return NextResponse.json({
             status: 200,

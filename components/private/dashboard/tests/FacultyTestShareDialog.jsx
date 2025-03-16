@@ -16,7 +16,7 @@ import {
   GET_STUDENTS,
 } from "@/graphql/queries/students.query";
 import { X, Search, Lock, Unlock, Plus, Loader } from "lucide-react";
-import { LOCK_SHARE_WITH } from "@/graphql/mutations/testPaper.mutation";
+import { LOCK_SHARED_WITH_TESTPAPER } from "@/graphql/mutations/testPaper.mutation";
 import { GET_TESTPAPER } from "@/graphql/queries/testPaper.query";
 import toast from "react-hot-toast";
 
@@ -63,7 +63,7 @@ const FacultyTestShareDialog = ({
   );
 
   // Mutation to lock/unlock the shared with field
-  const [lockShareWithMutation] = useMutation(LOCK_SHARE_WITH, {
+  const [lockShareWithMutation] = useMutation(LOCK_SHARED_WITH_TESTPAPER, {
     refetchQueries: [
       {
         query: GET_TESTPAPER,

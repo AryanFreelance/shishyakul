@@ -7,7 +7,7 @@ import fetch from "node-fetch";
 
 // Allow this API route to be invoked by Vercel cron
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 // Create a new Apollo Client instance for serverless environment
 const httpLink = new HttpLink({

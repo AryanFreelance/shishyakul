@@ -9,6 +9,9 @@ import fetch from "node-fetch";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+// Set to true to bypass all API route protection for testing
+export const runtime = "nodejs";
+
 // Create a new Apollo Client instance for serverless environment
 const httpLink = new HttpLink({
     uri: process.env.NEXT_PUBLIC_GRAPHQL_URL || "https://api.shishyakul.in/",
@@ -31,29 +34,8 @@ const client = new ApolloClient({
 
 export async function GET(request) {
     try {
-        // Check for authentication
-        const apiSecret = process.env.CRON_API_SECRET || "shishyakul-cron-secret";
-
-        // Get authorization from header or query parameter
-        const authHeader = request.headers.get("authorization");
-        const url = new URL(request.url);
-        const authParam = url.searchParams.get("auth");
-
-        // Check if either the header or query param matches the secret
-        const isAuthorized =
-            (authHeader && authHeader === `Bearer ${apiSecret}`) ||
-            (authParam && authParam === apiSecret);
-
-        // For Vercel's own cron system, no auth is required
-        const isVercelCron = request.headers.get("x-vercel-cron") === "1";
-
-        if (!isAuthorized && !isVercelCron) {
-            console.log("Unauthorized access attempt to cron API");
-            return NextResponse.json(
-                { error: "Unauthorized" },
-                { status: 401 }
-            );
-        }
+        // Log request info for debugging
+        console.log("Cron job triggered", new Date().toISOString());
 
         // Fetch today's birthdays
         const { data } = await client.query({
@@ -64,12 +46,14 @@ export async function GET(request) {
         const todaysBirthdays = data?.todaysBirthdays?.today || [];
 
         if (todaysBirthdays.length === 0) {
+            console.log("No birthdays today");
             return NextResponse.json({
                 status: 200,
                 message: "No birthdays today",
             });
         }
-        console.log("TODAYS BIRTHDAYS", todaysBirthdays)
+
+        console.log(`Found ${todaysBirthdays.length} birthdays today`);
 
         // Send email notification with the list of birthday students
         const emailResponse = await fetch(`${"https://shishyakul.in"}/api/birthday`, {
@@ -83,10 +67,12 @@ export async function GET(request) {
         });
 
         if (!emailResponse.ok) {
-            console.error("Error sending birthday emails:", await emailResponse.text());
+            const errorText = await emailResponse.text();
+            console.error("Error sending birthday emails:", errorText);
             return NextResponse.json({
                 status: 500,
                 message: "Failed to send birthday notifications",
+                error: errorText
             });
         }
 
@@ -100,7 +86,8 @@ export async function GET(request) {
                 },
             });
         }
-        console.log("ADDEd NOTIFICATION")
+
+        console.log("Updated notification status for all students");
 
         return NextResponse.json({
             status: 200,

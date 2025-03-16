@@ -4,11 +4,10 @@ import { NextResponse } from "next/server";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request) {
-    const { birthdayStudents } = await request.json();
-    const currentDate = new Date();
-
     try {
-        // Send email to admin
+        const { birthdayStudents } = await request.json();
+        const currentDate = new Date();
+
         const { error } = await resend.emails.send({
             from: "Shishyakul <birthday@shishyakul.in>",
             to: ["admin@shishyakul.in", "shindearyan179@gmail.com"],

@@ -152,29 +152,56 @@ const DashboardPage = () => {
           userId: puserId,
         },
       });
-      if (response === "ERROR" || response === null) {
+
+      const result = response?.data?.deleteStudent;
+
+      if (result === "ERROR" || result === null) {
         toast.error("Failed to delete student!", {
           id: toastId,
         });
         return;
       }
-      const deleteuserResponse = await fetch("/api/user", {
-        method: "DELETE",
-        body: JSON.stringify({ uid: puserId }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      if (deleteuserResponse.status !== 200) {
-        toast.error("Failed to delete student from database!", {
+
+      // If it's a full delete, also delete the user from Firebase Auth
+      if (result === "SUCCESS_FULL_DELETE") {
+        const deleteuserResponse = await fetch("/api/user", {
+          method: "DELETE",
+          body: JSON.stringify({ uid: puserId }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (deleteuserResponse.status !== 200) {
+          toast.error("Failed to delete student from authentication system!", {
+            id: toastId,
+          });
+          return;
+        }
+
+        toast.success("Student completely deleted successfully!", {
           id: toastId,
         });
-        return;
+      } else if (result === "SUCCESS_PARTIAL_DELETE") {
+        // For partial delete, we don't delete the user from Firebase Auth
+        toast.success("Student removed from this academic year only!", {
+          id: toastId,
+        });
       }
-      toast.success("Student Deleted Successfully!", {
-        id: toastId,
+
+      // Refresh the student list
+      fetchStudents({
+        fetchPolicy: "network-only",
+        variables: {
+          ay: searchParameters.ay,
+          grade:
+            searchParameters.grade === "select-grade"
+              ? null
+              : searchParameters.grade,
+        },
       });
     } catch (error) {
+      console.error("Error deleting student:", error);
       toast.error("Failed to delete student!", {
         id: toastId,
       });
@@ -1008,9 +1035,22 @@ const DashboardPage = () => {
                                 Are you absolutely sure?
                               </AlertDialogTitle>
                               <AlertDialogDescription>
-                                This action cannot be undone. This will
-                                permanently delete your account and remove your
-                                data from our servers.
+                                {student.academicYearsHistory &&
+                                student.academicYearsHistory.length > 1 ? (
+                                  <>
+                                    This will remove the student from the
+                                    academic year {student.ay} only.
+                                    <br />
+                                    The student's data for other academic years
+                                    will be preserved.
+                                  </>
+                                ) : (
+                                  <>
+                                    This action cannot be undone. This will
+                                    permanently delete the student and remove
+                                    all their data from our servers.
+                                  </>
+                                )}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

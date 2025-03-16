@@ -15,11 +15,12 @@ import { Input } from "@/components/ui/input";
 import { useMutation } from "@apollo/client";
 import { UPDATE_STUDENT_TOTAL_FEES } from "@/graphql/mutations/fees.mutation";
 import { GET_STUDENT_DETAILS } from "@/graphql/queries/students.query";
+import { GET_STUDENT_FEES } from "@/graphql/queries/fees.query";
 import toast from "react-hot-toast";
 
-const StudentFeesInfoDialog = ({ id, studData }) => {
+const StudentFeesInfoDialog = ({ id, studData, academicYear }) => {
   const [totalFees, setTotalFees] = useState(0);
-  const [open, setOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Initialize with existing total fees if available
   useEffect(() => {
@@ -42,6 +43,13 @@ const StudentFeesInfoDialog = ({ id, studData }) => {
             userId: id,
           },
         },
+        {
+          query: GET_STUDENT_FEES,
+          variables: {
+            userId: id,
+            academicYear: academicYear,
+          },
+        },
       ],
       onError: (error) => {
         console.error("GraphQL Error:", error);
@@ -57,12 +65,13 @@ const StudentFeesInfoDialog = ({ id, studData }) => {
         variables: {
           userId: id,
           totalFees: parseInt(totalFees),
+          academicYear: academicYear,
         },
       });
       toast.success("Total fees updated successfully!", {
         id: toastId,
       });
-      setOpen(false);
+      setIsDialogOpen(false);
     } catch (error) {
       console.error("Error updating total fees:", error);
 
@@ -83,7 +92,7 @@ const StudentFeesInfoDialog = ({ id, studData }) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="border-2">
           Edit Fee Details
@@ -91,7 +100,9 @@ const StudentFeesInfoDialog = ({ id, studData }) => {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Fee Details</DialogTitle>
+          <DialogTitle>
+            Edit Fee Details {academicYear && `(${academicYear})`}
+          </DialogTitle>
         </DialogHeader>
         <div>
           <Label htmlFor="total-fees">Total Fees</Label>

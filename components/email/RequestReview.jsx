@@ -73,7 +73,7 @@ export const YelpRecentLoginEmail = ({
                 <Text style={{ ...paragraph, marginTop: -5 }}>
                   <b>Student Profile: </b>
                   <br />
-                  {`https://shishyakul.in/dashboard/student/${ay}/${grade}/${userId}`}
+                  {`https://shishyakul.in/students/${ay}/${grade}/${userId}`}
                 </Text>
                 <Text style={{ ...paragraph, marginTop: -5 }}>
                   <b>Review: </b>

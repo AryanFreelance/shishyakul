@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import {
   AlertDialog,
+  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -34,13 +35,15 @@ import toast from "react-hot-toast";
 import { DELETE_FEE, UPDATE_FEE } from "@/graphql/mutations/fees.mutation";
 import { useMutation } from "@apollo/client";
 import { GET_STUDENT_DETAILS } from "@/graphql/queries/students.query";
-import { MessageCirclePlus, Trash } from "lucide-react";
+import { GET_STUDENT_FEES } from "@/graphql/queries/fees.query";
+import { MessageCirclePlus, Trash2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useState } from "react";
 
-const CheckFeeData = ({ isAdmin, studData, id }) => {
+const CheckFeeData = ({ isAdmin, studData, id, academicYear }) => {
   const [remark, setRemark] = useState("");
   const [open, setOpen] = useState(false);
+  const [currentFeeId, setCurrentFeeId] = useState(null);
 
   const [deleteFee] = useMutation(DELETE_FEE, {
     refetchQueries: [
@@ -50,6 +53,13 @@ const CheckFeeData = ({ isAdmin, studData, id }) => {
           ay: studData?.student?.ay,
           grade: studData?.student?.grade,
           userId: id,
+        },
+      },
+      {
+        query: GET_STUDENT_FEES,
+        variables: {
+          userId: id,
+          academicYear: academicYear,
         },
       },
     ],
@@ -65,11 +75,21 @@ const CheckFeeData = ({ isAdmin, studData, id }) => {
           userId: id,
         },
       },
+      {
+        query: GET_STUDENT_FEES,
+        variables: {
+          userId: id,
+          academicYear: academicYear,
+        },
+      },
     ],
   });
 
   useEffect(() => {
-    if (!open) setRemark("");
+    if (!open) {
+      setRemark("");
+      setCurrentFeeId(null);
+    }
   }, [open]);
 
   const handleMutation = async (
@@ -88,31 +108,67 @@ const CheckFeeData = ({ isAdmin, studData, id }) => {
     }
   };
 
-  const saveRemarkHandler = (e, feeId) => {
+  const saveRemarkHandler = async (e) => {
     e.preventDefault();
-    handleMutation(
-      updateFee,
-      { id: feeId, userId: id, remark },
-      "Updating Remark!",
-      "Remark updated successfully!",
-      "There was an error updating remark!"
-    );
+    const toastId = toast.loading("Saving Remark...");
+    if (!remark) {
+      toast.error("Please fill all the fields!", {
+        id: toastId,
+      });
+      return;
+    }
+
+    await updateFee({
+      variables: {
+        id: currentFeeId,
+        userId: id,
+        remark,
+        academicYear,
+      },
+    })
+      .then((data) => {
+        // console.log(data);
+        toast.success("Remark added successfully!", {
+          id: toastId,
+        });
+        setOpen(false);
+      })
+      .catch((error) => {
+        // console.log(error);
+        toast.error("There was an error adding remark!", {
+          id: toastId,
+        });
+      });
   };
 
-  const deleteFeeHandler = (e, feeid) => {
-    e.preventDefault();
-    handleMutation(
-      deleteFee,
-      { userId: id, deleteFeeId: feeid },
-      "Deleting Fee...",
-      "Fee deleted successfully!",
-      "There was an error deleting fee!"
-    );
+  const deleteFeeHandler = async (feeId) => {
+    const toastId = toast.loading("Deleting Fee...");
+
+    await deleteFee({
+      variables: {
+        deleteFeeId: feeId,
+        userId: id,
+        academicYear: academicYear,
+      },
+    })
+      .then((data) => {
+        // console.log(data);
+        toast.success("Fee deleted successfully!", {
+          id: toastId,
+        });
+      })
+      .catch((error) => {
+        console.error("Error deleting fee:", error);
+        toast.error("There was an error deleting fee!", {
+          id: toastId,
+        });
+      });
   };
 
-  const dialogOpenChangeHandler = (fee) => {
-    setOpen(!open);
+  const openRemarkDialog = (fee) => {
     setRemark(fee.remark || "");
+    setCurrentFeeId(fee.id);
+    setOpen(true);
   };
 
   const renderTableRows = () => {
@@ -182,62 +238,30 @@ const CheckFeeData = ({ isAdmin, studData, id }) => {
         {isAdmin && (
           <TableCell className="flex items-center justify-center gap-2">
             <AlertDialog>
-              <AlertDialogTrigger>
+              <AlertDialogTrigger asChild>
                 <Button variant="outline">
-                  <Trash />
+                  <Trash2 />
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Fee</AlertDialogTitle>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete this fee?
+                    This action cannot be undone. This will permanently delete
+                    the fee data.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <Button onClick={(e) => deleteFeeHandler(e, fee.id)}>
-                    Delete
-                  </Button>
+                  <AlertDialogAction onClick={() => deleteFeeHandler(fee.id)}>
+                    Continue
+                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <Dialog
-              open={open}
-              onOpenChange={() => dialogOpenChangeHandler(fee)}
-            >
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <MessageCirclePlus />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Add Remark</DialogTitle>
-                  <DialogDescription>
-                    Add remark of the fee below.
-                  </DialogDescription>
-                </DialogHeader>
-                <div>
-                  <Label htmlFor="remark">Remark</Label>
-                  <Textarea
-                    id="remark"
-                    placeholder="Fee Remark Here..."
-                    rows={8}
-                    value={remark}
-                    onChange={(e) => setRemark(e.target.value)}
-                  />
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="submit"
-                    onClick={(e) => saveRemarkHandler(e, fee.id)}
-                  >
-                    Save changes
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button variant="outline" onClick={() => openRemarkDialog(fee)}>
+              <MessageCirclePlus />
+            </Button>
           </TableCell>
         )}
       </TableRow>
@@ -246,6 +270,30 @@ const CheckFeeData = ({ isAdmin, studData, id }) => {
 
   return (
     <div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Remark</DialogTitle>
+            <DialogDescription>Add remark of the fee below.</DialogDescription>
+          </DialogHeader>
+          <div>
+            <Label htmlFor="remark">Remark</Label>
+            <Textarea
+              id="remark"
+              placeholder="Fee Remark Here..."
+              rows={8}
+              value={remark}
+              onChange={(e) => setRemark(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={saveRemarkHandler}>
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Table>
         <TableHeader>
           <TableRow>

@@ -30,6 +30,7 @@ export const DASHBOARD_GET_STUDENT = gql`
       ay
       grade
       batch
+      academicYearsHistory
       studentInformation {
         school
         board
@@ -71,6 +72,7 @@ export const GET_STUDENT_DETAILS = gql`
       grade
       batch
       totalFees
+      academicYearsHistory
       attendance {
         present
         absent
@@ -90,6 +92,7 @@ export const GET_STUDENT_DETAILS = gql`
         chequeRefNo
         chequeImgUrl
         remark
+        academicYear
       }
     }
   }
@@ -107,6 +110,7 @@ export const GET_STUDENT_PROFILE = gql`
       ay
       grade
       batch
+      academicYearsHistory
       guardianInformation {
         motherFirstName
         motherMiddleName

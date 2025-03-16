@@ -15,11 +15,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-const RequestReview = ({ name, email, ay, grade, userId, feeData }) => {
+const RequestReview = ({
+  name,
+  email,
+  ay,
+  grade,
+  userId,
+  feeData,
+  academicYear,
+}) => {
   const [additionalMessage, setAdditionalMessage] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const requestReviewHandler = async () => {
-    const loading = toast.loading("Sending Request...");
+  const requestReviewHandler = async (e) => {
+    e.preventDefault();
+    const toastId = toast.loading("Sending Request...");
 
     if (
       !additionalMessage ||
@@ -29,53 +39,70 @@ const RequestReview = ({ name, email, ay, grade, userId, feeData }) => {
       additionalMessage.trim().length < 10
     ) {
       toast.error("Please add a valid additional message.", {
-        id: loading,
+        id: toastId,
       });
       return;
     }
 
-    // console.log("FEEDATA", feeData);
+    // Calculate total fees paid
+    const totalFeesPaid = feeData
+      ? feeData.reduce((total, fee) => total + fee.feesPaid, 0)
+      : 0;
 
-    const emailResp = await fetch("/api/review", {
-      method: "POST",
-      body: JSON.stringify({
-        name,
-        email,
-        ay,
-        grade,
-        userId,
-        additionalMessage,
-        feeData,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    try {
+      // Use the existing /api/review endpoint
+      const emailResp = await fetch("/api/review", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          email,
+          ay,
+          grade,
+          userId,
+          additionalMessage,
+          feeData,
+          academicYear: academicYear || ay,
+          totalFeesPaid,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-    if (emailResp.status !== 200) {
-      // console.log("EMAILRESP", emailResp);
-      toast.error("Failed to send message. Please try again.", {
-        id: loading,
+      if (emailResp.status !== 200) {
+        toast.error("Failed to send message. Please try again.", {
+          id: toastId,
+        });
+        return;
+      }
+
+      toast.success("Request sent successfully!", {
+        id: toastId,
       });
       setAdditionalMessage("");
-      return;
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error("Error sending review request:", error);
+      toast.error(
+        "There was an error sending your request. Please try again.",
+        {
+          id: toastId,
+        }
+      );
     }
-
-    toast.success("Message sent successfully!", {
-      id: loading,
-    });
-    setAdditionalMessage("");
   };
 
   return (
     <div>
-      <Dialog>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
           <Button variant="outline">Request Review</Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Request Fee Review</DialogTitle>
+            <DialogTitle>
+              Request Fee Review {academicYear && `(${academicYear})`}
+            </DialogTitle>
             <DialogDescription>
               Found a mistake in the fee addition? No Problem, you can request
               admins to review the fee details.

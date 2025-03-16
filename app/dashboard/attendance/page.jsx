@@ -3,7 +3,12 @@ import Container from "@/components/shared/Container";
 import Navbar from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
 import { dashboardNavLinks } from "@/constants";
-import { ChevronDown } from "lucide-react";
+import {
+  ChevronDown,
+  RefreshCw,
+  SearchIcon,
+  Calendar as CalendarIcon,
+} from "lucide-react";
 import React, { useEffect, useState } from "react";
 import {
   DropdownMenu,
@@ -13,8 +18,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { format, set } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -55,12 +58,18 @@ const Page = () => {
   const [formattedDate, setFormattedDate] = useState("");
   const [absentEmails, setAbsentEmails] = useState([]);
   const [searchParameters, setSearchParameters] = useState({
-    ay: localStorage.getItem("a-ay") || "select-ay",
-    grade: localStorage.getItem("a-grade") || "select-grade",
+    ay: sessionStorage.getItem("a-ay") || "select-ay",
+    grade: sessionStorage.getItem("a-grade") || "select-grade",
   });
-  const [selectedBatch, setSelectedBatch] = useState("select-batch");
+  const [selectedBatch, setSelectedBatch] = useState(
+    sessionStorage.getItem("a-batch") || "select-batch"
+  );
+  const [studentName, setStudentName] = useState(
+    sessionStorage.getItem("a-studentName") || ""
+  );
   const [batches, setBatches] = useState(new Set());
   const [students, setStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
   const [isStudentDataLoading, setIsStudentDataLoading] = useState(false);
   const months = [
     "Jan",
@@ -171,9 +180,17 @@ const Page = () => {
 
   // Update the localStorage whenever the search parameters change
   useEffect(() => {
-    localStorage.setItem("a-grade", searchParameters.grade);
-    localStorage.setItem("a-ay", searchParameters.ay);
+    sessionStorage.setItem("a-grade", searchParameters.grade);
+    sessionStorage.setItem("a-ay", searchParameters.ay);
   }, [searchParameters]);
+
+  useEffect(() => {
+    sessionStorage.setItem("a-batch", selectedBatch);
+  }, [selectedBatch]);
+
+  useEffect(() => {
+    sessionStorage.setItem("a-studentName", studentName);
+  }, [studentName]);
 
   // Update the students array whenever the search parameters change
   useEffect(() => {
@@ -229,6 +246,23 @@ const Page = () => {
     // console.log("SELECTEDBATCH", selectedBatch);
   }, [selectedBatch]);
 
+  // Filter students by name
+  useEffect(() => {
+    if (studentName && students?.length > 0) {
+      const filtered = students.filter((student) =>
+        `${student?.firstname || ""} ${student?.lastname || ""}`
+          .toLowerCase()
+          .includes(studentName.toLowerCase())
+      );
+      setFilteredStudents(filtered);
+    } else {
+      setFilteredStudents(students);
+    }
+  }, [studentName, students]);
+
+  // Use filteredStudents for rendering instead of students directly
+  const displayStudents = studentName ? filteredStudents : students;
+
   // Update the present and absent arrays whenever the attendanceData changes
   useEffect(() => {
     if (attendanceData?.attendance) {
@@ -236,9 +270,9 @@ const Page = () => {
       setAbsent(attendanceData.attendance.absent || []);
 
       // Only try to set absentEmails if students array is populated
-      if (students && students.length > 0) {
+      if (displayStudents && displayStudents.length > 0) {
         setAbsentEmails(
-          students
+          displayStudents
             .filter((student) =>
               attendanceData.attendance.absent?.includes(student.userId)
             )
@@ -252,7 +286,7 @@ const Page = () => {
       setAbsent([]);
       setAbsentEmails([]);
     }
-  }, [attendanceData, students]);
+  }, [attendanceData, displayStudents]);
 
   useEffect(() => {
     if (studentsData?.gStudents?.length > 0) {
@@ -321,6 +355,51 @@ const Page = () => {
 
   // console.log("FORMATTEDDATE", formattedDate);
 
+  // Reset filters when academic year or grade changes
+  useEffect(() => {
+    if (
+      searchParameters.ay !== sessionStorage.getItem("a-ay") ||
+      searchParameters.grade !== sessionStorage.getItem("a-grade")
+    ) {
+      setStudentName("");
+      setSelectedBatch("select-batch");
+    }
+  }, [searchParameters.ay, searchParameters.grade]);
+
+  // Reset name filter when batch changes
+  useEffect(() => {
+    if (selectedBatch !== sessionStorage.getItem("a-batch")) {
+      setStudentName("");
+    }
+  }, [selectedBatch]);
+
+  // Add a function to handle refreshing the student list
+  const handleRefreshStudents = () => {
+    if (
+      searchParameters.ay !== "select-ay" &&
+      searchParameters.grade !== "select-grade"
+    ) {
+      fetchStudents({
+        fetchPolicy: "network-only",
+        variables: {
+          ay: searchParameters.ay,
+          grade: searchParameters.grade,
+        },
+        onCompleted: (data) => {
+          setStudents(data.gStudents || []);
+          setFilteredStudents(data.gStudents || []);
+          setStudentName("");
+          setSelectedBatch("select-batch");
+          sessionStorage.setItem("a-studentName", "");
+          sessionStorage.setItem("a-batch", "select-batch");
+          toast.success("Students Refreshed Successfully!");
+        },
+      });
+    } else {
+      toast.error("Please select Academic Year and Grade first!");
+    }
+  };
+
   return (
     <Container>
       <Navbar navLinks={dashboardNavLinks} isHome={false} />
@@ -375,7 +454,9 @@ const Page = () => {
                   <DropdownMenuContent>
                     <DropdownMenuItem
                       onClick={() => {
-                        setPresent(students?.map((student) => student.userId));
+                        setPresent(
+                          displayStudents?.map((student) => student.userId)
+                        );
                         setAbsent([]);
                       }}
                     >
@@ -383,7 +464,9 @@ const Page = () => {
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
-                        setAbsent(students?.map((student) => student.userId));
+                        setAbsent(
+                          displayStudents?.map((student) => student.userId)
+                        );
                         setPresent([]);
                       }}
                     >
@@ -474,16 +557,36 @@ const Page = () => {
                   </Select>
                 </div>
               </div>
+
+              {/* Name Search Input */}
+              <div className="flex justify-between items-center flex-wrap w-full md:w-[60%] gap-2 mt-4">
+                <div className="w-full">
+                  <div className="flex items-center gap-2 border-2 rounded-full px-4 py-2 border-main">
+                    <SearchIcon className="h-5 w-5 text-secondary" />
+                    <input
+                      type="text"
+                      placeholder="Search by Student Name..."
+                      className="w-full py-1 bg-transparent outline-none border-none text-secondary barlow-regular"
+                      value={studentName}
+                      onChange={(e) => setStudentName(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div>
-              <span>
-                {students?.length > 0 && students?.length} Students Found.
+              <span className="flex items-center gap-3">
+                {displayStudents?.length > 0 && displayStudents?.length}{" "}
+                Students Found.
+                <button onClick={handleRefreshStudents}>
+                  <RefreshCw className="h-5 w-5" />
+                </button>
               </span>
             </div>
 
             <div className="mt-6">
-              {students?.map((item, index) => (
+              {displayStudents?.map((item, index) => (
                 <div key={index}>
                   <div className="flex justify-between items-center rounded my-4">
                     <div>{item.firstname + " " + item.lastname}</div>
@@ -535,7 +638,7 @@ const Page = () => {
                     Please select both Academic Year & Grade to view Students.
                   </span>
                 )}
-              {(students === null || students?.length == 0) &&
+              {(displayStudents === null || displayStudents?.length == 0) &&
                 !isStudentDataLoading &&
                 searchParameters.ay !== "select-ay" &&
                 searchParameters.grade !== "select-grade" && (
@@ -544,7 +647,7 @@ const Page = () => {
                     attendance!!
                   </span>
                 )}
-              {students !== null && students?.length > 0 && (
+              {displayStudents !== null && displayStudents?.length > 0 && (
                 <>
                   <div className="w-full md:w-[50%]">
                     <Button

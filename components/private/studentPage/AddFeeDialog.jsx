@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { storage } from "@/firebase";
 import { CREATE_FEE } from "@/graphql/mutations/fees.mutation";
 import { GET_STUDENT_DETAILS } from "@/graphql/queries/students.query";
+import { GET_STUDENT_FEES } from "@/graphql/queries/fees.query";
 import { useMutation } from "@apollo/client";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { CloudUpload } from "lucide-react";
@@ -22,8 +23,9 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-const AddFeeDialog = ({ id, studData }) => {
+const AddFeeDialog = ({ id, studData, academicYear, onFeeAdded }) => {
   const [isFeeDialogOpen, setIsFeeDialogOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [feeData, setFeeData] = useState({
     feesPaid: "",
     paidOn: "",
@@ -47,12 +49,23 @@ const AddFeeDialog = ({ id, studData }) => {
           userId: id,
         },
       },
+      {
+        query: GET_STUDENT_FEES,
+        variables: {
+          userId: id,
+          academicYear: academicYear,
+        },
+      },
     ],
+    onCompleted: () => {
+      if (onFeeAdded) {
+        onFeeAdded();
+      }
+    },
   });
 
-  const addFeeHandler = async (e) => {
-    e.preventDefault();
-    const toastId = toast.loading("Adding Fee...");
+  const validateFeeData = (toastId) => {
+    // Basic validation
     if (
       !feeData.feesPaid ||
       !feeData.paidOn ||
@@ -60,138 +73,166 @@ const AddFeeDialog = ({ id, studData }) => {
       !feeData.year ||
       !feeData.mode
     ) {
-      toast.error("Please fill all the fields!", {
+      toast.error("Please fill all the required fields!", {
         id: toastId,
       });
-      setIsFeeDialogOpen(false);
-      return;
+      return false;
     }
-    // console.log(feeData);
 
+    // Mode-specific validation
     if (
       feeData.mode === "cheque" &&
       (!feeData.chequeRefNo || !feeData.chequeImgUrl)
     ) {
-      toast.error("Please fill all the fields!", {
+      toast.error("Please provide cheque reference number and image!", {
         id: toastId,
       });
-      setIsFeeDialogOpen(false);
-      return;
+      return false;
     }
     if (feeData.mode === "upi" && (!feeData.upiId || !feeData.upiImgUrl)) {
-      toast.error("Please fill all the fields!", {
+      toast.error("Please provide UPI ID and transaction screenshot!", {
         id: toastId,
       });
-      setIsFeeDialogOpen(false);
-      return;
+      return false;
     }
     if (feeData.mode === "neft" && !feeData.neftRefNo) {
-      toast.error("Please fill all the fields!", {
+      toast.error("Please provide NEFT reference number!", {
         id: toastId,
       });
-      setIsFeeDialogOpen(false);
-      return;
+      return false;
     }
-    let today = new Date();
-    let feeid = `${today.getFullYear()}-${
-      today.getMonth() + 1
-    }-${today.getDate()}_${
+
+    return true;
+  };
+
+  const generateFeeId = () => {
+    const today = new Date();
+    return `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}_${
       today.getHours() < 10 ? "0" + today.getHours() : today.getHours()
     }:${
       today.getMinutes() < 10 ? "0" + today.getMinutes() : today.getMinutes()
     }:${
       today.getSeconds() < 10 ? "0" + today.getSeconds() : today.getSeconds()
     }`;
+  };
 
-    const storageRef = ref(storage, `fee/${feeid}`);
+  const uploadImage = async (file, feeId, mode) => {
+    try {
+      const storageRef = ref(storage, `fee/${feeId}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadUrl = await getDownloadURL(storageRef);
+      return downloadUrl;
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      throw new Error("Failed to upload image");
+    }
+  };
 
-    if (feeData.mode === "cheque" || feeData.mode === "upi") {
-      await uploadBytes(
-        storageRef,
-        feeData.mode === "cheque" ? feeData.chequeImgUrl : feeData.upiImgUrl
-      )
-        .then(async (snapshot) => {
-          const downloadUrl = await getDownloadURL(storageRef);
-          // console.log("SNAPSHOT", snapshot);
-          // console.log("DOWNLOAD", downloadUrl);
-          // feeData.mode === "cheque"
-          //   ? setFeeData({ ...feeData, chequeImgUrl: downloadUrl })
-          //   : setFeeData({ ...feeData, upiImgUrl: downloadUrl });
+  const addFeeHandler = async (e) => {
+    e.preventDefault();
+    const toastId = toast.loading("Adding Fee...");
+    setIsUploading(true);
+
+    try {
+      // Validate fee data
+      if (!validateFeeData(toastId)) {
+        setIsUploading(false);
+        return;
+      }
+
+      // Generate fee ID
+      const feeId = generateFeeId();
+      let updatedFeeData = { ...feeData };
+
+      // Upload images if needed
+      if (feeData.mode === "cheque" || feeData.mode === "upi") {
+        try {
+          const fileToUpload =
+            feeData.mode === "cheque"
+              ? feeData.chequeImgUrl
+              : feeData.upiImgUrl;
+          const downloadUrl = await uploadImage(
+            fileToUpload,
+            feeId,
+            feeData.mode
+          );
+
           if (feeData.mode === "cheque") {
-            // setFeeData({ ...feeData, chequeImgUrl: downloadUrl });
-            feeData.chequeImgUrl = downloadUrl;
+            updatedFeeData.chequeImgUrl = downloadUrl;
           } else {
-            // setFeeData({ ...feeData, upiImgUrl: downloadUrl });
-            feeData.upiImgUrl = downloadUrl;
+            updatedFeeData.upiImgUrl = downloadUrl;
           }
-
-          // console.log("FEE DATA", feeData);
-
-          // toast.success("Test Paper Added Successfully!", {
-          //   id: toastId,
-          // });
-        })
-        .catch((error) => {
-          toast.error("Something went wrong!", {
+        } catch (error) {
+          toast.error("Failed to upload image. Please try again.", {
             id: toastId,
           });
-          // console.error(error);
-          setIsFeeDialogOpen(false);
+          setIsUploading(false);
           return;
-        });
-    }
+        }
+      }
 
-    await createFee({
-      variables: {
-        id: feeid,
-        userId: id,
-        email: studData?.student.email,
-        feesPaid: parseInt(feeData.feesPaid),
-        paidOn: feeData.paidOn,
-        month: feeData.month,
-        year: feeData.year,
-        mode: feeData.mode,
-        chequeRefNo: feeData.chequeRefNo || "",
-        chequeImgUrl: feeData.chequeImgUrl || "",
-        upiId: feeData.upiId || "",
-        upiImgUrl: feeData.upiImgUrl || "",
-        neftRefNo: feeData.neftRefNo || "",
-      },
-    })
-      .then((data) => {
-        // console.log(data);
+      // Create fee in database
+      const result = await createFee({
+        variables: {
+          id: feeId,
+          userId: id,
+          email: studData?.student.email,
+          feesPaid: parseInt(feeData.feesPaid),
+          paidOn: feeData.paidOn,
+          month: feeData.month,
+          year: feeData.year,
+          mode: feeData.mode,
+          chequeRefNo: updatedFeeData.chequeRefNo || "",
+          chequeImgUrl: updatedFeeData.chequeImgUrl || "",
+          upiId: updatedFeeData.upiId || "",
+          upiImgUrl: updatedFeeData.upiImgUrl || "",
+          neftRefNo: updatedFeeData.neftRefNo || "",
+          academicYear: academicYear || studData?.student?.ay,
+        },
+      });
+
+      if (result.data.createFee === "SUCCESS") {
         toast.success("Fee added successfully!", {
           id: toastId,
         });
-      })
-      .catch((error) => {
-        // console.log(error);
+
+        // Reset form
+        setFeeData({
+          feesPaid: "",
+          paidOn: "",
+          month: "",
+          year: "",
+          mode: "",
+          chequeRefNo: "",
+          chequeImgUrl: "",
+          upiId: "",
+          upiImgUrl: "",
+          neftRefNo: "",
+        });
+        setIsFeeDialogOpen(false);
+      } else {
         toast.error("There was an error adding fee!", {
           id: toastId,
         });
+      }
+    } catch (error) {
+      console.error("Error adding fee:", error);
+      toast.error("There was an error adding fee! Please try again.", {
+        id: toastId,
       });
-
-    setFeeData({
-      feesPaid: "",
-      paidOn: "",
-      month: "",
-      year: "",
-      mode: "",
-      chequeRefNo: "",
-      chequeImgUrl: "",
-      upiId: "",
-      upiImgUrl: "",
-      neftRefNo: "",
-    });
-    setIsFeeDialogOpen(false);
+    } finally {
+      setIsUploading(false);
+    }
   };
+
   return (
     <div>
       <Dialog
         open={isFeeDialogOpen}
-        onOpenChange={() => {
-          setIsFeeDialogOpen(!isFeeDialogOpen);
-          // console.log("ISFEEDIALOGOPEN", isFeeDialogOpen);
+        onOpenChange={(open) => {
+          if (!isUploading) {
+            setIsFeeDialogOpen(open);
+          }
         }}
       >
         <DialogTrigger asChild>
@@ -201,7 +242,9 @@ const AddFeeDialog = ({ id, studData }) => {
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Add Fee</DialogTitle>
+            <DialogTitle>
+              Add Fee {academicYear && `(${academicYear})`}
+            </DialogTitle>
             <DialogDescription>
               Add Fee here, and click save when you're done.
             </DialogDescription>
@@ -339,11 +382,12 @@ const AddFeeDialog = ({ id, studData }) => {
                           accept="image/*"
                           className="col-span-3 hidden"
                           onChange={(e) => {
-                            setFeeData({
-                              ...feeData,
-                              chequeImgUrl: e.target.files[0],
-                            });
-                            // console.log("FILE", e.target.files[0]);
+                            if (e.target.files && e.target.files[0]) {
+                              setFeeData({
+                                ...feeData,
+                                chequeImgUrl: e.target.files[0],
+                              });
+                            }
                           }}
                         />
                       </>
@@ -408,11 +452,12 @@ const AddFeeDialog = ({ id, studData }) => {
                           accept="image/*"
                           className="col-span-3 hidden"
                           onChange={(e) => {
-                            setFeeData({
-                              ...feeData,
-                              upiImgUrl: e.target.files[0],
-                            });
-                            // console.log("FILE", e.target.files[0]);
+                            if (e.target.files && e.target.files[0]) {
+                              setFeeData({
+                                ...feeData,
+                                upiImgUrl: e.target.files[0],
+                              });
+                            }
                           }}
                         />
                       </>
@@ -463,8 +508,12 @@ const AddFeeDialog = ({ id, studData }) => {
             }
           </div>
           <DialogFooter>
-            <Button type="submit" onClick={addFeeHandler}>
-              Save changes
+            <Button
+              type="submit"
+              onClick={addFeeHandler}
+              disabled={isUploading}
+            >
+              {isUploading ? "Saving..." : "Save changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

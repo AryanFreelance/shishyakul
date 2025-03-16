@@ -16,7 +16,20 @@ function makeClient() {
   });
 
   return new NextSSRApolloClient({
-    cache: new NextSSRInMemoryCache(),
+    cache: new NextSSRInMemoryCache({
+      typePolicies: {
+        Query: {
+          fields: {
+            birthdays: {
+              // Ensure we can get all birthdays without pagination limits
+              merge(existing, incoming) {
+                return incoming;
+              },
+            },
+          },
+        },
+      },
+    }),
     link:
       typeof window === "undefined"
         ? ApolloLink.from([
@@ -26,6 +39,14 @@ function makeClient() {
             httpLink,
           ])
         : httpLink,
+    defaultOptions: {
+      query: {
+        fetchPolicy: "network-only",
+      },
+      watchQuery: {
+        fetchPolicy: "network-only",
+      },
+    },
   });
 }
 

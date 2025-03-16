@@ -29,7 +29,13 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import toast from "react-hot-toast";
 import { useParams, useRouter } from "next/navigation";
 import { auth } from "@/firebase";
-import { Circle, CircleCheck, InfoIcon, AlertTriangle } from "lucide-react";
+import {
+  Circle,
+  CircleCheck,
+  InfoIcon,
+  AlertTriangle,
+  Calendar,
+} from "lucide-react";
 import { getAuth } from "firebase/auth";
 import { getDoc, doc } from "firebase/firestore";
 import { db } from "@/firebase";
@@ -42,6 +48,7 @@ import {
   GET_STUDENT_DETAILS,
   GET_STUDENT_PROFILE,
 } from "@/graphql/queries/students.query";
+import { GET_STUDENT_FEES } from "@/graphql/queries/fees.query";
 import { GET_PUBLISHED_TESTPAPERS_USERS } from "@/graphql/queries/testPaper.query";
 import { Separator } from "@/components/ui/separator";
 import ProfileCompletionStatus from "@/components/private/studentPage/ProfileCompletionStatus";
@@ -52,6 +59,13 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const dynamic = "force-dynamic";
 
@@ -224,6 +238,8 @@ const page = () => {
   const [authStatus, setAuthStatus] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isFaculty, setIsFaculty] = useState(false);
+  const [academicYears, setAcademicYears] = useState([]);
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState(ay);
   const [chartData, setChartData] = useState({
     labels: ["Present", "Absent"],
     datasets: [
@@ -284,13 +300,12 @@ const page = () => {
   //     Payment Screenshot
 
   // Queries - Get Student, Get Published Papers
-  const { data: studData } = useSuspenseQuery(GET_STUDENT_DETAILS, {
-    variables: {
-      ay,
-      grade,
-      userId: id,
-    },
-  });
+  const { data: studData, refetch: refetchStudData } = useSuspenseQuery(
+    GET_STUDENT_DETAILS,
+    {
+      variables: { ay, grade, userId: id },
+    }
+  );
 
   // Query to get profile data for completion calculation
   const { data: profileData, refetch: refetchProfile } = useSuspenseQuery(
@@ -315,97 +330,21 @@ const page = () => {
     }
   );
 
-  if (!studData)
-    return (
-      <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
-        Loading... <br />
-        <small>
-          If you are waiting for so long then please contact the admin!
-        </small>
-      </div>
-    );
+  // Query - Get Student Fees for selected academic year
+  const { data: feesData, refetch: refetchFeesData } = useSuspenseQuery(
+    GET_STUDENT_FEES,
+    {
+      variables: { userId: id, academicYear: selectedAcademicYear },
+    }
+  );
 
-  // console.log("STUDDATA", studData);
-
-  if (!studData?.student) {
-    return (
-      <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
-        No Student Found
-      </div>
-    );
-  }
-
+  // Auth state effect
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // console.log(user);
         if (user.email === "admin@shishyakul.in") {
           setIsAdmin(true);
         }
-
-        setChartData({
-          labels: ["Present", "Absent"],
-          datasets: [
-            {
-              label: "Days",
-              data: [
-                studData?.student?.attendance.present,
-                studData?.student?.attendance.absent,
-              ],
-              backgroundColor: ["#159a3a", "#d92e39"],
-              borderColor: ["#159a3a", "#d92e39"],
-              borderWidth: 1,
-            },
-          ],
-        });
-
-        // Process payment methods data for bar chart
-        if (studData?.student?.fees && studData.student.fees.length > 0) {
-          const paymentMethods = {};
-
-          // Group payments by method and sum amounts
-          studData.student.fees.forEach((fee) => {
-            // Capitalize first letter of payment method
-            const method = fee.mode.charAt(0).toUpperCase() + fee.mode.slice(1);
-            if (!paymentMethods[method]) {
-              paymentMethods[method] = 0;
-            }
-            paymentMethods[method] += fee.feesPaid;
-          });
-
-          // Convert to chart data format
-          setPaymentMethodsData({
-            labels: ["Payment Methods"],
-            datasets: [
-              ...Object.entries(paymentMethods).map(
-                ([method, amount], index) => ({
-                  label: method,
-                  data: [amount],
-                  backgroundColor: [
-                    index === 0
-                      ? "rgba(54, 162, 235, 0.6)" // Cash
-                      : index === 1
-                      ? "rgba(255, 99, 132, 0.6)" // UPI
-                      : index === 2
-                      ? "rgba(255, 206, 86, 0.6)" // NEFT
-                      : "rgba(75, 192, 192, 0.6)", // Cheque
-                  ],
-                  borderColor: [
-                    index === 0
-                      ? "rgba(54, 162, 235, 1)"
-                      : index === 1
-                      ? "rgba(255, 99, 132, 1)"
-                      : index === 2
-                      ? "rgba(255, 206, 86, 1)"
-                      : "rgba(75, 192, 192, 1)",
-                  ],
-                  borderWidth: 1,
-                })
-              ),
-            ],
-          });
-        }
-
         setAuthStatus(true);
       } else {
         setAuthStatus(false);
@@ -414,8 +353,77 @@ const page = () => {
     });
 
     return () => unsubscribe();
+  }, [router]);
+
+  // Chart data effect
+  useEffect(() => {
+    if (studData?.student) {
+      setChartData({
+        labels: ["Present", "Absent"],
+        datasets: [
+          {
+            label: "Days",
+            data: [
+              studData.student.attendance.present,
+              studData.student.attendance.absent,
+            ],
+            backgroundColor: ["#159a3a", "#d92e39"],
+            borderColor: ["#159a3a", "#d92e39"],
+            borderWidth: 1,
+          },
+        ],
+      });
+    }
   }, [studData]);
 
+  // Payment methods from student data
+  useEffect(() => {
+    if (studData?.student?.fees && studData.student.fees.length > 0) {
+      const paymentMethods = {};
+
+      // Group payments by method and sum amounts
+      studData.student.fees.forEach((fee) => {
+        // Capitalize first letter of payment method
+        const method = fee.mode.charAt(0).toUpperCase() + fee.mode.slice(1);
+        if (!paymentMethods[method]) {
+          paymentMethods[method] = 0;
+        }
+        paymentMethods[method] += fee.feesPaid;
+      });
+
+      // Update chart data
+      setPaymentMethodsData({
+        labels: ["Payment Methods"],
+        datasets: [
+          ...Object.entries(paymentMethods).map(([method, amount], index) => ({
+            label: method,
+            data: [amount],
+            backgroundColor: [
+              index === 0
+                ? "rgba(54, 162, 235, 0.6)" // Cash
+                : index === 1
+                ? "rgba(255, 99, 132, 0.6)" // UPI
+                : index === 2
+                ? "rgba(255, 206, 86, 0.6)" // NEFT
+                : "rgba(75, 192, 192, 0.6)", // Cheque
+            ],
+            borderColor: [
+              index === 0
+                ? "rgba(54, 162, 235, 1)"
+                : index === 1
+                ? "rgba(255, 99, 132, 1)"
+                : index === 2
+                ? "rgba(255, 206, 86, 1)"
+                : "rgba(75, 192, 192, 1)",
+            ],
+            borderWidth: 1,
+          })),
+        ],
+      });
+    }
+  }, [studData]);
+
+  // Faculty role check
   useEffect(() => {
     // Check if the user is a faculty member
     const checkUserRole = async () => {
@@ -433,6 +441,7 @@ const page = () => {
     checkUserRole();
   }, []);
 
+  // Profile completion calculation
   useEffect(() => {
     // Calculate profile completion percentages when profile data is available
     if (profileData?.student) {
@@ -476,6 +485,7 @@ const page = () => {
     }
   }, [profileData]);
 
+  // Profile refetch on focus
   useEffect(() => {
     // Refetch profile data when component mounts or when returning from profile page
     const handleFocus = () => {
@@ -491,6 +501,134 @@ const page = () => {
     };
   }, [refetchProfile]);
 
+  // Academic years setup
+  useEffect(() => {
+    // Set academic years from the student data
+    if (studData?.student?.academicYearsHistory) {
+      setAcademicYears(studData.student.academicYearsHistory);
+    }
+  }, [studData]);
+
+  // Process payment methods data for bar chart from feesData
+  useEffect(() => {
+    if (feesData?.studentFees && feesData.studentFees.length > 0) {
+      const paymentMethods = {};
+
+      // Group payments by method and sum amounts
+      feesData.studentFees.forEach((fee) => {
+        // Capitalize first letter of payment method
+        const method = fee.mode.charAt(0).toUpperCase() + fee.mode.slice(1);
+        if (!paymentMethods[method]) {
+          paymentMethods[method] = 0;
+        }
+        paymentMethods[method] += fee.feesPaid;
+      });
+
+      // Update chart data
+      setPaymentMethodsData({
+        labels: ["Payment Methods"],
+        datasets: [
+          ...Object.entries(paymentMethods).map(([method, amount], index) => ({
+            label: method,
+            data: [amount],
+            backgroundColor: [
+              index === 0
+                ? "rgba(54, 162, 235, 0.6)" // Cash
+                : index === 1
+                ? "rgba(255, 99, 132, 0.6)" // UPI
+                : index === 2
+                ? "rgba(255, 206, 86, 0.6)" // NEFT
+                : "rgba(75, 192, 192, 0.6)", // Cheque
+            ],
+            borderColor: [
+              index === 0
+                ? "rgba(54, 162, 235, 1)"
+                : index === 1
+                ? "rgba(255, 99, 132, 1)"
+                : index === 2
+                ? "rgba(255, 206, 86, 1)"
+                : "rgba(75, 192, 192, 1)",
+            ],
+            borderWidth: 1,
+          })),
+        ],
+      });
+    } else {
+      // Set default empty chart data when no fees are available
+      setPaymentMethodsData({
+        labels: ["Payment Methods"],
+        datasets: [],
+      });
+    }
+  }, [feesData]);
+
+  // Handle academic year change
+  const handleAcademicYearChange = (value) => {
+    setSelectedAcademicYear(value);
+    // Refetch fees data for the selected academic year
+    refetchFeesData({ userId: id, academicYear: value });
+  };
+
+  // // Navigate to the selected academic year page
+  // const navigateToSelectedYear = () => {
+  //   if (selectedAcademicYear) {
+  //     router.push(`/student/${selectedAcademicYear}/${grade}/${id}`);
+  //   }
+  // };
+
+  // Calculate total fees paid
+  const calculateTotalFeesPaid = () => {
+    if (!studData?.student?.fees || studData.student.fees.length === 0) {
+      return 0;
+    }
+
+    return studData.student.fees.reduce(
+      (total, fee) => total + fee.feesPaid,
+      0
+    );
+  };
+
+  // Calculate total fees paid for the selected academic year
+  const calculateTotalFeesPaidForSelectedYear = () => {
+    if (!feesData?.studentFees || feesData.studentFees.length === 0) {
+      return 0;
+    }
+
+    return feesData.studentFees.reduce((total, fee) => total + fee.feesPaid, 0);
+  };
+
+  // Get total fees (from database or calculate from existing data)
+  const getTotalFees = () => {
+    if (studData?.student?.totalFees) {
+      return studData.student.totalFees;
+    }
+
+    // Return default total fees of 60000 if not set
+    return 60000;
+  };
+
+  // Loading state
+  if (!studData) {
+    return (
+      <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
+        Loading... <br />
+        <small>
+          If you are waiting for so long then please contact the admin!
+        </small>
+      </div>
+    );
+  }
+
+  // No student found state
+  if (!studData?.student) {
+    return (
+      <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
+        No Student Found
+      </div>
+    );
+  }
+
+  // Auth loading state
   if (authStatus === null) {
     return (
       <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
@@ -499,6 +637,7 @@ const page = () => {
     );
   }
 
+  // Not authenticated state
   if (!authStatus) {
     return (
       <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
@@ -507,6 +646,7 @@ const page = () => {
     );
   }
 
+  // Logout handler
   const logoutHandler = () => {
     const toastId = toast.loading("Logging out...");
     signOut(auth)
@@ -522,29 +662,6 @@ const page = () => {
           id: toastId,
         });
       });
-  };
-
-  // Calculate total fees paid
-  const calculateTotalFeesPaid = () => {
-    if (!studData?.student?.fees || studData.student.fees.length === 0) {
-      return 0;
-    }
-
-    return studData.student.fees.reduce(
-      (total, fee) => total + fee.feesPaid,
-      0
-    );
-  };
-
-  // Get total fees (from database or calculate from existing data)
-  const getTotalFees = () => {
-    // If totalFees is set in the database, use that value
-    if (studData?.student?.totalFees) {
-      return studData.student.totalFees;
-    }
-
-    // Return default total fees of 60000 if not set
-    return 60000;
   };
 
   return (
@@ -571,12 +688,41 @@ const page = () => {
               <h2 className="subheading">
                 Welcome {studData?.student?.firstname}
               </h2>
-              <Link
-                href={`/student/${ay}/${grade}/${id}/profile`}
-                className="barlow-medium border-2 border-main rounded px-4 py-2"
-              >
-                Profile
-              </Link>
+              <div className="flex items-center gap-4">
+                {academicYears.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    {/* <Calendar size={16} /> */}
+                    <Select
+                      value={selectedAcademicYear}
+                      onValueChange={handleAcademicYearChange}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select Academic Year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {academicYears.map((year) => (
+                          <SelectItem key={year} value={year}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {/* <Button
+                      variant="outline"
+                      className="border-2 border-main"
+                      onClick={navigateToSelectedYear}
+                    >
+                      GO
+                    </Button> */}
+                  </div>
+                )}
+                <Link
+                  href={`/student/${ay}/${grade}/${id}/profile`}
+                  className="barlow-medium border-2 border-main rounded px-4 py-2"
+                >
+                  Profile
+                </Link>
+              </div>
             </div>
             <div className="my-8">
               <h3 className="subsubheading text-secondary mb-4">
@@ -724,12 +870,27 @@ const page = () => {
             <div className="lg:w-[70%] w-full">
               <div className="flex justify-between items-center flex-col md:flex-row gap-2 w-full">
                 <h3 className="subsubheading text-secondary mb-4">
-                  Fees Information
+                  Fees Information{" "}
+                  {selectedAcademicYear && `(${selectedAcademicYear})`}
                 </h3>
                 {isAdmin && !isFaculty && (
                   <div className="flex gap-4 items-center">
-                    <AddFeeDialog id={id} studData={studData} />
-                    <StudentFeesInfoDialog id={id} studData={studData} />
+                    <AddFeeDialog
+                      id={id}
+                      studData={studData}
+                      academicYear={selectedAcademicYear}
+                      onFeeAdded={() =>
+                        refetchFeesData({
+                          userId: id,
+                          academicYear: selectedAcademicYear,
+                        })
+                      }
+                    />
+                    <StudentFeesInfoDialog
+                      id={id}
+                      studData={studData}
+                      academicYear={selectedAcademicYear}
+                    />
                   </div>
                 )}
                 {!isAdmin && !isFaculty && (
@@ -739,7 +900,8 @@ const page = () => {
                     ay={ay}
                     grade={grade}
                     userId={id}
-                    feeData={studData?.student?.fees}
+                    feeData={feesData?.studentFees}
+                    academicYear={selectedAcademicYear}
                   />
                 )}
               </div>
@@ -765,7 +927,7 @@ const page = () => {
                       Fees Paid
                     </span>
                     <span className="text-2xl font-bold">
-                      ₹{calculateTotalFeesPaid()}
+                      ₹{calculateTotalFeesPaidForSelectedYear()}
                     </span>
                   </div>
                   <div className="flex flex-col">
@@ -773,14 +935,15 @@ const page = () => {
                       Balance
                     </span>
                     <span className="text-2xl font-bold">
-                      ₹{getTotalFees() - calculateTotalFeesPaid()}
+                      ₹
+                      {getTotalFees() - calculateTotalFeesPaidForSelectedYear()}
                     </span>
                   </div>
                 </div>
               </div>
 
               {/* Payment Methods Chart */}
-              {studData?.student?.fees && studData.student.fees.length > 0 && (
+              {feesData?.studentFees && feesData.studentFees.length > 0 && (
                 <div className="mb-6">
                   <h4 className="text-lg font-medium mb-2">Payment Methods</h4>
                   <div className="h-64">
@@ -804,7 +967,6 @@ const page = () => {
                             },
                           },
                           x: {
-                            // display: false, // Hide x-axis labels since we're using the legend
                             display: true,
                             text: "Payment Methods",
                           },
@@ -815,7 +977,17 @@ const page = () => {
                 </div>
               )}
 
-              <CheckFeeData isAdmin={isAdmin} studData={studData} id={id} />
+              <CheckFeeData
+                isAdmin={isAdmin}
+                studData={{
+                  student: {
+                    ...studData?.student,
+                    fees: feesData?.studentFees,
+                  },
+                }}
+                id={id}
+                academicYear={selectedAcademicYear}
+              />
             </div>
             <Separator className="my-4 lg:hidden" />
             <div className="w-full lg:w-[30%] flex items-center justify-center">

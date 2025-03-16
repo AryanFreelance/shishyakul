@@ -58,4 +58,9 @@ export const dashboardNavLinks = [
     href: "/dashboard/members",
     restrictFor: ["Faculty"],
   },
+  {
+    title: "Birthdays",
+    href: "/dashboard/birthdays",
+    // restrictFor: ["Admin"],
+  },
 ];

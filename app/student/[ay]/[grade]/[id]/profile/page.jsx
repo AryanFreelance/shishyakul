@@ -29,6 +29,7 @@ import {
   ChevronUp,
   ShieldAlert,
   AlertTriangle,
+  Calendar,
 } from "lucide-react";
 import ProfileStudentSectionInformation from "@/components/private/studentPage/ProfileStudentSectionInformation";
 import {
@@ -43,6 +44,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Utility functions to calculate profile completion
 const calculateStudentInfoCompletion = (studentInfo) => {
@@ -270,6 +278,12 @@ const page = () => {
   const [isParentSectionOpen, setIsParentSectionOpen] = useState(false);
   const [isStudentSectionOpen, setIsStudentSectionOpen] = useState(false);
 
+  const [academicYears, setAcademicYears] = useState([]);
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState("");
+  const [showAcademicYearDialog, setShowAcademicYearDialog] = useState(false);
+  const [tempSelectedAcademicYear, setTempSelectedAcademicYear] = useState("");
+  const [profileCreationMode, setProfileCreationMode] = useState("upgrade"); // "upgrade" or "new"
+
   const { ay: pAy, grade: pGrade, id } = useParams();
   const router = useRouter();
 
@@ -394,7 +408,10 @@ const page = () => {
     if (data?.student?.phone != null) setPhone(data?.student.phone);
     if (data?.student?.grade != null) setGrade(data?.student.grade);
     if (data?.student?.batch != null) setBatch(data?.student.batch);
-    if (data?.student?.ay != null) setAy(data?.student.ay);
+    if (data?.student?.ay != null) {
+      setAy(data?.student.ay);
+      setSelectedAcademicYear(data?.student.ay);
+    }
 
     if (data?.student?.parentSection === null) {
       setIsParentSectionNull(true);
@@ -402,6 +419,11 @@ const page = () => {
 
     if (data?.student?.studentSection === null) {
       setIsStudentBasicInfoNull(true);
+    }
+
+    // Set academic years from the student data
+    if (data?.student?.academicYearsHistory) {
+      setAcademicYears(data.student.academicYearsHistory);
     }
 
     // Calculate profile completion percentages
@@ -478,6 +500,22 @@ const page = () => {
       return;
     }
 
+    // Check if academic year is being updated
+    if (pAy !== ay) {
+      // Check if student already exists in the target academic year using academicYearsHistory
+      const studentExistsInTargetYear = academicYears.includes(ay);
+
+      if (studentExistsInTargetYear) {
+        toast.error(
+          "Student already exists in the selected academic year. Please choose a different academic year.",
+          {
+            id: toastId,
+          }
+        );
+        return;
+      }
+    }
+
     // Update Student Details
     const updateResp = await updateStudent({
       variables: {
@@ -496,8 +534,21 @@ const page = () => {
         siblingInformation: siblingInformation,
         parentSection: parentSectionInformation,
         studentSection: studentSectionInformation,
+        profileCreationMode: profileCreationMode,
+        checkStudentExists: true, // Add this flag to tell the backend to check if student exists
       },
     });
+
+    // Check if the error is because student already exists
+    if (updateResp?.data.updateStudent === "STUDENT_EXISTS") {
+      toast.error(
+        "Student already exists in the selected academic year. Please choose a different academic year.",
+        {
+          id: toastId,
+        }
+      );
+      return;
+    }
 
     if (updateResp?.data.updateStudent === "SUCCESS") {
       // Recalculate completion percentages
@@ -546,6 +597,42 @@ const page = () => {
     }
   };
 
+  // Handle academic year change
+  const handleAcademicYearChange = (value) => {
+    // If the value is the same as the current academic year, just navigate
+    if (value === pAy) {
+      setSelectedAcademicYear(value);
+      router.push(`/student/${value}/${grade}/${id}/profile`);
+      return;
+    }
+
+    // Check if student already exists in the selected academic year
+    // We're using includes() because academicYears should have all the years the student exists in
+    const studentExistsInTargetYear =
+      academicYears.includes(value) && value !== pAy;
+
+    if (studentExistsInTargetYear) {
+      // If student exists, we can navigate to that profile directly
+      setSelectedAcademicYear(value);
+      router.push(`/student/${value}/${grade}/${id}/profile`);
+      return;
+    }
+
+    // Store the selected value temporarily and show the dialog
+    setTempSelectedAcademicYear(value);
+    setShowAcademicYearDialog(true);
+  };
+
+  // Handle profile creation mode selection
+  const handleProfileCreationModeSelect = (mode) => {
+    setProfileCreationMode(mode);
+    setShowAcademicYearDialog(false);
+    setSelectedAcademicYear(tempSelectedAcademicYear);
+
+    // Navigate to the selected academic year's profile page
+    router.push(`/student/${tempSelectedAcademicYear}/${grade}/${id}/profile`);
+  };
+
   // Helper component for section completion indicator
   const SectionCompletionIndicator = ({ percentage }) => {
     const getColorClass = () => {
@@ -569,6 +656,54 @@ const page = () => {
   return (
     <Container>
       <div className="py-10 flex flex-col gap-8">
+        {/* Academic Year Change Dialog */}
+        <AlertDialog
+          open={showAcademicYearDialog}
+          onOpenChange={setShowAcademicYearDialog}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Create Profile for New Academic Year
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                You are about to create a new profile for academic year{" "}
+                {tempSelectedAcademicYear}. How would you like to set up this
+                new profile?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <div className="mt-4 space-y-4">
+              <div
+                className="border rounded-md p-4 cursor-pointer hover:bg-slate-50"
+                onClick={() => handleProfileCreationModeSelect("upgrade")}
+              >
+                <h3 className="font-semibold text-lg">Upgrade your profile</h3>
+                <p className="text-sm text-gray-600">
+                  Copy your existing profile information to the new academic
+                  year and then update it.
+                </p>
+              </div>
+
+              <div
+                className="border rounded-md p-4 cursor-pointer hover:bg-slate-50"
+                onClick={() => handleProfileCreationModeSelect("new")}
+              >
+                <h3 className="font-semibold text-lg">Create a new profile</h3>
+                <p className="text-sm text-gray-600">
+                  Start with a fresh profile for the new academic year. Only
+                  your basic personal information will be retained, but all
+                  other data including fees information will be reset.
+                </p>
+              </div>
+            </div>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <div className="flex justify-between items-center">
           <Link
             href={`/student/${pAy}/${pGrade}/${id}`}
@@ -576,11 +711,33 @@ const page = () => {
           >
             <ArrowLeft size={16} /> Go Back
           </Link>
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-medium">Overall Completion:</span>
-            <span className="text-lg font-bold">
-              {profileCompletionData.overall}%
-            </span>
+          <div className="flex items-center gap-4">
+            {academicYears.length > 1 && (
+              <div className="flex items-center gap-2">
+                <Calendar size={16} />
+                <Select
+                  value={selectedAcademicYear}
+                  onValueChange={handleAcademicYearChange}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select Academic Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {academicYears.map((year) => (
+                      <SelectItem key={year} value={year}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-medium">Overall Completion:</span>
+              <span className="text-lg font-bold">
+                {profileCompletionData.overall}%
+              </span>
+            </div>
           </div>
         </div>
 

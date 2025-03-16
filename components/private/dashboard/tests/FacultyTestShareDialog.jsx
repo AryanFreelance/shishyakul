@@ -16,7 +16,6 @@ import {
   GET_STUDENTS,
 } from "@/graphql/queries/students.query";
 import { X, Search, Lock, Unlock, Plus, Loader } from "lucide-react";
-import { useDebouncedCallback } from "use-debounce";
 import { LOCK_SHARE_WITH } from "@/graphql/mutations/testPaper.mutation";
 import { GET_TESTPAPER } from "@/graphql/queries/testPaper.query";
 import toast from "react-hot-toast";

@@ -152,7 +152,7 @@ export const subscribeToMembers = (callback) => {
             if (memberData.roles?.Faculty && memberData.uid) {
                 try {
                     const facultyRef = doc(db, "faculties", memberData.uid);
-                    const facultySnap = await facultyRef.get();
+                    const facultySnap = await getDoc(facultyRef);
                     if (facultySnap.exists()) {
                         const facultyData = facultySnap.data();
                         facultyAssignments = facultyData.assignedStudents || [];

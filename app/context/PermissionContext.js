@@ -5,6 +5,7 @@ import { auth, db } from '@/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import { hasPageAccess } from '@/utils/faculty-permissions';
 
 const PermissionContext = createContext();
 
@@ -17,12 +18,10 @@ export const PermissionProvider = ({ children }) => {
         isAdmin: false,
         isMember: false,
         roles: {
-            Attendance: false,
-            Tests: false,
+            Students: false,
             Fees: false,
-            ManageStudents: false,
             Content: false,
-            Members: false,
+            Birthdays: false,
             Faculty: false
         },
         facultyAssignments: []
@@ -42,12 +41,10 @@ export const PermissionProvider = ({ children }) => {
                         isAdmin: true,
                         isMember: true,
                         roles: {
-                            Attendance: true,
-                            Tests: true,
+                            Students: true,
                             Fees: true,
-                            ManageStudents: true,
                             Content: true,
-                            Members: true,
+                            Birthdays: true,
                             Faculty: true
                         },
                         facultyAssignments: [] // Admin can see all students, no need for assignments
@@ -82,12 +79,10 @@ export const PermissionProvider = ({ children }) => {
                             isAdmin: false,
                             isMember: true,
                             roles: {
-                                Attendance: memberData.roles?.Attendance || false,
-                                Tests: memberData.roles?.Tests || false,
+                                Students: memberData.roles?.Students || false,
                                 Fees: memberData.roles?.Fees || false,
-                                ManageStudents: memberData.roles?.Students || false,
                                 Content: memberData.roles?.Content || false,
-                                Members: memberData.roles?.Members || false,
+                                Birthdays: memberData.roles?.Birthdays || false,
                                 Faculty: memberData.roles?.Faculty || false
                             },
                             facultyAssignments
@@ -98,12 +93,10 @@ export const PermissionProvider = ({ children }) => {
                             isAdmin: false,
                             isMember: false,
                             roles: {
-                                Attendance: false,
-                                Tests: false,
+                                Students: false,
                                 Fees: false,
-                                ManageStudents: false,
                                 Content: false,
-                                Members: false,
+                                Birthdays: false,
                                 Faculty: false
                             },
                             facultyAssignments: []
@@ -116,12 +109,10 @@ export const PermissionProvider = ({ children }) => {
                         isAdmin: false,
                         isMember: false,
                         roles: {
-                            Attendance: false,
-                            Tests: false,
+                            Students: false,
                             Fees: false,
-                            ManageStudents: false,
                             Content: false,
-                            Members: false,
+                            Birthdays: false,
                             Faculty: false
                         },
                         facultyAssignments: []
@@ -133,12 +124,10 @@ export const PermissionProvider = ({ children }) => {
                     isAdmin: false,
                     isMember: false,
                     roles: {
-                        Attendance: false,
-                        Tests: false,
+                        Students: false,
                         Fees: false,
-                        ManageStudents: false,
                         Content: false,
-                        Members: false,
+                        Birthdays: false,
                         Faculty: false
                     },
                     facultyAssignments: []
@@ -156,6 +145,12 @@ export const PermissionProvider = ({ children }) => {
         if (permissions.isAdmin || user?.email === "admin@shishyakul.in") return true;
         if (!permissions.isMember) return false;
 
+        // For page permissions, use our utility function
+        if (['students', 'fees', 'content', 'birthdays', 'tests', 'attendance'].includes(permission.toLowerCase())) {
+            return hasPageAccess({ roles: permissions.roles, facultyAssignments: permissions.facultyAssignments }, permission.toLowerCase());
+        }
+
+        // For direct role checks (legacy approach)
         return permissions.roles[permission] || false;
     };
 

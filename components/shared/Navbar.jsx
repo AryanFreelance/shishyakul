@@ -10,12 +10,20 @@ import {
   SheetHeader,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { MenuIcon } from "lucide-react";
+import { MenuIcon, UserCircle } from "lucide-react";
 import { signOut, getAuth } from "firebase/auth";
 import { auth, db } from "@/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { doc, getDoc } from "firebase/firestore";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = ({ navLinks, isHome }) => {
   const [stickyTopClass, setStickyTopClass] = useState(false);
@@ -195,14 +203,55 @@ const Navbar = ({ navLinks, isHome }) => {
           </div>
         )}
         {!isHome && (
-          <div>
-            <Button
+          <div className="flex items-center gap-4">
+            {userEmail && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="p-0 h-10 w-10 rounded-full"
+                  >
+                    <UserCircle className="h-8 w-8" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1.5 text-sm">
+                    <div className="font-medium mb-1">Email:</div>
+                    <div className="text-muted-foreground break-all">
+                      {userEmail}
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1.5 text-sm">
+                    <div className="font-medium mb-1">Role:</div>
+                    <div className="text-muted-foreground">
+                      {isAdmin
+                        ? "Admin"
+                        : Object.entries(userRoles)
+                            .filter(([_, value]) => value)
+                            .map(([role]) => role)
+                            .join(", ") || "Student"}
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="cursor-pointer text-red-500"
+                    onClick={signoutHandler}
+                  >
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            {/* <Button
               className="text-[16px] filled-button"
               variant="navBtn"
               onClick={signoutHandler}
             >
               Logout
-            </Button>
+            </Button> */}
           </div>
         )}
       </div>

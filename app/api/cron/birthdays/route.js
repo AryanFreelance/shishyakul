@@ -54,9 +54,10 @@ export async function GET(request) {
         }
 
         console.log(`Found ${todaysBirthdays.length} birthdays today`);
+        console.log("TODAYS BIRTHDAYS", todaysBirthdays)
 
         // Send email notification with the list of birthday students
-        const emailResponse = await fetch(`${"https://shishyakul.in"}/api/birthday`, {
+        const emailResponse = await fetch(`${"http://localhost:3000"}/api/birthday`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -65,6 +66,7 @@ export async function GET(request) {
                 birthdayStudents: todaysBirthdays,
             }),
         });
+        console.log("EMAIL RESPONSE STATUS:", emailResponse.status);
 
         if (!emailResponse.ok) {
             const errorText = await emailResponse.text();
@@ -74,6 +76,15 @@ export async function GET(request) {
                 message: "Failed to send birthday notifications",
                 error: errorText
             });
+        }
+
+        // Try to get response JSON
+        let emailResult;
+        try {
+            emailResult = await emailResponse.json();
+            console.log("Email sending result:", emailResult);
+        } catch (e) {
+            console.log("Could not parse email response as JSON:", e.message);
         }
 
         // Update notification status for each student

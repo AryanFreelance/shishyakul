@@ -35,12 +35,10 @@ export function MemberDialog({
     email: "",
     phone: "",
     roles: {
-      Attendance: false,
-      Tests: false,
-      Fees: false,
       Students: false,
+      Fees: false,
       Content: false,
-      Members: false,
+      Birthdays: false,
       Faculty: false,
     },
     facultyAssignments: [],
@@ -73,12 +71,10 @@ export function MemberDialog({
         email: member.email || "",
         phone: member.phone || "",
         roles: {
-          Attendance: member.roles?.Attendance || false,
-          Tests: member.roles?.Tests || false,
-          Fees: member.roles?.Fees || false,
           Students: member.roles?.Students || false,
+          Fees: member.roles?.Fees || false,
           Content: member.roles?.Content || false,
-          Members: member.roles?.Members || false,
+          Birthdays: member.roles?.Birthdays || false,
           Faculty: member.roles?.Faculty || false,
         },
         facultyAssignments: Array.isArray(member.facultyAssignments)
@@ -93,12 +89,10 @@ export function MemberDialog({
         email: "",
         phone: "",
         roles: {
-          Attendance: false,
-          Tests: false,
-          Fees: false,
           Students: false,
+          Fees: false,
           Content: false,
-          Members: false,
+          Birthdays: false,
           Faculty: false,
         },
         facultyAssignments: [],
@@ -272,12 +266,10 @@ export function MemberDialog({
               <div className="sm:col-span-3 space-y-2">
                 <CheckboxGroup
                   roles={[
-                    "Attendance",
-                    "Tests",
-                    "Fees",
                     "Students",
+                    "Fees",
                     "Content",
-                    "Members",
+                    "Birthdays",
                     "Faculty",
                   ]}
                   selectedRoles={formData.roles}

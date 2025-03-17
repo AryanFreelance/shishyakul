@@ -5,8 +5,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request) {
     try {
+        console.log("BDAY")
         const { birthdayStudents } = await request.json();
         const currentDate = new Date();
+        console.log("BIRTHDAY STUDENTS", birthdayStudents)
 
         const { error } = await resend.emails.send({
             from: "Shishyakul <birthday@shishyakul.in>",
@@ -18,10 +20,14 @@ export async function POST(request) {
             }),
         });
 
+        console.log("ERROR", error)
+
         if (error) {
             console.error("Error sending birthday notifications:", error);
             return NextResponse.json({ error, status: 500 });
         }
+
+        console.log("SUCCESS")
 
         return NextResponse.json({
             status: 200,

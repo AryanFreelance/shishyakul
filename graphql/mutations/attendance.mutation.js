@@ -26,6 +26,7 @@ export const ATTENDANCE_HANDLER = gql`
     $date: String!
     $present: [ID]!
     $absent: [ID]!
+    $facultyId: ID
   ) {
     attendanceHandler(
       ay: $ay
@@ -34,13 +35,14 @@ export const ATTENDANCE_HANDLER = gql`
       date: $date
       present: $present
       absent: $absent
+      facultyId: $facultyId
     )
   }
 `;
 
 // Update Attendance
 export const UPDATE_ATTENDANCE = gql`
-  mutation UpdateAttendance($present: [ID]!, $absent: [ID]!, $timestamp: ID!) {
-    updateAttendance(timestamp: $timestamp, present: $present, absent: $absent)
+  mutation UpdateAttendance($present: [ID]!, $absent: [ID]!, $timestamp: ID!, $facultyId: ID) {
+    updateAttendance(timestamp: $timestamp, present: $present, absent: $absent, facultyId: $facultyId)
   }
 `;

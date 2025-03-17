@@ -171,6 +171,7 @@ const FacultyTestAttendancePage = () => {
           date: selectedDate,
           present: attendance.present,
           absent: attendance.absent,
+          facultyId: isAdmin ? null : user?.uid,
         },
       });
     } catch (error) {

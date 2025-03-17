@@ -22,10 +22,11 @@ import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { auth } from "@/firebase";
+import { auth, db } from "@/firebase";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import DevelopmentMode from "@/components/shared/DevelopmentMode";
+import { doc, getDoc } from "firebase/firestore";
 
 const Page = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -38,14 +39,33 @@ const Page = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         const userid = user.uid;
         setUid(userid);
         setAuthStatus(true);
+
+        // Admin check
         if (user.email === "admin@shishyakul.in") {
           router.push("/dashboard");
-        } else {
+          return;
+        }
+
+        // Check if user is a member
+        try {
+          const memberRef = doc(db, "members", user.email);
+          const memberDoc = await getDoc(memberRef);
+
+          if (memberDoc.exists()) {
+            // User is a member, redirect to dashboard
+            router.push("/dashboard");
+          } else {
+            // User is a student, redirect to student page
+            router.push(`/student/user/${userid}`);
+          }
+        } catch (error) {
+          console.error("Error checking member status:", error);
+          // Default to student page if error
           router.push(`/student/user/${userid}`);
         }
       } else {
@@ -88,15 +108,38 @@ const Page = () => {
   const loginHandler = async (e) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password).then((res) => {
-        if (email === "admin@shishyakul.in") {
-          router.push("/dashboard");
-        } else {
-          // router.push(`/student/${uid}`);
+      await signInWithEmailAndPassword(auth, email, password).then(
+        async (res) => {
+          const user = res.user;
+
+          // Admin check
+          if (user.email === "admin@shishyakul.in") {
+            router.push("/dashboard");
+            toast.success("User logged in successfully");
+            return;
+          }
+
+          // Check if user is a member
+          try {
+            const memberRef = doc(db, "members", user.email);
+            const memberDoc = await getDoc(memberRef);
+
+            if (memberDoc.exists()) {
+              // User is a member, redirect to dashboard
+              router.push("/dashboard");
+            } else {
+              // User is a student, redirect to student page
+              router.push(`/student/user/${user.uid}`);
+            }
+            toast.success("User logged in successfully");
+          } catch (error) {
+            console.error("Error checking member status:", error);
+            // Default to student page if error
+            router.push(`/student/user/${user.uid}`);
+            toast.success("User logged in successfully");
+          }
         }
-        toast.success("User logged in successfully");
-        // console.log("RES", res, email, uid);
-      });
+      );
     } catch (error) {
       // console.log(error.code, error.message);
       const errorMessage =

@@ -167,8 +167,8 @@ export const GET_STUDENT_PROFILE = gql`
 
 // Get Students for Attendance Marking
 export const GET_STUDENTS_FOR_ATTENDANCE = gql`
-  query GStudents($ay: String, $grade: String) {
-    gStudents(ay: $ay, grade: $grade) {
+  query GStudents($ay: String, $grade: String, $facultyId: ID) {
+    gStudents(ay: $ay, grade: $grade, facultyId: $facultyId) {
       userId
       firstname
       middlename

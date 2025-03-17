@@ -54,12 +54,10 @@ export function MembersList({ members, onEdit, onDelete, onUpdateRoles }) {
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {[
-                      "Attendance",
-                      "Tests",
-                      "Fees",
                       "Students",
+                      "Fees",
                       "Content",
-                      "Members",
+                      "Birthdays",
                       "Faculty",
                     ].map((role) =>
                       member.roles && member.roles[role] ? (
@@ -146,27 +144,20 @@ export function MembersList({ members, onEdit, onDelete, onUpdateRoles }) {
               <div className="mt-3">
                 <p className="text-xs font-medium mb-1">Roles:</p>
                 <div className="flex flex-wrap gap-1">
-                  {[
-                    "Attendance",
-                    "Tests",
-                    "Fees",
-                    "Students",
-                    "Content",
-                    "Members",
-                    "Faculty",
-                  ].map((role) =>
-                    member.roles && member.roles[role] ? (
-                      <span
-                        key={`${member.id}-${role}`}
-                        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
-                          role === "Faculty"
-                            ? "bg-blue-100 text-blue-800 border-blue-200"
-                            : ""
-                        }`}
-                      >
-                        {role}
-                      </span>
-                    ) : null
+                  {["Students", "Fees", "Content", "Birthdays", "Faculty"].map(
+                    (role) =>
+                      member.roles && member.roles[role] ? (
+                        <span
+                          key={`${member.id}-${role}`}
+                          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                            role === "Faculty"
+                              ? "bg-blue-100 text-blue-800 border-blue-200"
+                              : ""
+                          }`}
+                        >
+                          {role}
+                        </span>
+                      ) : null
                   )}
                 </div>
               </div>

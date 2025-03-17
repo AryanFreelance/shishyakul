@@ -15,7 +15,22 @@ const ProtectedRoute = ({ children, requiredPermission }) => {
     );
   }
 
-  if (!hasPermission(requiredPermission)) {
+  // Convert old permission names to new ones if necessary
+  let normalizedPermission = requiredPermission;
+  if (requiredPermission === "ManageStudents") {
+    normalizedPermission = "Students";
+  } else if (
+    requiredPermission === "Attendance" ||
+    requiredPermission === "Tests"
+  ) {
+    // Faculty can access Tests and Attendance pages
+    normalizedPermission = requiredPermission.toLowerCase();
+  } else if (requiredPermission === "Members") {
+    // Only Content role can access Members page now
+    normalizedPermission = "Content";
+  }
+
+  if (!hasPermission(normalizedPermission)) {
     return <InsufficientPermission />;
   }
 

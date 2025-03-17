@@ -113,12 +113,14 @@ export const MARK_TESTPAPER_ATTENDANCE = gql`
     $date: String
     $present: [ID]
     $absent: [ID]
+    $facultyId: ID
   ) {
     testAttendanceHandler(
       id: $id
       date: $date
       present: $present
       absent: $absent
+      facultyId: $facultyId
     )
   }
 `;

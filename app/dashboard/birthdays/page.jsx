@@ -168,7 +168,7 @@ const BirthdaysPage = () => {
 
   // Navigate to student profile - UPDATED URL FORMAT
   const handleStudentClick = (userId, ay, grade) => {
-    router.push(`/students/${ay}/${grade}/${userId}`);
+    router.push(`/student/${ay}/${grade}/${userId}`);
   };
 
   // When academic year changes, reload data for the active tab

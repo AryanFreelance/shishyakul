@@ -49,8 +49,17 @@ import {
   GET_ACADEMIC_YEARS,
   GET_STUDENTS_FOR_ATTENDANCE,
 } from "@/graphql/queries/students.query";
+import { usePermission } from "@/app/context/PermissionContext";
 
 const Page = () => {
+  const { permissions, user, getFacultyAssignments } = usePermission();
+  const isFaculty = permissions.roles?.Faculty && !permissions.isAdmin;
+  const facultyId = isFaculty ? user?.uid : null;
+  const facultyAssignments = getFacultyAssignments();
+
+  const [availableAcademicYears, setAvailableAcademicYears] = useState([]);
+  const [availableGrades, setAvailableGrades] = useState([]);
+
   const [present, setPresent] = useState([]);
   const [absent, setAbsent] = useState([]);
   const today = new Date();
@@ -98,7 +107,11 @@ const Page = () => {
   const [fetchStudents, { data: studentsData, loading: studDataLoading }] =
     useLazyQuery(GET_STUDENTS_FOR_ATTENDANCE, {
       fetchPolicy: "network-only",
-      variables: { ay: searchParameters.ay, grade: searchParameters.grade },
+      variables: {
+        ay: searchParameters.ay,
+        grade: searchParameters.grade,
+        facultyId: facultyId,
+      },
       onCompleted: (data) => {
         setStudents(data?.gStudents || []);
         // console.log("DATA", data);
@@ -157,32 +170,73 @@ const Page = () => {
     // console.log("STUDENTS", studentsData?.gStudents);
   }, [studentsData, studDataLoading]);
 
-  // Update the formattedDate whenever the date changes
+  // Fetch students when search parameters change
+  useEffect(() => {
+    if (
+      searchParameters.ay !== "select-ay" &&
+      searchParameters.grade !== "select-grade"
+    ) {
+      fetchStudents({
+        variables: {
+          ay: searchParameters.ay,
+          grade: searchParameters.grade,
+          facultyId: facultyId,
+        },
+      });
+      // Save parameters to session storage
+      sessionStorage.setItem("a-ay", searchParameters.ay);
+      sessionStorage.setItem("a-grade", searchParameters.grade);
+    }
+  }, [searchParameters.ay, searchParameters.grade, facultyId, fetchStudents]);
+
+  // Set up formatted date on load
   useEffect(() => {
     const sDate = date && date.toString().split(" ");
-    const formattedDate =
-      date && `${sDate[2]}-${getMonthNumber(sDate[1])}-${sDate[3]}`;
-    setFormattedDate(date ? formattedDate : "(select a date)");
-    if (formattedDate !== "(select a date)" && formattedDate) {
+    let formattedDateStr;
+
+    if (date) {
+      if (sDate && sDate.length >= 4) {
+        // Format from Date object string
+        formattedDateStr = `${sDate[2]}-${getMonthNumber(sDate[1])}-${
+          sDate[3]
+        }`;
+      } else {
+        // Fallback to manual formatting
+        const day = date.getDate() < 10 ? "0" + date.getDate() : date.getDate();
+        const month =
+          date.getMonth() + 1 < 10
+            ? "0" + (date.getMonth() + 1)
+            : date.getMonth() + 1;
+        const year = date.getFullYear();
+        formattedDateStr = `${day}-${month}-${year}`;
+      }
+    } else {
+      formattedDateStr = "(select a date)";
+    }
+
+    setFormattedDate(formattedDateStr);
+
+    // Fetch attendance data if parameters are set and date is valid
+    if (
+      formattedDateStr !== "(select a date)" &&
+      searchParameters.ay !== "select-ay" &&
+      searchParameters.grade !== "select-grade"
+    ) {
       fetchAttendance({
         variables: {
           ay: searchParameters.ay,
           grade: searchParameters.grade,
-          timestamp: formattedDate.split("-").reverse().join("-"),
+          timestamp: formattedDateStr.split("-").reverse().join("-"),
         },
       });
     }
-    // Set the batch value to select-batch
+
+    // Reset batch selection when date changes
     if (selectedBatch && selectedBatch !== "select-batch") {
       setSelectedBatch("select-batch");
+      sessionStorage.setItem("a-batch", "select-batch");
     }
-  }, [date]);
-
-  // Update the localStorage whenever the search parameters change
-  useEffect(() => {
-    sessionStorage.setItem("a-grade", searchParameters.grade);
-    sessionStorage.setItem("a-ay", searchParameters.ay);
-  }, [searchParameters]);
+  }, [date, searchParameters.ay, searchParameters.grade, fetchAttendance]);
 
   useEffect(() => {
     sessionStorage.setItem("a-batch", selectedBatch);
@@ -260,9 +314,6 @@ const Page = () => {
     }
   }, [studentName, students]);
 
-  // Use filteredStudents for rendering instead of students directly
-  const displayStudents = studentName ? filteredStudents : students;
-
   // Update the present and absent arrays whenever the attendanceData changes
   useEffect(() => {
     if (attendanceData?.attendance) {
@@ -270,9 +321,9 @@ const Page = () => {
       setAbsent(attendanceData.attendance.absent || []);
 
       // Only try to set absentEmails if students array is populated
-      if (displayStudents && displayStudents.length > 0) {
+      if (students && students.length > 0) {
         setAbsentEmails(
-          displayStudents
+          students
             .filter((student) =>
               attendanceData.attendance.absent?.includes(student.userId)
             )
@@ -286,7 +337,7 @@ const Page = () => {
       setAbsent([]);
       setAbsentEmails([]);
     }
-  }, [attendanceData, displayStudents]);
+  }, [attendanceData, students]);
 
   useEffect(() => {
     if (studentsData?.gStudents?.length > 0) {
@@ -325,6 +376,7 @@ const Page = () => {
         present: present,
         absent: absent,
         date: formattedDate,
+        facultyId: facultyId,
       },
     });
     toast.dismiss(toastId);
@@ -384,6 +436,7 @@ const Page = () => {
         variables: {
           ay: searchParameters.ay,
           grade: searchParameters.grade,
+          facultyId: facultyId,
         },
         onCompleted: (data) => {
           setStudents(data.gStudents || []);
@@ -399,6 +452,76 @@ const Page = () => {
       toast.error("Please select Academic Year and Grade first!");
     }
   };
+
+  // Filter academic years and grades based on faculty assignments
+  useEffect(() => {
+    if (isFaculty && facultyAssignments.length > 0) {
+      // Extract unique academic years from faculty assignments
+      const uniqueAYs = [
+        ...new Set(
+          facultyAssignments.map((assignment) => assignment.academicYear)
+        ),
+      ];
+      setAvailableAcademicYears(uniqueAYs);
+
+      // Filter grades based on selected academic year
+      if (searchParameters.ay !== "select-ay") {
+        const gradesForSelectedAY = facultyAssignments
+          .filter(
+            (assignment) => assignment.academicYear === searchParameters.ay
+          )
+          .map((assignment) => assignment.grade)
+          .filter((grade) => grade && grade !== "all");
+
+        setAvailableGrades([...new Set(gradesForSelectedAY)]);
+      } else {
+        setAvailableGrades([]);
+      }
+    }
+  }, [isFaculty, facultyAssignments, searchParameters.ay]);
+
+  // Update grade options when academic year changes
+  useEffect(() => {
+    if (isFaculty && searchParameters.ay !== "select-ay") {
+      const gradesForSelectedAY = facultyAssignments
+        .filter((assignment) => assignment.academicYear === searchParameters.ay)
+        .map((assignment) => assignment.grade)
+        .filter((grade) => grade && grade !== "all");
+
+      setAvailableGrades([...new Set(gradesForSelectedAY)]);
+
+      // Reset grade if current selection is not in available grades
+      if (
+        searchParameters.grade !== "select-grade" &&
+        !gradesForSelectedAY.includes(searchParameters.grade)
+      ) {
+        setSearchParameters((prev) => ({ ...prev, grade: "select-grade" }));
+      }
+    }
+  }, [searchParameters.ay, isFaculty, facultyAssignments]);
+
+  // Filter students based on batch selection
+  useEffect(() => {
+    if (selectedBatch !== "select-batch" && students.length > 0) {
+      const batchFilteredStudents = students.filter(
+        (student) => student.batch === selectedBatch
+      );
+      setFilteredStudents(batchFilteredStudents);
+    } else {
+      setFilteredStudents(students);
+    }
+  }, [selectedBatch, students]);
+
+  // Compute final displayed students based on filters
+  const displayStudents = studentName
+    ? filteredStudents.filter((student) =>
+        `${student?.firstname || ""} ${student?.middlename || ""} ${
+          student?.lastname || ""
+        }`
+          .toLowerCase()
+          .includes(studentName.toLowerCase())
+      )
+    : filteredStudents;
 
   return (
     <Container>
@@ -493,6 +616,7 @@ const Page = () => {
                   <Select
                     onValueChange={(value) => {
                       setSearchParameters({ ...searchParameters, ay: value });
+                      sessionStorage.setItem("a-ay", value);
                     }}
                     value={searchParameters.ay}
                     defaultValue="select-ay"
@@ -504,7 +628,15 @@ const Page = () => {
                       <SelectItem value="select-ay">Select A.Y.</SelectItem>
                       {ayLoading ? (
                         <SelectItem value="loading">Loading...</SelectItem>
+                      ) : isFaculty && facultyAssignments.length > 0 ? (
+                        // Show only assigned academic years for faculty
+                        availableAcademicYears.map((acay, index) => (
+                          <SelectItem key={index} value={acay}>
+                            {acay}
+                          </SelectItem>
+                        ))
                       ) : (
+                        // Show all academic years for admin
                         Array.from(ay?.academicYears)?.map((acay, index) => (
                           <SelectItem key={index} value={acay}>
                             {acay}
@@ -517,31 +649,48 @@ const Page = () => {
                 {/* Standard Dropdown */}
                 <div className="w-full md:w-[30%]">
                   <Select
-                    onValueChange={(value) =>
-                      setSearchParameters({ ...searchParameters, grade: value })
-                    }
+                    onValueChange={(value) => {
+                      setSearchParameters({
+                        ...searchParameters,
+                        grade: value,
+                      });
+                      sessionStorage.setItem("a-grade", value);
+                    }}
                     value={searchParameters.grade}
                     defaultValue="select-grade"
+                    disabled={searchParameters.ay === "select-ay"}
                   >
                     <SelectTrigger className="px-4 text-secondary barlow-regular rounded-full md:rounded-none border-main border-2 md:border-l-slate-600 md:border-r-slate-600 outline-none focus:border-none focus-outline-none bg-transparent w-full py-6">
                       <SelectValue placeholder="Grade" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="select-grade">Select Grade</SelectItem>
-                      {grades.map((grd, index) => (
-                        <SelectItem key={index} value={grd || index}>
-                          {grd}
-                        </SelectItem>
-                      ))}
+                      {isFaculty && facultyAssignments.length > 0
+                        ? // Show only assigned grades for faculty for the selected academic year
+                          availableGrades.map((grade, index) => (
+                            <SelectItem key={index} value={grade}>
+                              {grade}
+                            </SelectItem>
+                          ))
+                        : // Show all grades for admin
+                          grades.map((grd, index) => (
+                            <SelectItem key={index} value={grd || index}>
+                              {grd}
+                            </SelectItem>
+                          ))}
                     </SelectContent>
                   </Select>
                 </div>
                 {/* Batch Dropdown */}
                 <div className="w-full md:w-[30%]">
                   <Select
-                    onValueChange={(value) => setSelectedBatch(value)}
+                    onValueChange={(value) => {
+                      setSelectedBatch(value);
+                      sessionStorage.setItem("a-batch", value);
+                    }}
                     value={selectedBatch}
                     defaultValue="select-batch"
+                    disabled={searchParameters.grade === "select-grade"}
                   >
                     <SelectTrigger className="px-4 text-secondary barlow-regular rounded-full md:rounded-none md:rounded-r-full border-main border-2 md:border-l-slate-600 outline-none focus:border-none focus-outline-none bg-transparent w-full py-6">
                       <SelectValue placeholder="Batch" />

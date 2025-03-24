@@ -14,7 +14,9 @@ import toast from "react-hot-toast";
 import { Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
+import { useMutation } from "@apollo/client";
+import { CREATE_TEST } from "@/graphql/mutations/testPaper.mutation";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +46,7 @@ const page = () => {
   // Move these state declarations to the top before they're used
   const [userEmail, setUserEmail] = useState("");
   const [userName, setUserName] = useState("");
+  const [facultyId, setFacultyId] = useState("");
   const [isFaculty, setIsFaculty] = useState(false);
 
   const today = new Date();
@@ -60,26 +63,59 @@ const page = () => {
   // Queries
   // useSuspenseQuery(GET_TESTPAPERS);
 
-  // Get current user information
+  // Create test mutation
+  const [createTest, { loading: mutationLoading }] = useMutation(CREATE_TEST, {
+    onCompleted: (data) => {
+      toast.success("Test Paper Added Successfully!");
+      setIsFormLoading(false);
+
+      // Redirect to the appropriate page based on user role
+      if (isFaculty && userEmail !== "admin@shishyakul.in") {
+        router.push("/dashboard/tests/faculty");
+      } else {
+        router.push("/dashboard/tests");
+      }
+    },
+    onError: (error) => {
+      toast.error("Failed to create test paper: " + error.message);
+      setIsFormLoading(false);
+    },
+  });
+
+  // Effect to get user info
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
         setUserEmail(user.email);
-        console.log("User email set:", user.email);
 
-        // Get user name and role from members collection
-        const memberDoc = await getDoc(doc(db, "members", user.email));
-        if (memberDoc.exists()) {
-          setUserName(memberDoc.data().name || "");
-          // Check if user has Faculty role
-          setIsFaculty(memberDoc.data().roles?.Faculty || false);
+        try {
+          // Get user info from members collection
+          const memberRef = doc(db, "members", user.email);
+          const memberDoc = await getDoc(memberRef);
+
+          if (memberDoc.exists()) {
+            const memberData = memberDoc.data();
+            setUserName(memberData.name || "");
+            setFacultyId(memberData.uid || "");
+
+            // Check if user has Faculty role
+            const hasRoleFaculty = memberData.roles?.Faculty || false;
+            setIsFaculty(hasRoleFaculty);
+          }
+
+          setLoading(false);
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          setLoading(false);
         }
+      } else {
+        router.push("/login");
       }
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     // console.log(isFormLoading);
@@ -128,7 +164,7 @@ const page = () => {
   const testPaperAddHandler = async (e) => {
     e.preventDefault();
     setIsFormLoading(true);
-    const toastId = toast.loading("Uploading Test Paper...");
+    const toastId = toast.loading("Adding Test Paper...");
 
     // Log the current email state for debugging
     console.log("Current user email:", userEmail);
@@ -167,74 +203,49 @@ const page = () => {
         const snapshot = await uploadBytes(storageRef, formData.question_paper);
         const downloadUrl = await getDownloadURL(storageRef);
 
-        console.log("Creating test paper with email:", userEmail);
+        // Debug info
+        console.log("Creating test paper with:", {
+          email: userEmail,
+          name: userName,
+          isFaculty,
+          facultyId,
+          title: formData.test_name,
+        });
 
-        // Ensure valid data for all fields
-        const testData = {
-          id: fileid,
-          title: formData.test_name.trim(),
-          subject: formData.subject.trim(),
-          date: formData.date,
-          totalMarks: parseInt(formData.total_marks) || 0, // Ensure valid integer
-          url: downloadUrl,
-          createdBy: userEmail.trim(),
-          creatorName: userName.trim() || "Faculty", // Provide default if empty
-          createdAt: new Date().toISOString(),
-          published: false, // Draft by default
-          sharedWith: [], // Empty shared list by default
-        };
+        // Call the createTest mutation
+        await createTest({
+          variables: {
+            id: fileid,
+            title: formData.test_name,
+            subject: formData.subject,
+            date: formData.date,
+            totalMarks: parseInt(formData.total_marks),
+            url: downloadUrl,
+            createdBy: userEmail,
+            creatorName: userName,
+            facultyId: isFaculty ? facultyId : null,
+          },
+        });
 
-        // Validate required fields again
-        if (
-          !testData.id ||
-          !testData.title ||
-          !testData.subject ||
-          !testData.date ||
-          !testData.url
-        ) {
-          console.error("Missing required fields:", testData);
-          toast.error("Missing required fields for test paper creation", {
-            id: toastId,
-          });
-          setIsFormLoading(false);
-          return;
-        }
-
-        console.log("Test paper data:", testData);
-
-        try {
-          // Save to the testPapersDraft collection
-          await setDoc(doc(db, "testPapersDraft", fileid), testData);
-
-          console.log(
-            "Test paper created successfully, redirecting to appropriate page"
-          );
-
-          toast.success("Test Paper Added Successfully!", {
-            id: toastId,
-          });
-
-          // Redirect to the appropriate page based on user role
-          if (isFaculty && userEmail !== "admin@shishyakul.in") {
-            router.push("/dashboard/tests/faculty");
-          } else {
-            router.push("/dashboard/tests");
-          }
-        } catch (error) {
-          console.error("Exception caught during test paper creation:", error);
-          toast.error(
-            "Failed to create test paper: " +
-              (error.message || "Unknown error"),
-            {
-              id: toastId,
-            }
-          );
-          setIsFormLoading(false);
-        }
+        toast.success("Test Paper Added Successfully!", {
+          id: toastId,
+        });
       } catch (error) {
-        console.error("Error uploading file:", error);
+        console.error("Error creating test paper:", error);
+
+        // More detailed error logging
+        if (error.graphQLErrors) {
+          error.graphQLErrors.forEach((gqlError) => {
+            console.error("GraphQL Error:", gqlError);
+          });
+        }
+
+        if (error.networkError) {
+          console.error("Network Error:", error.networkError);
+        }
+
         toast.error(
-          "Failed to upload file: " + (error.message || "Unknown error"),
+          "Failed to create test paper: " + (error.message || "Unknown error"),
           {
             id: toastId,
           }

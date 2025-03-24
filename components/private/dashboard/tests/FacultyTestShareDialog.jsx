@@ -86,6 +86,11 @@ const FacultyTestShareDialog = ({
   const [searchStudents, { loading: studentsLoading }] = useLazyQuery(
     GET_STUDENTS,
     {
+      variables: {
+        ay: selectedAcademicYear,
+        grade: selectedGrade,
+        batch: selectedBatch,
+      },
       onCompleted: (data) => {
         if (data?.students) {
           // Filter students based on faculty assignments
@@ -99,30 +104,22 @@ const FacultyTestShareDialog = ({
 
           // Filter by search term
           if (searchTerm) {
-            filtered = filtered.filter(
-              (student) =>
-                student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                student.email.toLowerCase().includes(searchTerm.toLowerCase())
+            filtered = filtered.filter((student) =>
+              `${student.firstname} ${student.middlename || ""} ${
+                student.lastname
+              }`
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase())
             );
           }
 
-          // Filter by academic year, grade, and batch if selected
-          filtered = filtered.filter((student) => {
-            // Check if student matches any of the faculty's assignments
-            return facultyAssignments.some(
-              (assignment) =>
-                (!selectedAcademicYear ||
-                  student.academicYear === selectedAcademicYear) &&
-                (!selectedGrade || student.grade === selectedGrade) &&
-                (!selectedBatch || student.batch === selectedBatch) &&
-                student.academicYear === assignment.academicYear &&
-                student.grade === assignment.grade &&
-                student.batch === assignment.batch
-            );
-          });
-
           setSearchResults(filtered);
+          setIsSearching(false);
         }
+      },
+      onError: (error) => {
+        console.error("Error searching students:", error);
+        toast.error("Error searching students");
         setIsSearching(false);
       },
       fetchPolicy: "network-only",
@@ -202,7 +199,7 @@ const FacultyTestShareDialog = ({
       setIsSearching(true);
       searchStudents({
         variables: {
-          academicYear: selectedAcademicYear,
+          ay: selectedAcademicYear,
           grade: selectedGrade,
           batch: selectedBatch,
         },
@@ -217,7 +214,7 @@ const FacultyTestShareDialog = ({
       setIsSearching(true);
       searchStudents({
         variables: {
-          academicYear: selectedAcademicYear,
+          ay: selectedAcademicYear,
           grade: selectedGrade,
           batch: selectedBatch,
         },
@@ -225,54 +222,112 @@ const FacultyTestShareDialog = ({
     }
   }, 300);
 
-  // Add student to shared with list
-  const addStudent = (student) => {
-    const isAlreadyShared = sharedWith.some(
-      (share) => share.email === student.email
-    );
-
-    if (!isAlreadyShared) {
-      const newShareInfo = {
-        email: student.email,
-        name: student.name,
-        academicYear: student.academicYear,
-        grade: student.grade,
-        batch: student.batch,
-      };
-
-      setSharedWith([...sharedWith, newShareInfo]);
-    }
+  // Function to handle student search
+  const handleSearch = () => {
+    setIsSearching(true);
+    searchStudents({
+      variables: {
+        ay: selectedAcademicYear,
+        grade: selectedGrade,
+        batch: selectedBatch,
+      },
+    });
   };
 
-  // Add filter (all students matching current filter)
-  const addAllInFilter = () => {
-    const filteredToAdd = searchResults.filter(
-      (student) => !sharedWith.some((share) => share.email === student.email)
+  // Function to check if a student is already shared with
+  const isStudentShared = (student) => {
+    return sharedWith.some(
+      (shared) =>
+        shared.academicYear === selectedAcademicYear &&
+        shared.grade === selectedGrade &&
+        shared.batch === student.batch
     );
+  };
 
-    if (filteredToAdd.length > 0) {
-      const newShareWith = [
+  // Function to add a student to shared list
+  const addStudentToSharedList = (student) => {
+    if (!isStudentShared(student)) {
+      setSharedWith([
         ...sharedWith,
-        ...filteredToAdd.map((student) => ({
-          email: student.email,
-          name: student.name,
-          academicYear: student.academicYear,
-          grade: student.grade,
+        {
+          academicYear: selectedAcademicYear,
+          grade: selectedGrade,
           batch: student.batch,
-        })),
-      ];
-
-      setSharedWith(newShareWith);
+        },
+      ]);
     }
   };
 
-  // Remove student from shared with list
-  const removeStudent = (email) => {
-    const updatedSharedWith = sharedWith.filter(
-      (share) => share.email !== email
+  // Function to remove a student from shared list
+  const removeStudentFromSharedList = (student) => {
+    setSharedWith(
+      sharedWith.filter(
+        (shared) =>
+          !(
+            shared.academicYear === selectedAcademicYear &&
+            shared.grade === selectedGrade &&
+            shared.batch === student.batch
+          )
+      )
     );
-    setSharedWith(updatedSharedWith);
   };
+
+  // Effect to fetch academic years when dialog opens
+  useEffect(() => {
+    if (isDialogOpen) {
+      getAcademicYears();
+    }
+  }, [isDialogOpen, getAcademicYears]);
+
+  // Effect to update grades when academic year changes
+  useEffect(() => {
+    if (selectedAcademicYear) {
+      // Extract unique grades for the selected academic year
+      const gradesForYear = facultyAssignments
+        .filter(
+          (assignment) => assignment.academicYear === selectedAcademicYear
+        )
+        .map((assignment) => assignment.grade)
+        .filter((grade) => grade && grade !== "all");
+
+      setGrades([...new Set(gradesForYear)]);
+      setSelectedGrade("");
+      setBatches([]);
+      setSelectedBatch("");
+    } else {
+      setGrades([]);
+      setSelectedGrade("");
+      setBatches([]);
+      setSelectedBatch("");
+    }
+  }, [selectedAcademicYear, facultyAssignments]);
+
+  // Effect to update batches when grade changes
+  useEffect(() => {
+    if (selectedAcademicYear && selectedGrade) {
+      // Extract unique batches for the selected academic year and grade
+      const batchesForGrade = facultyAssignments
+        .filter(
+          (assignment) =>
+            assignment.academicYear === selectedAcademicYear &&
+            assignment.grade === selectedGrade
+        )
+        .map((assignment) => assignment.batch)
+        .filter(Boolean);
+
+      setBatches([...new Set(batchesForGrade)]);
+      setSelectedBatch("");
+    } else {
+      setBatches([]);
+      setSelectedBatch("");
+    }
+  }, [selectedAcademicYear, selectedGrade, facultyAssignments]);
+
+  // Effect to clear search results when filters change
+  useEffect(() => {
+    setSearchResults([]);
+    setSearchTerm("");
+  }, [selectedAcademicYear, selectedGrade, selectedBatch]);
 
   // Lock/unlock share with
   const toggleLockShareWith = async () => {
@@ -418,7 +473,16 @@ const FacultyTestShareDialog = ({
                       variant="outline"
                       size="sm"
                       className="h-8"
-                      onClick={addAllInFilter}
+                      onClick={() => {
+                        setIsSearching(true);
+                        searchStudents({
+                          variables: {
+                            ay: selectedAcademicYear,
+                            grade: selectedGrade,
+                            batch: selectedBatch,
+                          },
+                        });
+                      }}
                       disabled={lockShareWith}
                     >
                       <Plus className="h-3 w-3 mr-1" />
@@ -440,15 +504,20 @@ const FacultyTestShareDialog = ({
                         variant="ghost"
                         size="sm"
                         className="h-8"
-                        onClick={() => addStudent(student)}
-                        disabled={
-                          lockShareWith ||
-                          sharedWith.some(
-                            (share) => share.email === student.email
-                          )
-                        }
+                        onClick={() => {
+                          if (isStudentShared(student)) {
+                            removeStudentFromSharedList(student);
+                          } else {
+                            addStudentToSharedList(student);
+                          }
+                        }}
+                        disabled={lockShareWith || isStudentShared(student)}
                       >
-                        <Plus className="h-4 w-4" />
+                        {isStudentShared(student) ? (
+                          <X className="h-4 w-4" />
+                        ) : (
+                          <Plus className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   ))}
@@ -499,7 +568,7 @@ const FacultyTestShareDialog = ({
                           variant="ghost"
                           size="sm"
                           className="h-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => removeStudent(share.email)}
+                          onClick={() => removeStudentFromSharedList(share)}
                           disabled={lockShareWith}
                         >
                           <X className="h-4 w-4" />
@@ -548,7 +617,7 @@ const FacultyTestShareDialog = ({
                       variant="ghost"
                       size="sm"
                       className="h-7 text-red-500 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => removeStudent(share.email)}
+                      onClick={() => removeStudentFromSharedList(share)}
                     >
                       <X className="h-3 w-3" />
                     </Button>

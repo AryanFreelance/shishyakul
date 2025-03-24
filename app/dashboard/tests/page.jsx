@@ -1,320 +1,206 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import Container from "@/components/shared/Container";
 import Navbar from "@/components/shared/Navbar";
 import { dashboardNavLinks } from "@/constants";
-import { Button } from "@/components/ui/button";
-import { Circle, CircleCheck, CircleDashed, CircleX, Plus } from "lucide-react";
-import Link from "next/link";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-
-export const dynamic = "force-dynamic";
+import { useRouter } from "next/navigation";
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 import { GET_TESTPAPERS } from "@/graphql/queries/testPaper.query";
-import DevelopmentMode from "@/components/shared/DevelopmentMode";
+import { getAuth } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/firebase";
+import TestPaperCard from "@/components/private/dashboard/tests/TestPaperCard";
+import { Button } from "@/components/ui/button";
+import { PlusCircle, Loader } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import toast from "react-hot-toast";
 
-const page = () => {
-  // if (true) {
-  //   return (
-  //     <>
-  //       <Navbar navLinks={dashboardNavLinks} isHome={false} />
-  //       <DevelopmentMode />
-  //     </>
-  //   );
-  // }
+const TestsPage = () => {
+  const router = useRouter();
+  const [userEmail, setUserEmail] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isFaculty, setIsFaculty] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [facultyId, setFacultyId] = useState("");
 
-  // Queries
-  const { data } = useSuspenseQuery(GET_TESTPAPERS);
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const email = user.email;
+        setUserEmail(email);
+        setIsAdmin(email === "admin@shishyakul.in");
 
-  //if (data) // console.log(data);
-  // Check if the minumum date is less than less than today's date in the data
-  const today = new Date();
-  const todayDate = `${
-    today.getDate() < 10 ? "0" + today.getDate() : today.getDate()
-  }-${
-    today.getMonth() + 1 < 10
-      ? "0" + (today.getMonth() + 1)
-      : today.getMonth() + 1
-  }-${today.getFullYear()}`;
+        // Check for faculty role and get faculty ID
+        const memberDoc = await getDoc(doc(db, "members", email));
+        if (memberDoc.exists()) {
+          const memberData = memberDoc.data();
+          setIsFaculty(memberData.roles?.Faculty || false);
+          setFacultyId(memberData.uid || "");
+          console.log("Faculty data:", {
+            isFaculty: memberData.roles?.Faculty,
+            facultyId: memberData.uid,
+          });
+        }
+
+        setLoading(false);
+      } else {
+        router.push("/login");
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+
+  // Query test papers based on user role
+  const {
+    data,
+    error,
+    loading: queryLoading,
+  } = useSuspenseQuery(GET_TESTPAPERS, {
+    variables: {
+      facultyId: isFaculty ? facultyId : null,
+      isAdmin,
+    },
+    skip: loading || (!facultyId && isFaculty),
+  });
+
+  useEffect(() => {
+    if (data) {
+      console.log("Test papers data:", data);
+    }
+  }, [data]);
+
+  const handleNewTestPaper = () => {
+    router.push("/dashboard/tests/new");
+  };
+
+  if (loading || queryLoading) {
+    return (
+      <Container>
+        <Navbar navLinks={dashboardNavLinks} isHome={false} />
+        <div className="flex justify-center items-center h-[60vh]">
+          <Loader className="h-8 w-8 animate-spin" />
+          <p className="ml-2">Loading...</p>
+        </div>
+      </Container>
+    );
+  }
+
+  if (error) {
+    console.error("Error fetching test papers:", error);
+    toast.error("Error fetching test papers");
+    return (
+      <Container>
+        <Navbar navLinks={dashboardNavLinks} isHome={false} />
+        <div className="py-8">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold">Test Papers</h1>
+            <Button onClick={handleNewTestPaper}>
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Create New Test
+            </Button>
+          </div>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+            Error loading test papers. Please try again later.
+          </div>
+        </div>
+      </Container>
+    );
+  }
+
+  const draftTestPapers = data?.testpapers?.draft || [];
+  const publishedTestPapers = data?.testpapers?.published || [];
+
+  console.log("Processed test papers:", {
+    draftCount: draftTestPapers.length,
+    publishedCount: publishedTestPapers.length,
+  });
 
   return (
     <Container>
       <Navbar navLinks={dashboardNavLinks} isHome={false} />
-      <div className="pb-10">
-        <div className="flex justify-between items-center">
-          <h2 className="subheading text-center">Test Papers</h2>
-        </div>
-        <div className="mt-8">
-          {data?.testpapers?.published.length === 0 && (
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-semibold">No Test Papers Found</h3>
-                <p className="text-sm text-gray-500">
-                  Create a test paper to get started
-                </p>
-              </div>
-            </div>
-          )}
-          <div className="flex flex-col gap-6">
-            {data?.testpapers?.published.map((item, index) => (
-              <div
-                key={index}
-                className="flex flex-col md:flex-row w-full md:justify-between md:items-center bg-secondary text-primary p-4 rounded"
-              >
-                <div className="md:w-[84%]">
-                  <div className="flex items-center gap-4">
-                    {item.date < todayDate.split("-").reverse().join("-") ? (
-                      <CircleCheck className="text-green-300" />
-                    ) : (
-                      <Circle className="text-red-300" />
-                    )}
-                    <div className="flex flex-col gap-1">
-                      <h3 className="smallheading">{item.title}</h3>
-                      {/* Date Format - "21/4/2024, 4:45:02 pm" convert it to "21/04/2024*/}
-                      <span>
-                        Created on -{" "}
-                        {item?.createdAt
-                          .split(",")[0]
-                          .split("/")
-                          .map((item) => {
-                            return item?.length === 1 ? `0${item}` : item;
-                          })
-                          .join("/")}
-                      </span>
-                      <span>
-                        Test On - {item.date.split("-").reverse().join("/")}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex w-full md:w-[16%] justify-end mt-4 md:mt-0 items-center gap-4">
-                  <AlertDialog>
-                    <AlertDialogTrigger>
-                      <Button variant="outline">View</Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>{item.title}</AlertDialogTitle>
-
-                        <AlertDialogDescription>
-                          Created on -{" "}
-                          {item?.createdAt
-                            .split(",")[0]
-                            .split("/")
-                            .map((item) => {
-                              return item?.length === 1 ? `0${item}` : item;
-                            })
-                            .join("/")}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <iframe
-                        src={item.url}
-                        className="w-full rounded"
-                        height="480"
-                        allowFullScreen
-                      ></iframe>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Close</AlertDialogCancel>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-
-                  <Link href={`/dashboard/test/${item.id}0`}>Manage</Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="pb-10">
-        <div className="flex justify-between items-center">
-          <h2 className="subheading">Drafted Papers</h2>
-          <Button asChild>
-            <Link
-              href="/dashboard/tests/add"
-              className="flex gap-2 items-center"
-            >
-              <span className="barlow-regular">Add Test</span> <Plus />
-            </Link>
+      <div className="py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold">Test Papers</h1>
+          <Button onClick={handleNewTestPaper}>
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Create New Test
           </Button>
         </div>
-        <div className="mt-8">
-          {data?.testpapers?.draft.length === 0 && (
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-semibold">No Drafted Papers Found</h3>
-                <p className="text-sm text-gray-500">
-                  Create a test paper to get started
-                </p>
+
+        <Tabs defaultValue="drafts" className="w-full">
+          <TabsList>
+            <TabsTrigger value="drafts">Drafts</TabsTrigger>
+            <TabsTrigger value="published">Published</TabsTrigger>
+          </TabsList>
+
+          {/* Draft Test Papers */}
+          <TabsContent value="drafts" className="mt-6">
+            {draftTestPapers.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {draftTestPapers.map((test) => (
+                  <TestPaperCard
+                    key={test.id}
+                    test={test}
+                    published={false}
+                    createdBy={test.createdBy}
+                    creatorName={test.creatorName}
+                    onEditClick={() =>
+                      router.push(`/dashboard/tests/edit/${test.id}`)
+                    }
+                  />
+                ))}
               </div>
-            </div>
-          )}
-          <div className="flex flex-col gap-6">
-            {data?.testpapers?.draft.map((item, index) => (
-              <div
-                key={index}
-                className="flex flex-col md:flex-row w-full md:justify-between md:items-center bg-secondary text-primary p-4 rounded"
-              >
-                <div className="md:w-[84%]">
-                  <div className="flex items-center gap-4">
-                    {item.date < todayDate.split("-").reverse().join("-") ? (
-                      <CircleX className="text-gray-400" />
-                    ) : (
-                      <CircleDashed className="text-gray-300" />
-                    )}
-                    <div>
-                      <h3 className="smallheading">{item?.title}</h3>
-                      <span>
-                        Created on -{" "}
-                        {item?.createdAt
-                          .split(",")[0]
-                          .split("/")
-                          .map((item) => {
-                            return item?.length === 1 ? `0${item}` : item;
-                          })
-                          .join("/")}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex w-full md:w-[16%] justify-end mt-4 md:mt-0 items-center gap-4">
-                  <AlertDialog>
-                    <AlertDialogTrigger>
-                      <Button variant="outline">View</Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>{item?.title}</AlertDialogTitle>
-
-                        <AlertDialogDescription>
-                          Created on -{" "}
-                          {item?.createdAt
-                            .split(",")[0]
-                            .split("/")
-                            .map((item) => {
-                              return item?.length === 1 ? `0${item}` : item;
-                            })
-                            .join("/")}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <iframe
-                        src={item.url}
-                        className="w-full rounded"
-                        height="480"
-                        allowFullScreen
-                      ></iframe>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Close</AlertDialogCancel>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-
-                  <Link href={`/dashboard/test/${item.id}1`}>Manage</Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="pb-10">
-        <div className="flex justify-between items-center">
-          <h2 className="subheading text-center">Completed Test Papers</h2>
-        </div>
-        <div className="mt-8">
-          {data?.testpapers?.published.length === 0 && (
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-semibold">
-                  No Completed Test Papers Found
+            ) : (
+              <div className="bg-gray-50 border rounded-lg p-8 text-center">
+                <h3 className="text-lg font-medium mb-2">
+                  No draft test papers found
                 </h3>
-                <p className="text-sm text-gray-500">
-                  Create a test paper to get started
+                <p className="text-gray-500 mb-4">
+                  Create a new test paper to get started
+                </p>
+                <Button onClick={handleNewTestPaper}>
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Create New Test
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Published Test Papers */}
+          <TabsContent value="published" className="mt-6">
+            {publishedTestPapers.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {publishedTestPapers.map((test) => (
+                  <TestPaperCard
+                    key={test.id}
+                    test={test}
+                    published={true}
+                    createdBy={test.createdBy}
+                    creatorName={test.creatorName}
+                    onEditClick={() =>
+                      router.push(`/dashboard/tests/edit/${test.id}`)
+                    }
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-50 border rounded-lg p-8 text-center">
+                <h3 className="text-lg font-medium mb-2">
+                  No published test papers found
+                </h3>
+                <p className="text-gray-500">
+                  Publish a draft test paper to make it available to students
                 </p>
               </div>
-            </div>
-          )}
-          <div className="flex flex-col gap-6">
-            {data?.testpapers?.published.map(
-              (item, index) =>
-                item.date < todayDate.split("-").reverse().join("-") && (
-                  <div
-                    key={index}
-                    className="flex flex-col md:flex-row w-full md:justify-between md:items-center bg-secondary text-primary p-4 rounded"
-                  >
-                    <div className="md:w-[84%]">
-                      <div className="flex items-center gap-4">
-                        <CircleCheck className="text-green-300" />
-                        <div className="flex flex-col gap-1">
-                          <h3 className="smallheading">{item.title}</h3>
-                          <span>
-                            Created on -{" "}
-                            {item.createdAt
-                              .split(",")[0]
-                              .split("/")
-                              .map((item) => {
-                                return item.length === 1 ? `0${item}` : item;
-                              })
-                              .join("/")}
-                          </span>
-                          <span>
-                            Test On - {item.date.split("-").reverse().join("/")}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex w-full md:w-[16%] justify-end mt-4 md:mt-0 items-center gap-4">
-                      <AlertDialog>
-                        <AlertDialogTrigger>
-                          <Button variant="outline">View</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>{item?.title}</AlertDialogTitle>
-
-                            <AlertDialogDescription>
-                              Created on -{" "}
-                              {item?.createdAt
-                                .split(",")[0]
-                                .split("/")
-                                .map((item) => {
-                                  return item.length === 1 ? `0${item}` : item;
-                                })
-                                .join("/")}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <iframe
-                            src={item.url}
-                            className="w-full rounded"
-                            height="480"
-                            allowFullScreen
-                          ></iframe>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Close</AlertDialogCancel>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-
-                      <Link href={`/dashboard/test/${item.id}0`}>Manage</Link>
-                    </div>
-                  </div>
-                )
             )}
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </Container>
   );
 };
 
-export default page;
+export default TestsPage;

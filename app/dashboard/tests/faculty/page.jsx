@@ -31,6 +31,7 @@ const FacultyTestsPage = () => {
   const router = useRouter();
   const [userEmail, setUserEmail] = useState("");
   const [userName, setUserName] = useState("");
+  const [facultyId, setFacultyId] = useState("");
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("drafts");
 
@@ -40,62 +41,49 @@ const FacultyTestsPage = () => {
   const [draftLoading, setDraftLoading] = useState(false);
   const [publishedLoading, setPublishedLoading] = useState(false);
 
-  // Function to fetch draft test papers
-  const fetchDraftTestPapers = async (email) => {
-    if (!email) return;
+  // Function to fetch test papers from faculty subcollection
+  const fetchFacultyTestPapers = async (facultyId) => {
+    if (!facultyId) return;
 
     setDraftLoading(true);
-    try {
-      console.log("Fetching draft test papers for user:", email);
-      const testPapersRef = collection(db, "testPapersDraft");
-      const q = firestoreQuery(
-        testPapersRef,
-        where("createdBy", "==", email),
-        orderBy("createdAt", "desc")
-      );
-
-      const querySnapshot = await getDocs(q);
-      const papers = [];
-
-      querySnapshot.forEach((doc) => {
-        papers.push(doc.data());
-      });
-
-      console.log(`Found ${papers.length} draft test papers`);
-      setDraftTestPapers(papers);
-    } catch (error) {
-      console.error("Error fetching draft test papers:", error);
-    } finally {
-      setDraftLoading(false);
-    }
-  };
-
-  // Function to fetch published test papers
-  const fetchPublishedTestPapers = async (email) => {
-    if (!email) return;
-
     setPublishedLoading(true);
     try {
-      console.log("Fetching published test papers for user:", email);
-      const testPapersRef = collection(db, "testPapers");
-      const q = firestoreQuery(
-        testPapersRef,
-        where("createdBy", "==", email),
-        orderBy("createdAt", "desc")
+      console.log("Fetching test papers for faculty:", facultyId);
+      const facultyTestPapersRef = collection(
+        db,
+        "faculties",
+        facultyId,
+        "testpapers"
       );
+      const querySnapshot = await getDocs(facultyTestPapersRef);
 
-      const querySnapshot = await getDocs(q);
-      const papers = [];
+      const draftPapers = [];
+      const publishedPapers = [];
 
       querySnapshot.forEach((doc) => {
-        papers.push(doc.data());
+        const paperData = doc.data();
+        if (paperData.published) {
+          publishedPapers.push(paperData);
+        } else {
+          draftPapers.push(paperData);
+        }
       });
 
-      console.log(`Found ${papers.length} published test papers`);
-      setPublishedTestPapers(papers);
+      // Sort by createdAt in descending order
+      draftPapers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      publishedPapers.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+
+      console.log(`Found ${draftPapers.length} draft test papers`);
+      console.log(`Found ${publishedPapers.length} published test papers`);
+
+      setDraftTestPapers(draftPapers);
+      setPublishedTestPapers(publishedPapers);
     } catch (error) {
-      console.error("Error fetching published test papers:", error);
+      console.error("Error fetching faculty test papers:", error);
     } finally {
+      setDraftLoading(false);
       setPublishedLoading(false);
     }
   };
@@ -103,8 +91,14 @@ const FacultyTestsPage = () => {
   // Function to publish a test paper
   const publishTestPaper = async (testId) => {
     try {
-      // Get the draft test paper
-      const testPaperRef = doc(db, "testPapersDraft", testId);
+      // Get the draft test paper from faculty subcollection
+      const testPaperRef = doc(
+        db,
+        "faculties",
+        facultyId,
+        "testpapers",
+        testId
+      );
       const testPaperDoc = await getDoc(testPaperRef);
 
       if (!testPaperDoc.exists()) {
@@ -115,23 +109,26 @@ const FacultyTestsPage = () => {
 
       const testPaperData = testPaperDoc.data();
 
-      // Add to published collection with published=true
-      const publishedData = {
+      // Update the test paper in the faculty subcollection
+      await setDoc(testPaperRef, {
+        ...testPaperData,
+        published: true,
+      });
+
+      // Add to published collection
+      await setDoc(doc(db, "testPapers", testId), {
         ...testPaperData,
         published: true,
         sharedWith: [],
-      };
-
-      await setDoc(doc(db, "testPapers", testId), publishedData);
+      });
 
       // Delete from draft collection
-      await deleteDoc(testPaperRef);
+      await deleteDoc(doc(db, "testPapersDraft", testId));
 
       toast.success("Test paper published successfully");
 
-      // Refresh the lists
-      fetchDraftTestPapers(userEmail);
-      fetchPublishedTestPapers(userEmail);
+      // Refresh the test papers
+      fetchFacultyTestPapers(facultyId);
     } catch (error) {
       console.error("Error publishing test paper:", error);
       toast.error("Failed to publish test paper");
@@ -170,9 +167,9 @@ const FacultyTestsPage = () => {
 
       // Refresh the lists
       if (isPublished) {
-        fetchPublishedTestPapers(userEmail);
+        fetchFacultyTestPapers(facultyId);
       } else {
-        fetchDraftTestPapers(userEmail);
+        fetchFacultyTestPapers(facultyId);
       }
     } catch (error) {
       console.error("Error deleting test paper:", error);
@@ -180,33 +177,38 @@ const FacultyTestsPage = () => {
     }
   };
 
-  // Fetch user data and check if faculty role exists
+  // Effect to get user info and fetch test papers
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        const email = user.email;
-        setUserEmail(email);
+        setUserEmail(user.email);
 
-        // Get user name from members collection
-        const memberDoc = await getDoc(doc(db, "members", email));
-        if (memberDoc.exists()) {
-          setUserName(memberDoc.data().name || "");
+        try {
+          // Get user info from members collection
+          const membersRef = collection(db, "members");
+          const q = firestoreQuery(
+            membersRef,
+            where("email", "==", user.email)
+          );
+          const querySnapshot = await getDocs(q);
 
-          // Check if user has Faculty role
-          const hasRoleFaculty = memberDoc.data().roles?.Faculty || false;
+          if (!querySnapshot.empty) {
+            const userData = querySnapshot.docs[0].data();
+            setUserName(userData.name || "");
+            setFacultyId(userData.uid || "");
 
-          // Allow admin to view faculty tests as well
-          const isAdmin = email === "admin@shishyakul.in";
-
-          if (!hasRoleFaculty && !isAdmin) {
-            // Redirect to dashboard if not a faculty member or admin
-            router.push("/dashboard");
-            return;
+            // Fetch test papers using faculty ID
+            if (userData.uid) {
+              fetchFacultyTestPapers(userData.uid);
+            }
           }
-        }
 
-        setLoading(false);
+          setLoading(false);
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          setLoading(false);
+        }
       } else {
         router.push("/login");
       }
@@ -215,40 +217,10 @@ const FacultyTestsPage = () => {
     return () => unsubscribe();
   }, [router]);
 
-  // Fetch test papers when user email changes
-  useEffect(() => {
-    if (userEmail) {
-      console.log("Fetching test papers for user email:", userEmail);
-      fetchDraftTestPapers(userEmail);
-      fetchPublishedTestPapers(userEmail);
-    }
-  }, [userEmail]);
-
-  // Add a refresh timer to periodically refresh the data
-  useEffect(() => {
-    // Initial fetch on component mount
-    if (userEmail) {
-      fetchDraftTestPapers(userEmail);
-      fetchPublishedTestPapers(userEmail);
-    }
-
-    // Set up periodic refresh every 30 seconds
-    const refreshInterval = setInterval(() => {
-      if (userEmail) {
-        console.log("Periodic refresh of test papers");
-        fetchDraftTestPapers(userEmail);
-        fetchPublishedTestPapers(userEmail);
-      }
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(refreshInterval);
-  }, [userEmail]);
-
   // Manual refresh function
   const handleManualRefresh = () => {
     console.log("Manual refresh requested for user:", userEmail);
-    fetchDraftTestPapers(userEmail);
-    fetchPublishedTestPapers(userEmail);
+    fetchFacultyTestPapers(facultyId);
   };
 
   // Handler for creating a new test paper

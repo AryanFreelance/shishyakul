@@ -19,7 +19,7 @@ export const GET_TEMP_STUDENTS = gql`
 
 // Get Students for Dashboard
 export const DASHBOARD_GET_STUDENT = gql`
-  query Students($ay: String!, $grade: String) {
+  query Students($ay: String, $grade: String) {
     students(ay: $ay, grade: $grade) {
       userId
       email
@@ -46,7 +46,7 @@ export const DASHBOARD_GET_STUDENT = gql`
 
 // Get Student Information
 export const GET_STUDENT_INFO = gql`
-  query StudentInfo($userId: ID!) {
+  query StudentInfo($userId: ID) {
     studentInfo(userId: $userId) {
       userId
       firstname
@@ -60,7 +60,7 @@ export const GET_STUDENT_INFO = gql`
 
 // Get Student Details
 export const GET_STUDENT_DETAILS = gql`
-  query Student($ay: String!, $grade: String!, $userId: ID!) {
+  query Student($ay: String, $grade: String, $userId: ID) {
     student(ay: $ay, grade: $grade, userId: $userId) {
       userId
       email
@@ -100,7 +100,7 @@ export const GET_STUDENT_DETAILS = gql`
 
 // Get Student Profile Information
 export const GET_STUDENT_PROFILE = gql`
-  query Student($ay: String!, $grade: String!, $userId: ID!) {
+  query Student($ay: String, $grade: String, $userId: ID) {
     student(ay: $ay, grade: $grade, userId: $userId) {
       email
       firstname
@@ -174,6 +174,22 @@ export const GET_STUDENTS_FOR_ATTENDANCE = gql`
       middlename
       lastname
       email
+      ay
+      grade
+      batch
+    }
+  }
+`;
+
+// Get Students for Faculty Test Share Dialog
+export const GET_STUDENTS = gql`
+  query GetStudents($ay: String, $grade: String, $batch: String) {
+    students(ay: $ay, grade: $grade) {
+      userId
+      email
+      firstname
+      middlename
+      lastname
       ay
       grade
       batch

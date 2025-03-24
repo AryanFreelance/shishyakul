@@ -11,6 +11,7 @@ export const CREATE_TEST = gql`
     $subject: String
     $createdBy: String
     $creatorName: String
+    $facultyId: ID
   ) {
     createTest(
       id: $id
@@ -21,6 +22,7 @@ export const CREATE_TEST = gql`
       subject: $subject
       createdBy: $createdBy
       creatorName: $creatorName
+      facultyId: $facultyId
     )
   }
 `;
@@ -121,6 +123,23 @@ export const MARK_TESTPAPER_ATTENDANCE = gql`
       present: $present
       absent: $absent
       facultyId: $facultyId
+    )
+  }
+`;
+
+// Update Test Attendance
+export const UPDATE_TEST_ATTENDANCE = gql`
+  mutation UpdateTestAttendance(
+    $id: ID!
+    $present: [String]
+    $absent: [String]
+    $attendanceDate: String
+  ) {
+    updateTestAttendance(
+      id: $id
+      present: $present
+      absent: $absent
+      attendanceDate: $attendanceDate
     )
   }
 `;

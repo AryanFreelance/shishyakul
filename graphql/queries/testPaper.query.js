@@ -2,8 +2,8 @@ import { gql } from "@apollo/client";
 
 // Get Test Papers
 export const GET_TESTPAPERS = gql`
-  query Testpapers {
-    testpapers {
+  query Testpapers($facultyId: ID, $isAdmin: Boolean) {
+    testpapers(facultyId: $facultyId, isAdmin: $isAdmin) {
       draft {
         id
         title
@@ -18,6 +18,8 @@ export const GET_TESTPAPERS = gql`
         url
         createdAt
         published
+        createdBy
+        creatorName
       }
       published {
         id
@@ -33,6 +35,8 @@ export const GET_TESTPAPERS = gql`
         url
         createdAt
         published
+        createdBy
+        creatorName
       }
     }
   }
@@ -182,26 +186,37 @@ export const GET_TESTPAPER_MARKS_STUDENTS = gql`
 
 // Get Faculty Test Papers
 export const GET_FACULTY_TESTPAPERS = gql`
-  query FacultyTestpapers($createdBy: String, $published: Boolean) {
-    facultyTestpapers(createdBy: $createdBy, published: $published) {
-      id
-      title
-      subject
-      totalMarks
-      date
-      sharedWith {
-        academicYear
-        grade
-        batch
-        email
-        name
+  query FacultyTestpapers($facultyId: ID) {
+    facultyTestpapers(facultyId: $facultyId) {
+      published {
+        id
+        title
+        subject
+        totalMarks
+        date
+        sharedWith {
+          academicYear
+          grade
+          batch
+        }
+        url
+        createdAt
+        published
+        createdBy
+        creatorName
       }
-      url
-      createdAt
-      published
-      createdBy
-      creatorName
-      lockShareWith
+      draft {
+        id
+        title
+        subject
+        totalMarks
+        date
+        url
+        createdAt
+        published
+        createdBy
+        creatorName
+      }
     }
   }
 `;

@@ -22,6 +22,7 @@ import {
 import { getAuth } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/firebase";
+import { ChevronLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,7 @@ const EditTestPage = ({ params }) => {
   const [isPublished, setIsPublished] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [userName, setUserName] = useState("");
+  const [facultyId, setFacultyId] = useState("");
   const [loading, setLoading] = useState(true);
   const [testData, setTestData] = useState(null);
 
@@ -50,187 +52,171 @@ const EditTestPage = ({ params }) => {
     const auth = getAuth();
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        const email = user.email;
-        setUserEmail(email);
+        setUserEmail(user.email);
 
-        // Get user name from members collection
-        const memberDoc = await getDoc(doc(db, "members", email));
-        if (memberDoc.exists()) {
-          setUserName(memberDoc.data().name || "");
+        try {
+          // Get user info from members collection
+          const memberRef = doc(db, "members", user.email);
+          const memberDoc = await getDoc(memberRef);
 
-          // Check if user has Faculty role
-          const hasRoleFaculty = memberDoc.data().roles?.Faculty || false;
-          const isAdmin = email === "admin@shishyakul.in";
-          if (!hasRoleFaculty && !isAdmin) {
-            // Redirect to dashboard if not a faculty member or admin
-            router.push("/dashboard");
-            return;
-          }
+          if (memberDoc.exists()) {
+            const memberData = memberDoc.data();
+            setUserName(memberData.name || "");
+            setFacultyId(memberData.uid || "");
 
-          // Fetch test data only after we have the user email
-          try {
-            // First check if it's a draft or published test
-            const draftTestRef = doc(db, "testPapersDraft", params.id);
-            const draftTestDoc = await getDoc(draftTestRef);
+            // Check if user has Faculty role or is admin
+            const hasRoleFaculty = memberData.roles?.Faculty || false;
+            const isAdmin = user.email === "admin@shishyakul.in";
 
-            if (draftTestDoc.exists()) {
-              const data = draftTestDoc.data();
-
-              // Check if current user is the creator or admin
-              if (data.createdBy === email || email === "admin@shishyakul.in") {
-                setTestData(data);
-                setIsPublished(false);
-
-                // Set form data
-                setFormData({
-                  test_name: data.title || "",
-                  subject: data.subject || "",
-                  date: data.date
-                    ? new Date(data.date).toISOString().split("T")[0]
-                    : "",
-                  total_marks: data.totalMarks || "",
-                  question_paper: null,
-                });
-
-                // If there's a URL, mark PDF as uploaded
-                if (data.url) {
-                  setIsPdfUploaded(true);
-                }
-
-                setLoading(false);
-                return;
-              }
+            if (!hasRoleFaculty && !isAdmin) {
+              // Redirect to dashboard if not a faculty member or admin
+              router.push("/dashboard");
+              return;
             }
 
-            // Try published test
-            const publishedTestRef = doc(db, "testPapers", params.id);
-            const publishedTestDoc = await getDoc(publishedTestRef);
+            // Fetch test data only after we have the user email
+            try {
+              // First check if it's a draft or published test
+              const draftTestRef = doc(db, "testPapersDraft", params.id);
+              const draftTestDoc = await getDoc(draftTestRef);
 
-            if (publishedTestDoc.exists()) {
-              const data = publishedTestDoc.data();
+              if (draftTestDoc.exists()) {
+                const data = draftTestDoc.data();
 
-              // Check if current user is the creator or admin
-              if (data.createdBy === email || email === "admin@shishyakul.in") {
-                setTestData(data);
-                setIsPublished(true);
+                // Check if current user is the creator or admin
+                if (
+                  data.createdBy === user.email ||
+                  user.email === "admin@shishyakul.in"
+                ) {
+                  setTestData(data);
+                  setIsPublished(false);
 
-                // Set form data
-                setFormData({
-                  test_name: data.title || "",
-                  subject: data.subject || "",
-                  date: data.date
-                    ? new Date(data.date).toISOString().split("T")[0]
-                    : "",
-                  total_marks: data.totalMarks || "",
-                  question_paper: null,
-                });
+                  // Set form data
+                  setFormData({
+                    test_name: data.title || "",
+                    subject: data.subject || "",
+                    date: data.date
+                      ? new Date(data.date).toISOString().split("T")[0]
+                      : "",
+                    total_marks: data.totalMarks || "",
+                    question_paper: null,
+                  });
 
-                // If there's a URL, mark PDF as uploaded
-                if (data.url) {
-                  setIsPdfUploaded(true);
+                  // If there's a URL, mark PDF as uploaded
+                  if (data.url) {
+                    setIsPdfUploaded(true);
+                  }
+                } else {
+                  // Not the creator, redirect to dashboard
+                  toast.error("You don't have permission to edit this test");
+                  router.push("/dashboard/tests");
+                  return;
                 }
+              } else {
+                // Check if it's a published test
+                const publishedTestRef = doc(db, "testPapers", params.id);
+                const publishedTestDoc = await getDoc(publishedTestRef);
 
-                setLoading(false);
-                return;
+                if (publishedTestDoc.exists()) {
+                  const data = publishedTestDoc.data();
+
+                  // Check if current user is the creator or admin
+                  if (
+                    data.createdBy === user.email ||
+                    user.email === "admin@shishyakul.in"
+                  ) {
+                    setTestData(data);
+                    setIsPublished(true);
+
+                    // Set form data
+                    setFormData({
+                      test_name: data.title || "",
+                      subject: data.subject || "",
+                      date: data.date
+                        ? new Date(data.date).toISOString().split("T")[0]
+                        : "",
+                      total_marks: data.totalMarks || "",
+                      question_paper: null,
+                    });
+
+                    // If there's a URL, mark PDF as uploaded
+                    if (data.url) {
+                      setIsPdfUploaded(true);
+                    }
+                  } else {
+                    // Not the creator, redirect to dashboard
+                    toast.error("You don't have permission to edit this test");
+                    router.push("/dashboard/tests");
+                    return;
+                  }
+                } else {
+                  // Test not found
+                  toast.error("Test paper not found");
+                  router.push("/dashboard/tests");
+                  return;
+                }
               }
+            } catch (error) {
+              console.error("Error fetching test data:", error);
+              toast.error("Error fetching test data");
+              router.push("/dashboard/tests");
+              return;
             }
-
-            // If we get here, the test wasn't found or the user doesn't have permission
-            console.error(
-              `Test not found or permission denied. User: ${email}, Test ID: ${params.id}`
-            );
-            toast.error(
-              "Test not found or you don't have permission to edit it"
-            );
-            router.push("/dashboard/tests/faculty");
-          } catch (error) {
-            console.error("Error fetching test data:", error);
-            toast.error("Failed to load test data");
-            router.push("/dashboard/tests/faculty");
           }
-        } else {
-          // User not found in members collection
+        } catch (error) {
+          console.error("Error fetching user data:", error);
           router.push("/login");
+          return;
         }
+
+        setLoading(false);
       } else {
         router.push("/login");
       }
     });
 
     return () => unsubscribe();
-  }, [router, params.id]);
+  }, [params.id, router]);
 
   // Update test mutation
-  const [updateTest, { loading: mutationLoading }] = useMutation(
-    UPDATE_FACULTY_TESTPAPER,
-    {
-      refetchQueries: [
-        { query: GET_FACULTY_TESTPAPERS, variables: { createdBy: userEmail } },
-      ],
-      onCompleted: (data) => {
-        toast.success("Test updated successfully!");
-        setIsFormLoading(false);
-        router.push("/dashboard/tests/faculty");
+  const [updateTest] = useMutation(UPDATE_FACULTY_TESTPAPER, {
+    refetchQueries: [
+      {
+        query: GET_TESTPAPER,
+        variables: { id: params.id, published: isPublished },
       },
-      onError: (error) => {
-        toast.error("Error updating test!");
-        console.error(error);
-        setIsFormLoading(false);
-      },
-    }
-  );
+    ],
+    onCompleted: () => {
+      toast.success("Test paper updated successfully");
+      setIsFormLoading(false);
+    },
+    onError: (error) => {
+      toast.error(`Error updating test paper: ${error.message}`);
+      setIsFormLoading(false);
+    },
+  });
 
-  const handleFormSubmit = async (e) => {
+  // Handler to update the test paper
+  const updateTestPaperHandler = async (e) => {
     e.preventDefault();
     setIsFormLoading(true);
 
     try {
-      // Validation
-      if (
-        !formData.test_name ||
-        !formData.subject ||
-        !formData.date ||
-        !formData.total_marks
-      ) {
-        toast.error("Please fill all fields");
-        setIsFormLoading(false);
-        return;
-      }
-
-      // Prepare mutation variables
-      let updateTestVariables = {
-        id: params.id,
-        title: formData.test_name,
-        subject: formData.subject,
-        date: new Date(formData.date).toISOString(),
-        totalMarks: parseInt(formData.total_marks),
-        published: isPublished,
-        createdBy: userEmail,
-        creatorName: userName,
-      };
-
-      // If a new PDF is uploaded, upload it to Firebase Storage
-      if (formData.question_paper) {
-        // Upload file to Firebase Storage
-        const pdfRef = ref(
-          storage,
-          `test_papers/${params.id}_${Date.now()}.pdf`
-        );
-        await uploadBytes(pdfRef, formData.question_paper);
-        const pdfUrl = await getDownloadURL(pdfRef);
-        updateTestVariables.url = pdfUrl;
-      } else if (testData.url) {
-        // Keep existing URL if no new file is uploaded
-        updateTestVariables.url = testData.url;
-      }
-
-      // Update test
       await updateTest({
-        variables: updateTestVariables,
+        variables: {
+          id: params.id,
+          title: formData.test_name,
+          subject: formData.subject,
+          date: formData.date,
+          totalMarks: parseInt(formData.total_marks),
+          url: testData?.url || "",
+          published: isPublished,
+          createdBy: userEmail,
+          creatorName: userName,
+        },
       });
     } catch (error) {
-      console.error("Error updating test:", error);
-      toast.error("Error updating test!");
+      console.error("Error updating test paper:", error);
       setIsFormLoading(false);
     }
   };
@@ -272,10 +258,19 @@ const EditTestPage = ({ params }) => {
     <Container>
       <Navbar navLinks={dashboardNavLinks} isHome={false} />
       <div className="py-8">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-8">Edit Test Paper</h1>
+        <div className="flex items-center gap-4 mb-8">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => router.push("/dashboard/tests")}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl sm:text-3xl font-bold">Edit Test Paper</h1>
+        </div>
 
         <form
-          onSubmit={handleFormSubmit}
+          onSubmit={updateTestPaperHandler}
           className="space-y-6 max-w-3xl mx-auto"
         >
           <div className="space-y-2">
@@ -378,12 +373,8 @@ const EditTestPage = ({ params }) => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={isFormLoading || mutationLoading}
-            >
-              {isFormLoading || mutationLoading ? (
+            <Button type="submit" className="flex-1" disabled={isFormLoading}>
+              {isFormLoading ? (
                 <>
                   <Loader className="h-4 w-4 animate-spin mr-2" />
                   Updating...

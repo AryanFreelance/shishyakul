@@ -58,44 +58,57 @@ const FacultyTestDetailPage = () => {
   const [shareInput, setShareInput] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [userName, setUserName] = useState("");
-  const [facultyAssignments, setFacultyAssignments] = useState([]);
+  const [facultyId, setFacultyId] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isPublished, setIsPublished] = useState(false);
   const [isFormLoading, setIsFormLoading] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [facultyAssignments, setFacultyAssignments] = useState([]);
 
   // Fetch the current user data and test paper data
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        const email = user.email;
-        setUserEmail(email);
+        setUserEmail(user.email);
 
-        // Get user name and faculty assignments from members collection
-        const memberDoc = await getDoc(doc(db, "members", email));
-        if (memberDoc.exists()) {
-          setUserName(memberDoc.data().name || "");
+        try {
+          // Get user info from members collection
+          const memberRef = doc(db, "members", user.email);
+          const memberDoc = await getDoc(memberRef);
 
-          // Check if user has Faculty role
-          const hasRoleFaculty = memberDoc.data().roles?.Faculty || false;
-          const isAdmin = email === "admin@shishyakul.in";
-          if (!hasRoleFaculty && !isAdmin) {
-            // Redirect to dashboard if not a faculty member or admin
-            router.push("/dashboard");
-            return;
-          }
+          if (memberDoc.exists()) {
+            const memberData = memberDoc.data();
+            setUserName(memberData.name || "");
+            setFacultyId(memberData.uid || "");
 
-          // Get faculty assignments if user has Faculty role
-          if (hasRoleFaculty && memberDoc.data().uid) {
-            try {
-              const facultyRef = doc(db, "faculties", memberDoc.data().uid);
-              const facultyDoc = await getDoc(facultyRef);
-              if (facultyDoc.exists()) {
-                setFacultyAssignments(facultyDoc.data().assignedStudents || []);
+            // Check if user has Faculty role
+            const hasRoleFaculty = memberData.roles?.Faculty || false;
+            const isAdmin = user.email === "admin@shishyakul.in";
+            if (!hasRoleFaculty && !isAdmin) {
+              // Redirect to dashboard if not a faculty member or admin
+              router.push("/dashboard");
+              return;
+            }
+
+            // Get faculty assignments if user has Faculty role
+            if (hasRoleFaculty && memberData.uid) {
+              try {
+                const facultyRef = doc(db, "faculties", memberData.uid);
+                const facultyDoc = await getDoc(facultyRef);
+                if (facultyDoc.exists()) {
+                  setFacultyAssignments(
+                    facultyDoc.data().assignedStudents || []
+                  );
+                }
+              } catch (error) {
+                console.error("Error fetching faculty assignments:", error);
               }
-            } catch (error) {
-              console.error("Error fetching faculty assignments:", error);
             }
           }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          router.push("/login");
         }
 
         setLoading(false);
@@ -105,7 +118,7 @@ const FacultyTestDetailPage = () => {
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [id, router]);
 
   // Query to fetch the test paper data
   const { data } = useSuspenseQuery(GET_TESTPAPER, {
@@ -155,7 +168,7 @@ const FacultyTestDetailPage = () => {
         { query: GET_TESTPAPER, variables: { id, published: false } },
         {
           query: GET_FACULTY_TESTPAPERS,
-          variables: { createdBy: userEmail, published: false },
+          variables: { facultyId },
         },
       ],
       onCompleted: () => {
@@ -192,11 +205,7 @@ const FacultyTestDetailPage = () => {
       refetchQueries: [
         {
           query: GET_FACULTY_TESTPAPERS,
-          variables: { createdBy: userEmail, published: false },
-        },
-        {
-          query: GET_FACULTY_TESTPAPERS,
-          variables: { createdBy: userEmail, published: true },
+          variables: { facultyId },
         },
       ],
       onCompleted: () => {
@@ -216,11 +225,7 @@ const FacultyTestDetailPage = () => {
       refetchQueries: [
         {
           query: GET_FACULTY_TESTPAPERS,
-          variables: { createdBy: userEmail, published: false },
-        },
-        {
-          query: GET_FACULTY_TESTPAPERS,
-          variables: { createdBy: userEmail, published: true },
+          variables: { facultyId },
         },
       ],
       onCompleted: () => {

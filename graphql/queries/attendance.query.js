@@ -14,7 +14,7 @@ export const GET_STUDENTS = gql`
 
 // Get Attendance for a particular date
 export const GET_ATTENDANCE = gql`
-  query Attendance($timestamp: String!) {
+  query Attendance($timestamp: String) {
     attendance(timestamp: $timestamp) {
       timestamp
       absent

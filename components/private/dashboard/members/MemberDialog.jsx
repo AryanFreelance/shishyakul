@@ -281,142 +281,138 @@ export function MemberDialog({
 
             {/* Faculty Assignments Section */}
             {showFacultyAssignment && (
-              <div className="grid sm:grid-cols-4 items-start gap-2 sm:gap-4 border-t pt-4 mt-2">
-                <Label className="sm:text-right pt-2">
-                  Faculty Assignments
-                </Label>
-                <div className="sm:col-span-3 space-y-4">
-                  {/* Current assignments */}
-                  {formData.facultyAssignments.length > 0 && (
+              <div className="space-y-4 mt-4">
+                <Label>Faculty Assignments</Label>
+
+                {/* Display existing assignments if editing */}
+                {formData.facultyAssignments.length > 0 && (
+                  <div className="mb-4">
+                    <Label className="mb-2 block">Current Assignments</Label>
                     <div className="space-y-2">
-                      <Label>Current Assignments</Label>
-                      <div className="space-y-2">
-                        {formData.facultyAssignments.map(
-                          (assignment, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center justify-between border p-2 rounded bg-gray-50"
-                            >
-                              <div>
-                                <span className="font-medium">
-                                  Academic Year:
-                                </span>{" "}
-                                {assignment.academicYear}
-                                {assignment.grade && (
-                                  <span className="ml-2 font-medium">
-                                    Grade:
-                                  </span>
-                                )}{" "}
+                      {formData.facultyAssignments.map((assignment, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-2 border rounded"
+                        >
+                          <div>
+                            <span className="font-medium">
+                              {assignment.academicYear}
+                            </span>
+                            {assignment.grade && (
+                              <span className="ml-2">
+                                Grade:{" "}
                                 {assignment.grade === "all"
                                   ? "All Grades"
                                   : assignment.grade}
-                                {assignment.batch && (
-                                  <span className="ml-2 font-medium">
-                                    Batch:
-                                  </span>
-                                )}{" "}
+                              </span>
+                            )}
+                            {assignment.batch && (
+                              <span className="ml-2">
+                                Batch:{" "}
                                 {assignment.batch === "all"
                                   ? "All Batches"
                                   : assignment.batch}
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => removeAssignment(index)}
-                                className="text-red-500"
-                              >
-                                <X size={16} />
-                              </button>
-                            </div>
-                          )
-                        )}
-                      </div>
+                              </span>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeAssignment(index)}
+                            disabled={isLoading}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
-                  )}
-
-                  {/* Add new assignment */}
-                  <div className="space-y-2 border p-3 rounded">
-                    <Label>Add New Assignment</Label>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Label className="w-24">Academic Year*</Label>
-                        <Select
-                          value={newAssignment.academicYear}
-                          onValueChange={(value) =>
-                            handleAssignmentChange("academicYear", value)
-                          }
-                          disabled={isLoading}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select Academic Year" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ayData?.academicYears?.map((year) => (
-                              <SelectItem key={year} value={year}>
-                                {year}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Label className="w-24">Grade</Label>
-                        <Select
-                          value={newAssignment.grade}
-                          onValueChange={(value) =>
-                            handleAssignmentChange("grade", value)
-                          }
-                          disabled={isLoading}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select Grade (Optional)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Grades</SelectItem>
-                            {grades.map((grade) => (
-                              <SelectItem key={grade} value={grade}>
-                                {grade}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Label className="w-24">Batch</Label>
-                        <Select
-                          value={newAssignment.batch}
-                          onValueChange={(value) =>
-                            handleAssignmentChange("batch", value)
-                          }
-                          disabled={isLoading || !newAssignment.grade}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select Batch (Optional)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Batches</SelectItem>
-                            {batches.map((batch) => (
-                              <SelectItem key={batch} value={batch}>
-                                {batch}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addAssignment}
-                      disabled={isLoading || !newAssignment.academicYear}
-                      className="mt-2"
-                    >
-                      <Plus className="mr-1 h-4 w-4" /> Add Assignment
-                    </Button>
                   </div>
+                )}
+
+                {/* Add new assignment */}
+                <div className="space-y-2 border p-3 rounded">
+                  <Label>Add New Assignment</Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="w-24">Academic Year*</Label>
+                      <Select
+                        value={newAssignment.academicYear}
+                        onValueChange={(value) =>
+                          handleAssignmentChange("academicYear", value)
+                        }
+                        disabled={isLoading}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select Academic Year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ayData?.academicYears?.map((year) => (
+                            <SelectItem key={year} value={year}>
+                              {year}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Label className="w-24">Grade</Label>
+                      <Select
+                        value={newAssignment.grade}
+                        onValueChange={(value) =>
+                          handleAssignmentChange("grade", value)
+                        }
+                        disabled={isLoading}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select Grade (Optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Grades</SelectItem>
+                          {grades.map((grade) => (
+                            <SelectItem key={grade} value={grade}>
+                              {grade}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Label className="w-24">Batch</Label>
+                      <Select
+                        value={newAssignment.batch}
+                        onValueChange={(value) =>
+                          handleAssignmentChange("batch", value)
+                        }
+                        disabled={isLoading || !newAssignment.grade}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select Batch (Optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Batches</SelectItem>
+                          {batches.map((batch) => (
+                            <SelectItem key={batch} value={batch}>
+                              {batch}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addAssignment}
+                    disabled={isLoading || !newAssignment.academicYear}
+                    className="mt-2"
+                  >
+                    <Plus className="mr-1 h-4 w-4" /> Add Assignment
+                  </Button>
                 </div>
               </div>
             )}

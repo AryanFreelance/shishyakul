@@ -128,7 +128,8 @@ const DashboardPage = () => {
       fetchPolicy: "network-only",
       variables: { ay: searchParameters.ay, grade: searchParameters.grade },
       onCompleted: (data) => {
-        console.log("STUDENTS", data?.students);
+        console.log("STUDENTS FULL DATA:", data);
+        console.log("FIRST STUDENT EXAMPLE:", data?.students?.[0]);
         setStudents(data?.students || []);
       },
     }
@@ -343,7 +344,15 @@ const DashboardPage = () => {
   }, [schoolName]);
 
   useEffect(() => {
-    if (searchParameters.ay && searchParameters.ay !== "select-ay")
+    if (searchParameters.ay && searchParameters.ay !== "select-ay") {
+      // For faculty users, require both academic year AND grade to be selected
+      if (isFaculty && !isAdmin && searchParameters.grade === "select-grade") {
+        // Clear students list when only academic year is selected for faculty
+        setStudents([]);
+        setFilteredStudents([]);
+        return;
+      }
+
       fetchStudents({
         fetchPolicy: "network-only",
         variables: {
@@ -369,6 +378,7 @@ const DashboardPage = () => {
           }
         },
       });
+    }
     if (searchParameters.ay === "select-ay") {
       setStudents([]);
       setFilteredStudents([]);
@@ -804,6 +814,19 @@ const DashboardPage = () => {
               <RefreshCw />
             </button>
           </span>
+
+          {/* Instruction for faculty users */}
+          {isFaculty &&
+            !isAdmin &&
+            searchParameters.ay !== "select-ay" &&
+            searchParameters.grade === "select-grade" && (
+              <div className="mb-6 p-4 border-2 border-main rounded-md bg-yellow-50">
+                <p className="text-amber-700 barlow-semibold">
+                  Please select a grade to view your assigned students.
+                </p>
+              </div>
+            )}
+
           {students?.length !== 0 && (
             <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-4">
               {/* <div className="flex item-center justify-end"> */}
@@ -948,7 +971,15 @@ const DashboardPage = () => {
                     colSpan="9"
                     className="barlow-semibold text-center"
                   >
-                    No students found
+                    {isFaculty && !isAdmin
+                      ? searchParameters.ay === "select-ay"
+                        ? "Please select an academic year and grade to view students"
+                        : searchParameters.grade === "select-grade"
+                        ? "Please select a grade to view your assigned students"
+                        : "No students found for the selected filters"
+                      : searchParameters.ay === "select-ay"
+                      ? "Please select an academic year to view students"
+                      : "No students found for the selected filters"}
                   </TableCell>
                 </TableRow>
               )}

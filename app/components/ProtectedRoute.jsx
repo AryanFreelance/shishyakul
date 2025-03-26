@@ -19,11 +19,8 @@ const ProtectedRoute = ({ children, requiredPermission }) => {
   let normalizedPermission = requiredPermission;
   if (requiredPermission === "ManageStudents") {
     normalizedPermission = "Students";
-  } else if (
-    requiredPermission === "Attendance" ||
-    requiredPermission === "Tests"
-  ) {
-    // Faculty can access Tests and Attendance pages
+  } else if (requiredPermission === "Tests") {
+    // Faculty can access Tests page
     normalizedPermission = requiredPermission.toLowerCase();
   } else if (requiredPermission === "Members") {
     // Only Content role can access Members page now

@@ -66,6 +66,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  checkMemberRoles,
+  hasRole,
+  isFacultyMember,
+  isMember,
+} from "@/utils/member-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -238,8 +244,17 @@ const page = () => {
   const [authStatus, setAuthStatus] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isFaculty, setIsFaculty] = useState(false);
+  const [memberRoles, setMemberRoles] = useState(null);
   const [academicYears, setAcademicYears] = useState([]);
   const [selectedAcademicYear, setSelectedAcademicYear] = useState(ay);
+  const [hasFeePermission, setHasFeePermission] = useState(false);
+  // const permissionContext = usePermission();
+  // const { permissions } = usePermission();
+
+  // useEffect(() => {
+  //   console.log("Raw permission context:", permissionContext);
+  // }, [permissionContext]);
+
   const [chartData, setChartData] = useState({
     labels: ["Present", "Absent"],
     datasets: [
@@ -423,23 +438,35 @@ const page = () => {
     }
   }, [studData]);
 
-  // Faculty role check
+  // Function to check member roles
+  const checkRoles = async () => {
+    const { roles, isFaculty: facultyStatus } = await checkMemberRoles();
+    setMemberRoles(roles);
+    setIsFaculty(facultyStatus);
+  };
+
+  // Check member roles on component mount
   useEffect(() => {
-    // Check if the user is a faculty member
-    const checkUserRole = async () => {
-      const auth = getAuth();
-      const user = auth.currentUser;
-
-      if (user) {
-        const memberDoc = await getDoc(doc(db, "members", user.email));
-        if (memberDoc.exists() && memberDoc.data().roles?.Faculty) {
-          setIsFaculty(true);
-        }
-      }
-    };
-
-    checkUserRole();
+    checkRoles();
   }, []);
+
+  // Update permission checking function
+  const checkPermission = async (role) => {
+    // Admin always has access to everything
+    if (isAdmin) return true;
+
+    // Check if user has the specific role
+    return await hasRole(role);
+  };
+
+  // Check fee permission on component mount and when isAdmin changes
+  useEffect(() => {
+    const checkFeePermission = async () => {
+      const hasPermission = await checkPermission("Fees");
+      setHasFeePermission(hasPermission);
+    };
+    checkFeePermission();
+  }, [isAdmin]);
 
   // Profile completion calculation
   useEffect(() => {
@@ -608,16 +635,16 @@ const page = () => {
   };
 
   // Loading state
-  if (!studData) {
-    return (
-      <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
-        Loading... <br />
-        <small>
-          If you are waiting for so long then please contact the admin!
-        </small>
-      </div>
-    );
-  }
+  // if (!studData || permissionContext?.loading) {
+  //   return (
+  //     <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
+  //       Loading... <br />
+  //       <small>
+  //         If you are waiting for so long then please contact the admin!
+  //       </small>
+  //     </div>
+  //   );
+  // }
 
   // No student found state
   if (!studData?.student) {
@@ -873,27 +900,36 @@ const page = () => {
                   Fees Information{" "}
                   {selectedAcademicYear && `(${selectedAcademicYear})`}
                 </h3>
-                {isAdmin && !isFaculty && (
-                  <div className="flex gap-4 items-center">
-                    <AddFeeDialog
-                      id={id}
-                      studData={studData}
-                      academicYear={selectedAcademicYear}
-                      onFeeAdded={() =>
-                        refetchFeesData({
-                          userId: id,
-                          academicYear: selectedAcademicYear,
-                        })
-                      }
-                    />
-                    <StudentFeesInfoDialog
-                      id={id}
-                      studData={studData}
-                      academicYear={selectedAcademicYear}
-                    />
-                  </div>
+                {/* Show fee management tools for admins, faculty with access, and members with Fees permission */}
+                {(isAdmin || hasFeePermission) && (
+                  <>
+                    {/* Add this debugging information temporarily */}
+                    {/* <div className="text-xs bg-yellow-100 p-2 mb-2 rounded">
+                      Debug: isAdmin={isAdmin.toString()}, hasFeePermission=
+                      {checkPermission("Fees").toString()}
+                    </div> */}
+                    <div className="flex gap-4 items-center">
+                      <AddFeeDialog
+                        id={id}
+                        studData={studData}
+                        academicYear={selectedAcademicYear}
+                        onFeeAdded={() =>
+                          refetchFeesData({
+                            userId: id,
+                            academicYear: selectedAcademicYear,
+                          })
+                        }
+                      />
+                      <StudentFeesInfoDialog
+                        id={id}
+                        studData={studData}
+                        academicYear={selectedAcademicYear}
+                      />
+                    </div>
+                  </>
                 )}
-                {!isAdmin && !isFaculty && (
+                {/* Show RequestReview only for students (not admins, faculty, or members) */}
+                {!isAdmin && !isFaculty && !memberRoles && (
                   <RequestReview
                     name={`${studData?.student?.firstname} ${studData?.student?.lastname}`}
                     email={studData?.student?.email}

@@ -30,6 +30,7 @@ import {
   ShieldAlert,
   AlertTriangle,
   Calendar,
+  Shield,
 } from "lucide-react";
 import ProfileStudentSectionInformation from "@/components/private/studentPage/ProfileStudentSectionInformation";
 import {
@@ -51,6 +52,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { checkMemberRoles, hasRole } from "@/utils/member-utils";
+import { auth } from "@/firebase";
 
 // Utility functions to calculate profile completion
 const calculateStudentInfoCompletion = (studentInfo) => {
@@ -284,6 +288,13 @@ const page = () => {
   const [tempSelectedAcademicYear, setTempSelectedAcademicYear] = useState("");
   const [profileCreationMode, setProfileCreationMode] = useState("upgrade"); // "upgrade" or "new"
 
+  const [hasEditPermission, setHasEditPermission] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isCurrentUserStudent, setIsCurrentUserStudent] = useState(false);
+  const [isMemberWithStudentRole, setIsMemberWithStudentRole] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState(null);
+  const [isCheckingPermission, setIsCheckingPermission] = useState(true);
+
   const { ay: pAy, grade: pGrade, id } = useParams();
   const router = useRouter();
 
@@ -315,6 +326,49 @@ const page = () => {
       },
     ],
   });
+
+  // Check user permissions
+  useEffect(() => {
+    const checkPermissions = async () => {
+      setIsCheckingPermission(true);
+
+      const auth = getAuth();
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          // Set current user email
+          setCurrentUserEmail(user.email);
+
+          // Check if admin
+          const isAdminUser = user.email === "admin@shishyakul.in";
+          setIsAdmin(isAdminUser);
+
+          // Check if student (comparing with profile data)
+          const isStudent = user.email === data?.student?.email;
+          setIsCurrentUserStudent(isStudent);
+
+          // Check if member with Students role
+          const { roles } = await checkMemberRoles();
+          const hasMemberStudentRole = roles && roles.Students === true;
+          setIsMemberWithStudentRole(hasMemberStudentRole);
+
+          // Set overall permission
+          setHasEditPermission(
+            isAdminUser || isStudent || hasMemberStudentRole
+          );
+          setIsCheckingPermission(false);
+        } else {
+          // Not logged in, redirect to login
+          router.push("/login");
+        }
+      });
+
+      return () => unsubscribe();
+    };
+
+    if (data?.student) {
+      checkPermissions();
+    }
+  }, [data?.student?.email, router]);
 
   if (loading) return <div>Loading...</div>;
 
@@ -470,6 +524,19 @@ const page = () => {
 
   const updateInformationHandler = async (e) => {
     e.preventDefault();
+
+    // Permission check before updating
+    if (!hasEditPermission) {
+      toast.error("You don't have permission to edit this profile");
+      return;
+    }
+
+    // For students, ensure they can only edit their own profile
+    if (isCurrentUserStudent && currentUserEmail !== data?.student?.email) {
+      toast.error("You can only edit your own profile");
+      return;
+    }
+
     const toastId = toast.loading("Updating Information...");
 
     if (
@@ -653,9 +720,56 @@ const page = () => {
     );
   };
 
+  // Loading state for permission check
+  if (isCheckingPermission) {
+    return (
+      <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
+        Checking permissions...
+      </div>
+    );
+  }
+
+  // If no permission, show restricted access message
+  if (!hasEditPermission) {
+    return (
+      <Container>
+        <div className="py-10 flex flex-col gap-8 items-center justify-center min-h-[50vh]">
+          <Shield className="text-red-500 w-16 h-16" />
+          <h2 className="text-2xl font-bold text-center">Access Restricted</h2>
+          <p className="text-center text-gray-600 max-w-md">
+            You don't have permission to edit this profile. Only the student
+            themselves, administrators, or members with the Students role can
+            edit profiles.
+          </p>
+          <Link
+            href={`/student/${pAy}/${pGrade}/${id}`}
+            className="flex items-center gap-2 text-[16px] text-center border-2 border-main rounded px-4 py-2 mt-4"
+          >
+            <ArrowLeft size={16} /> Go Back to Student Page
+          </Link>
+        </div>
+      </Container>
+    );
+  }
+
   return (
     <Container>
       <div className="py-10 flex flex-col gap-8">
+        {/* Permission status indicator */}
+        <div className="bg-blue-50 p-3 rounded-md">
+          <div className="flex items-center gap-2 text-sm">
+            <Shield className="h-4 w-4 text-blue-500" />
+            <span>
+              Editing as:{" "}
+              {isAdmin
+                ? "Administrator"
+                : isCurrentUserStudent
+                ? "Student"
+                : "Member"}
+            </span>
+          </div>
+        </div>
+
         {/* Academic Year Change Dialog */}
         <AlertDialog
           open={showAcademicYearDialog}

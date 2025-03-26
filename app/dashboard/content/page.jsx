@@ -6,8 +6,17 @@ import Navbar from "@/components/shared/Navbar";
 import { dashboardNavLinks } from "@/constants";
 import Image from "next/image";
 import { FaStar } from "react-icons/fa";
-import { db } from "@/firebase"; // Ensure Firebase is correctly configured
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { db, auth } from "@/firebase";
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  getDoc,
+  doc,
+} from "firebase/firestore";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { checkMemberRoles, hasRole } from "@/utils/member-utils";
 import ActionButtonTeachers from "@/components/private/dashboard/content/ActionButtonTeachers";
 import DevelopmentMode from "@/components/shared/DevelopmentMode";
 import AddContentButton from "@/components/private/dashboard/content/AddContentButton";
@@ -19,6 +28,46 @@ const ContentPage = () => {
   const [loadingTestimonials, setLoadingTestimonials] = useState(true);
   const [errorTeachers, setErrorTeachers] = useState(null);
   const [errorTestimonials, setErrorTestimonials] = useState(null);
+
+  // Add state for permissions
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [hasContentPermission, setHasContentPermission] = useState(false);
+  const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
+
+  // Check user permissions
+  useEffect(() => {
+    const checkUserPermissions = async () => {
+      setIsLoadingPermissions(true);
+
+      try {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            // Check if admin
+            const isAdminUser = user.email === "admin@shishyakul.in";
+            setIsAdmin(isAdminUser);
+
+            // Check for Content permission using role checking
+            const { roles } = await checkMemberRoles();
+            const hasContentRole = roles && roles.Content === true;
+
+            // Set permission state - admin or has Content role
+            setHasContentPermission(isAdminUser || hasContentRole);
+            setIsLoadingPermissions(false);
+          } else {
+            // Redirect to login if not authenticated
+            window.location.href = "/login";
+          }
+        });
+
+        return () => unsubscribe();
+      } catch (error) {
+        console.error("Error checking permissions:", error);
+        setIsLoadingPermissions(false);
+      }
+    };
+
+    checkUserPermissions();
+  }, []);
 
   useEffect(() => {
     /**
@@ -73,6 +122,34 @@ const ContentPage = () => {
       unsubscribeTestimonials();
     };
   }, []);
+
+  // Show loading indicator while checking permissions
+  if (isLoadingPermissions) {
+    return (
+      <Container>
+        <Navbar navLinks={dashboardNavLinks} isHome={false} />
+        <div className="flex justify-center items-center h-[70vh]">
+          <p className="text-xl">Checking permissions...</p>
+        </div>
+      </Container>
+    );
+  }
+
+  // Show access denied if user doesn't have permission
+  if (!hasContentPermission) {
+    return (
+      <Container>
+        <Navbar navLinks={dashboardNavLinks} isHome={false} />
+        <div className="flex flex-col justify-center items-center h-[70vh] gap-4">
+          <h2 className="text-2xl font-bold text-red-600">Access Denied</h2>
+          <p className="text-lg text-center max-w-md">
+            You don't have permission to access this page. Please contact an
+            administrator.
+          </p>
+        </div>
+      </Container>
+    );
+  }
 
   if (process.env.ENVIRONMENT === "production") {
     return (

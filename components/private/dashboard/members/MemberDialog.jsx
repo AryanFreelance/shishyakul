@@ -40,6 +40,7 @@ export function MemberDialog({
       Content: false,
       Birthdays: false,
       Faculty: false,
+      Attendance: false,
     },
     facultyAssignments: [],
   });
@@ -76,6 +77,7 @@ export function MemberDialog({
           Content: member.roles?.Content || false,
           Birthdays: member.roles?.Birthdays || false,
           Faculty: member.roles?.Faculty || false,
+          Attendance: member.roles?.Attendance || false,
         },
         facultyAssignments: Array.isArray(member.facultyAssignments)
           ? member.facultyAssignments
@@ -94,6 +96,7 @@ export function MemberDialog({
           Content: false,
           Birthdays: false,
           Faculty: false,
+          Attendance: false,
         },
         facultyAssignments: [],
       });
@@ -271,6 +274,7 @@ export function MemberDialog({
                     "Content",
                     "Birthdays",
                     "Faculty",
+                    "Attendance",
                   ]}
                   selectedRoles={formData.roles}
                   onChange={handleRoleChange}

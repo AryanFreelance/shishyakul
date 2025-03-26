@@ -68,7 +68,9 @@ import SearchBarStudent from "@/components/private/dashboard/SearchBarStudent";
 import { getDoc, doc, setDoc } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "@/firebase";
-import { usePermission } from "@/app/context/PermissionContext";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { checkMemberRoles, hasRole } from "@/utils/member-utils";
+import { auth } from "@/firebase";
 
 const DashboardPage = () => {
   const [studEmail, setStudEmail] = useState("");
@@ -115,10 +117,11 @@ const DashboardPage = () => {
   });
   const [showColumnSettings, setShowColumnSettings] = useState(false);
 
-  const { permissions, getFacultyAssignments } = usePermission();
-  const isFaculty = permissions.roles.Faculty;
-  const isAdmin = permissions.isAdmin;
-  const facultyAssignments = getFacultyAssignments();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isFaculty, setIsFaculty] = useState(false);
+  const [memberRoles, setMemberRoles] = useState(null);
+  const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
+  const [facultyAssignments, setFacultyAssignments] = useState([]);
 
   // Queries - GET_ACADEMIC_YEARS, GET_TEMP_STUDENTS, DASHBOARD_GET_STUDENT
   const { data: ay, loading: ayLoading } = useSuspenseQuery(GET_ACADEMIC_YEARS);
@@ -676,6 +679,58 @@ const DashboardPage = () => {
       [column]: !prev[column],
     }));
   };
+
+  // Add useEffect for checking user roles
+  useEffect(() => {
+    const checkUserRoles = async () => {
+      setIsLoadingPermissions(true);
+      try {
+        // Check if user is admin
+        const user = auth.currentUser;
+        if (user) {
+          const isAdminUser = user.email === "admin@shishyakul.in";
+          setIsAdmin(isAdminUser);
+
+          // Get member roles using utility function
+          const { roles, isFaculty: isFacultyMember } =
+            await checkMemberRoles();
+          setMemberRoles(roles || null);
+          setIsFaculty(isFacultyMember || false);
+
+          // Get faculty assignments if user is faculty
+          if (isFacultyMember) {
+            // You may need to implement a proper function to fetch faculty assignments
+            const memberDoc = await getDoc(doc(db, "members", user.email));
+            if (memberDoc.exists()) {
+              const memberData = memberDoc.data();
+              setFacultyAssignments(memberData.assignments || []);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error checking user roles:", error);
+      } finally {
+        setIsLoadingPermissions(false);
+      }
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        checkUserRoles();
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Loading state for permission check
+  if (isLoadingPermissions) {
+    return (
+      <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <Container>

@@ -511,11 +511,12 @@ const Page = () => {
 
           if (isFacultyMember) {
             const memberDoc = await getDoc(
-              doc(db, "members", currentUser.email)
+              doc(db, "faculties", currentUser.uid)
             );
             if (memberDoc.exists()) {
               const memberData = memberDoc.data();
-              setFacultyAssignments(memberData.assignments || []);
+              setFacultyAssignments(memberData.assignedStudents || []);
+              console.log("FACULTIESDATA", memberData);
             }
           }
         } else {

@@ -38,7 +38,7 @@ export function MemberDialog({
       Students: false,
       Fees: false,
       Content: false,
-      Birthdays: false,
+      // Birthdays: false,
       Faculty: false,
       Attendance: false,
     },
@@ -51,6 +51,7 @@ export function MemberDialog({
     grade: "",
     batch: "",
   });
+  const [editingAssignmentIndex, setEditingAssignmentIndex] = useState(null);
   const [grades, setGrades] = useState(["8", "9", "10", "11", "12"]);
   const [batches, setBatches] = useState([
     "Morning",
@@ -75,7 +76,7 @@ export function MemberDialog({
           Students: member.roles?.Students || false,
           Fees: member.roles?.Fees || false,
           Content: member.roles?.Content || false,
-          Birthdays: member.roles?.Birthdays || false,
+          // Birthdays: member.roles?.Birthdays || false,
           Faculty: member.roles?.Faculty || false,
           Attendance: member.roles?.Attendance || false,
         },
@@ -94,7 +95,7 @@ export function MemberDialog({
           Students: false,
           Fees: false,
           Content: false,
-          Birthdays: false,
+          // Birthdays: false,
           Faculty: false,
           Attendance: false,
         },
@@ -159,11 +160,22 @@ export function MemberDialog({
       // If batch is "all", keep it as "all" in the data structure
     };
 
-    // Add the new assignment
-    setFormData((prev) => ({
-      ...prev,
-      facultyAssignments: [...prev.facultyAssignments, processedAssignment],
-    }));
+    if (editingAssignmentIndex !== null) {
+      // Update existing assignment
+      setFormData((prev) => ({
+        ...prev,
+        facultyAssignments: prev.facultyAssignments.map((item, index) =>
+          index === editingAssignmentIndex ? processedAssignment : item
+        ),
+      }));
+      setEditingAssignmentIndex(null);
+    } else {
+      // Add the new assignment
+      setFormData((prev) => ({
+        ...prev,
+        facultyAssignments: [...prev.facultyAssignments, processedAssignment],
+      }));
+    }
 
     // Reset the form
     setNewAssignment({
@@ -173,11 +185,40 @@ export function MemberDialog({
     });
   };
 
+  const editAssignment = (index) => {
+    const assignment = formData.facultyAssignments[index];
+    setNewAssignment({
+      academicYear: assignment.academicYear || "",
+      grade: assignment.grade || "",
+      batch: assignment.batch || "",
+    });
+    setEditingAssignmentIndex(index);
+  };
+
   const removeAssignment = (index) => {
     setFormData((prev) => ({
       ...prev,
       facultyAssignments: prev.facultyAssignments.filter((_, i) => i !== index),
     }));
+
+    // If currently editing this assignment, cancel the edit
+    if (editingAssignmentIndex === index) {
+      setEditingAssignmentIndex(null);
+      setNewAssignment({
+        academicYear: "",
+        grade: "",
+        batch: "",
+      });
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingAssignmentIndex(null);
+    setNewAssignment({
+      academicYear: "",
+      grade: "",
+      batch: "",
+    });
   };
 
   const handleSubmit = (e) => {
@@ -272,7 +313,7 @@ export function MemberDialog({
                     "Students",
                     "Fees",
                     "Content",
-                    "Birthdays",
+                    // "Birthdays",
                     "Faculty",
                     "Attendance",
                   ]}
@@ -296,7 +337,9 @@ export function MemberDialog({
                       {formData.facultyAssignments.map((assignment, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between p-2 border rounded"
+                          className={`flex items-center justify-between p-2 border rounded ${
+                            editingAssignmentIndex === index ? "bg-muted" : ""
+                          }`}
                         >
                           <div>
                             <span className="font-medium">
@@ -336,7 +379,11 @@ export function MemberDialog({
 
                 {/* Add new assignment */}
                 <div className="space-y-2 border p-3 rounded">
-                  <Label>Add New Assignment</Label>
+                  <Label>
+                    {editingAssignmentIndex !== null
+                      ? "Edit Assignment"
+                      : "Add New Assignment"}
+                  </Label>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Label className="w-24">Academic Year*</Label>
@@ -407,16 +454,35 @@ export function MemberDialog({
                     </div>
                   </div>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addAssignment}
-                    disabled={isLoading || !newAssignment.academicYear}
-                    className="mt-2"
-                  >
-                    <Plus className="mr-1 h-4 w-4" /> Add Assignment
-                  </Button>
+                  <div className="flex space-x-2 mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addAssignment}
+                      disabled={isLoading || !newAssignment.academicYear}
+                    >
+                      {editingAssignmentIndex !== null ? (
+                        "Update Assignment"
+                      ) : (
+                        <>
+                          <Plus className="mr-1 h-4 w-4" /> Add Assignment
+                        </>
+                      )}
+                    </Button>
+
+                    {editingAssignmentIndex !== null && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={cancelEdit}
+                        disabled={isLoading}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

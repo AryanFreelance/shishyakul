@@ -92,8 +92,8 @@ export const hasPageAccess = (user, page) => {
       return user.roles.Fees;
     case "content":
       return user.roles.Content;
-    case "birthdays":
-      return user.roles.Birthdays || user.roles.Faculty;
+    // case "birthdays":
+    //   return user.roles.Birthdays || user.roles.Faculty;
     case "tests":
       return user.roles.Faculty;
     case "attendance":

@@ -697,12 +697,14 @@ const page = () => {
         <div className="flex flex-col gap-10 lg:items-center w-full">
           <div className="w-full">
             <div>
-              <Link
-                href="/dashboard"
-                className="text-[16px] mb-8 mr-10 text-center border-2 border-main rounded px-4 py-2"
-              >
-                Go Back
-              </Link>
+              {(isAdmin || isFaculty || memberRoles) && (
+                <Link
+                  href="/dashboard"
+                  className="text-[16px] mb-8 mr-10 text-center border-2 border-main rounded px-4 py-2"
+                >
+                  Go Back
+                </Link>
+              )}
               <Button
                 onClick={logoutHandler}
                 className="text-[16px] filled-button mb-8"

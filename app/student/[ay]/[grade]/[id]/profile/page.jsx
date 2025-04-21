@@ -826,7 +826,7 @@ const page = () => {
             <ArrowLeft size={16} /> Go Back
           </Link>
           <div className="flex items-center gap-4">
-            {academicYears.length > 1 && (
+            {/* {academicYears.length > 1 && (
               <div className="flex items-center gap-2">
                 <Calendar size={16} />
                 <Select
@@ -845,7 +845,7 @@ const page = () => {
                   </SelectContent>
                 </Select>
               </div>
-            )}
+            )} */}
             <div className="flex items-center gap-2">
               <span className="text-lg font-medium">Overall Completion:</span>
               <span className="text-lg font-bold">

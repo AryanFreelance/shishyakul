@@ -57,7 +57,7 @@ export function MembersList({ members, onEdit, onDelete, onUpdateRoles }) {
                       "Students",
                       "Fees",
                       "Content",
-                      "Birthdays",
+                      // "Birthdays",
                       "Faculty",
                       "Attendance",
                     ].map((role) =>
@@ -149,7 +149,7 @@ export function MembersList({ members, onEdit, onDelete, onUpdateRoles }) {
                     "Students",
                     "Fees",
                     "Content",
-                    "Birthdays",
+                    // "Birthdays",
                     "Faculty",
                     "Attendance",
                   ].map((role) =>

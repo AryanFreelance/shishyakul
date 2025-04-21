@@ -2,8 +2,8 @@ import { gql } from "@apollo/client";
 
 // Get Test Papers
 export const GET_TESTPAPERS = gql`
-  query Testpapers {
-    testpapers {
+  query Testpapers($facultyId: ID, $isAdmin: Boolean) {
+    testpapers(facultyId: $facultyId, isAdmin: $isAdmin) {
       draft {
         id
         title
@@ -18,6 +18,8 @@ export const GET_TESTPAPERS = gql`
         url
         createdAt
         published
+        createdBy
+        creatorName
       }
       published {
         id
@@ -33,6 +35,8 @@ export const GET_TESTPAPERS = gql`
         url
         createdAt
         published
+        createdBy
+        creatorName
       }
     }
   }
@@ -40,7 +44,7 @@ export const GET_TESTPAPERS = gql`
 
 // Get a Test Paper
 export const GET_TESTPAPER = gql`
-  query Testpaper($id: ID!, $published: Boolean!) {
+  query Testpaper($id: ID, $published: Boolean) {
     testpaper(id: $id, published: $published) {
       id
       title
@@ -106,7 +110,7 @@ export const GET_PUBLISHED_TESTPAPERS_SECURE = gql`
 
 // Get Test Papers for the User
 export const GET_PUBLISHED_TESTPAPERS_USERS = gql`
-  query TestpaperUsers($ay: String!, $grade: String!, $id: ID!) {
+  query TestpaperUsers($ay: String, $grade: String, $id: ID) {
     testpaperUsers(ay: $ay, grade: $grade, id: $id) {
       id
       title
@@ -124,7 +128,7 @@ export const GET_PUBLISHED_TESTPAPERS_USERS = gql`
 
 // Get the marks for a test paper
 export const GET_TESTPAPER_MARKS = gql`
-  query TestpaperMarks($id: ID!) {
+  query TestpaperMarks($id: ID) {
     testpaperMarks(id: $id) {
       id
       name
@@ -138,7 +142,7 @@ export const GET_TESTPAPER_MARKS = gql`
 
 // Get Test Paper Shared Users for a Test Paper
 export const GET_TESTPAPER_SHARED_USERS = gql`
-  query TestAccessedUsers($id: ID!) {
+  query TestAccessedUsers($id: ID) {
     testAccessedUsers(id: $id) {
       userId
       firstname
@@ -152,7 +156,7 @@ export const GET_TESTPAPER_SHARED_USERS = gql`
 `;
 
 export const GET_TESTPAPER_ATTENDANCE_STUDENTS = gql`
-  query TestpaperAttendanceStudents($id: ID!) {
+  query TestpaperAttendanceStudents($id: ID) {
     testpaperAttendanceStudents(id: $id) {
       userId
       firstname
@@ -166,7 +170,7 @@ export const GET_TESTPAPER_ATTENDANCE_STUDENTS = gql`
 `;
 
 export const GET_TESTPAPER_MARKS_STUDENTS = gql`
-  query TestpaperAttendanceStudents($id: ID!) {
+  query TestpaperAttendanceStudents($id: ID) {
     testpaperAttendanceStudents(id: $id) {
       userId
       firstname
@@ -176,6 +180,68 @@ export const GET_TESTPAPER_MARKS_STUDENTS = gql`
       grade
       batch
       email
+    }
+  }
+`;
+
+// Get Faculty Test Papers
+export const GET_FACULTY_TESTPAPERS = gql`
+  query FacultyTestpapers($facultyId: ID) {
+    facultyTestpapers(facultyId: $facultyId) {
+      published {
+        id
+        title
+        subject
+        totalMarks
+        date
+        sharedWith {
+          academicYear
+          grade
+          batch
+        }
+        url
+        createdAt
+        published
+        createdBy
+        creatorName
+      }
+      draft {
+        id
+        title
+        subject
+        totalMarks
+        date
+        url
+        createdAt
+        published
+        createdBy
+        creatorName
+      }
+    }
+  }
+`;
+
+// Get All Faculty Test Papers (Admin only)
+export const GET_ALL_FACULTY_TESTPAPERS = gql`
+  query AllFacultyTestpapers {
+    allFacultyTestpapers {
+      facultyEmail
+      facultyName
+      testpapers {
+        id
+        title
+        subject
+        totalMarks
+        date
+        sharedWith {
+          academicYear
+          grade
+          batch
+        }
+        url
+        createdAt
+        published
+      }
     }
   }
 `;

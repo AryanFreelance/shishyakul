@@ -38,13 +38,17 @@ import {
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
-const TempStudentsComp = () => {
+const TempStudentsComp = ({ tempCurrentPage = 0, setTempCurrentPage }) => {
   const [onePageTempStudent, setOnePageTempStudent] = useState([]);
   const [pages, setPages] = useState(0);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [currentPage, setCurrentPage] = useState(tempCurrentPage || 0);
+  const [pageSize, setPageSize] = useState(
+    parseInt(sessionStorage.getItem("tempPageSize") || "20")
+  );
 
-  const [searchEmail, setSearchEmail] = useState("");
+  const [searchEmail, setSearchEmail] = useState(
+    sessionStorage.getItem("tempSearchEmail") || ""
+  );
   const [filteredTempStudents, setFilteredTempStudents] = useState([]);
   const [selectedEmails, setSelectedEmails] = useState([]);
   // const pageSize = 20;
@@ -59,6 +63,28 @@ const TempStudentsComp = () => {
     refetchQueries: [{ query: GET_TEMP_STUDENTS }],
   });
 
+  // Update currentPage when tempCurrentPage changes
+  useEffect(() => {
+    setCurrentPage(tempCurrentPage);
+  }, [tempCurrentPage]);
+
+  // Update tempCurrentPage when currentPage changes
+  useEffect(() => {
+    if (setTempCurrentPage && currentPage !== tempCurrentPage) {
+      setTempCurrentPage(currentPage);
+    }
+  }, [currentPage, tempCurrentPage, setTempCurrentPage]);
+
+  // Store pageSize in sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem("tempPageSize", pageSize.toString());
+  }, [pageSize]);
+
+  // Store searchEmail in sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem("tempSearchEmail", searchEmail);
+  }, [searchEmail]);
+
   const deleteTempStudentHandler = async (email) => {
     const toastId = toast.loading("Deleting Student...");
 
@@ -68,20 +94,59 @@ const TempStudentsComp = () => {
       id: toastId,
     });
     setSearchEmail("");
+    sessionStorage.removeItem("tempSearchEmail");
   };
 
   const handleSearchTempStudent = (e) => {
     const value = e.target.value;
     setSearchEmail(value);
-    const filteredTempStudents = tempStudents?.tempStudents.filter((student) =>
-      student.email.toLowerCase().includes(value.toLowerCase())
-    );
+    const filteredTempStudents = tempStudents?.tempStudents
+      ? tempStudents.tempStudents.filter((student) =>
+          student.email.toLowerCase().includes(value.toLowerCase())
+        )
+      : [];
     setFilteredTempStudents(filteredTempStudents);
   };
 
   useEffect(() => {
-    setFilteredTempStudents(tempStudents?.tempStudents);
-  }, [tempStudents]);
+    // Apply search filter if there's a saved search term
+    if (searchEmail && tempStudents?.tempStudents) {
+      const filtered = tempStudents.tempStudents.filter((student) =>
+        student.email.toLowerCase().includes(searchEmail.toLowerCase())
+      );
+      setFilteredTempStudents(filtered);
+    } else {
+      setFilteredTempStudents(tempStudents?.tempStudents || []);
+    }
+  }, [tempStudents, searchEmail]);
+
+  useEffect(() => {
+    if (filteredTempStudents && Array.isArray(filteredTempStudents)) {
+      const startIndex = currentPage * pageSize;
+      const endIndex = startIndex + pageSize;
+      const slicedTempStudents = filteredTempStudents.slice(
+        startIndex,
+        endIndex
+      );
+
+      setOnePageTempStudent(slicedTempStudents);
+      setPages(Math.ceil(filteredTempStudents.length / pageSize));
+
+      // Reset to first page if current page doesn't exist anymore
+      if (
+        currentPage >= Math.ceil(filteredTempStudents.length / pageSize) &&
+        currentPage > 0
+      ) {
+        setCurrentPage(0);
+        if (setTempCurrentPage) {
+          setTempCurrentPage(0);
+        }
+      }
+    } else {
+      setOnePageTempStudent([]);
+      setPages(0);
+    }
+  }, [filteredTempStudents, currentPage, pageSize, setTempCurrentPage]);
 
   const handleCheckboxChange = (email) => {
     setSelectedEmails((prev) => {
@@ -169,31 +234,18 @@ const TempStudentsComp = () => {
     });
   };
 
-  useEffect(() => {
-    if (filteredTempStudents) {
-      const startIndex = currentPage * pageSize;
-      const endIndex = startIndex + pageSize;
-      const slicedTempStudents = filteredTempStudents.slice(
-        startIndex,
-        endIndex
-      );
-
-      setOnePageTempStudent(slicedTempStudents);
-      setPages(Math.ceil(filteredTempStudents.length / pageSize));
-
-      // console.log("Sliced Temp Students", slicedTempStudents);
-      // console.log("Pages", pages);
-      // console.log("Current Page", currentPage);
-    }
-  }, [filteredTempStudents, currentPage, pageSize]);
-
   return (
     <div>
       <div className="flex justify-between items-center">
         <h2 className="subheading">Students Pending</h2>
       </div>
       <div className="my-4 mb-6 text-lg">
-        <span>{filteredTempStudents.length} Students Found.</span>
+        <span>
+          {filteredTempStudents && Array.isArray(filteredTempStudents)
+            ? filteredTempStudents.length
+            : 0}{" "}
+          Students Found.
+        </span>
       </div>
       {/* Searchbar */}
       <div className="flex justify-center items-center w-full">
@@ -217,7 +269,14 @@ const TempStudentsComp = () => {
         {/* Set the value of the input in the pageSize when the input focus changes */}
         <select
           value={pageSize}
-          onChange={(e) => setPageSize(e.target.value)}
+          onChange={(e) => {
+            const newPageSize = parseInt(e.target.value);
+            setPageSize(newPageSize);
+            setCurrentPage(0);
+            if (setTempCurrentPage) {
+              setTempCurrentPage(0);
+            }
+          }}
           className="border-2 border-main bg-transparent px-3 py-1 rounded"
         >
           <option value="20">20</option>
@@ -227,7 +286,14 @@ const TempStudentsComp = () => {
         </select>
         <div className="flex justify-center items-center gap-4 mt-4 md:mt-0">
           <button
-            onClick={() => currentPage !== 0 && setCurrentPage(currentPage - 1)}
+            onClick={() => {
+              if (currentPage !== 0) {
+                setCurrentPage(currentPage - 1);
+                if (setTempCurrentPage) {
+                  setTempCurrentPage(currentPage - 1);
+                }
+              }
+            }}
             className="border-2 px-3 py-1 rounded border-black/50 hover:border-black disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-black/50"
             disabled={currentPage === 0}
           >
@@ -242,16 +308,26 @@ const TempStudentsComp = () => {
                     ? "text-black border-main"
                     : "border-black/50 hover:border-black"
                 }`}
-                onClick={() => setCurrentPage(index)}
+                onClick={() => {
+                  setCurrentPage(index);
+                  if (setTempCurrentPage) {
+                    setTempCurrentPage(index);
+                  }
+                }}
               >
                 {index + 1}
               </button>
             ))}
           </div>
           <button
-            onClick={() =>
-              currentPage !== pages - 1 && setCurrentPage(currentPage + 1)
-            }
+            onClick={() => {
+              if (currentPage !== pages - 1) {
+                setCurrentPage(currentPage + 1);
+                if (setTempCurrentPage) {
+                  setTempCurrentPage(currentPage + 1);
+                }
+              }
+            }}
             className="border-2 px-3 py-1 rounded border-black/50 hover:border-black disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-black/50"
             disabled={currentPage === pages - 1}
           >
@@ -260,19 +336,19 @@ const TempStudentsComp = () => {
         </div>
       </div>
       <div className="flex items-center gap-2 justify-end my-2">
-        {selectedEmails.length > 0 && (
+        {selectedEmails && selectedEmails.length > 0 && (
           <span className="text-lg">
             {selectedEmails.length} Emails Selected!
           </span>
         )}
         <Button
-          disabled={selectedEmails.length === 0}
+          disabled={!selectedEmails || selectedEmails.length === 0}
           onClick={bulkDeleteVerifications}
         >
           Bulk Delete
         </Button>
         <Button
-          disabled={selectedEmails.length === 0}
+          disabled={!selectedEmails || selectedEmails.length === 0}
           onClick={(e) => {
             e.preventDefault();
             setSelectedEmails([]);
@@ -294,149 +370,104 @@ const TempStudentsComp = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tempStudents?.tempStudents.length === 0 &&
-              filteredTempStudents?.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan="4"
-                    className="barlow-semibold text-center"
-                  >
-                    No pending students
-                  </TableCell>
-                </TableRow>
-              )}
-            {filteredTempStudents?.length === 0 &&
-              tempStudents?.tempStudents.length > 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan="4"
-                    className="barlow-semibold text-center"
-                  >
-                    No students found
-                  </TableCell>
-                </TableRow>
-              )}
-            {onePageTempStudent?.map((tempStudents, index) => (
-              <TableRow key={index}>
-                <TableCell className="barlow-regular">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      onChange={() => handleCheckboxChange(tempStudents.email)}
-                      checked={selectedEmails.includes(tempStudents.email)}
-                      className="transform scale-150"
-                    />
-                    {currentPage * pageSize + index + 1}
-                  </div>
-                </TableCell>
-                <TableCell className="barlow-semibold">
-                  {tempStudents.email}
-                </TableCell>
-                <TableCell className="barlow-regular">
-                  {tempStudents.verificationCode}
-                </TableCell>
-                <TableCell className="barlow-regular flex items-center gap-4">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <button className="border-2 border-main rounded p-1">
-                        <Trash />
-                      </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          Are you absolutely sure?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently
-                          delete your account and remove your data from our
-                          servers.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() =>
-                            deleteTempStudentHandler(tempStudents.email)
-                          }
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <button className="border-2 border-main rounded p-1">
-                        <Repeat />
-                      </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          Share the verification code again?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          The code will be sent to the shishya's email once you
-                          confirm the operation.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={(e) =>
-                            resendVerificationCode(
-                              e,
-                              tempStudents.email,
-                              tempStudents.verificationCode
-                            )
-                          }
-                        >
-                          Resend
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+            {(!onePageTempStudent ||
+              !Array.isArray(onePageTempStudent) ||
+              onePageTempStudent.length === 0) && (
+              <TableRow>
+                <TableCell colSpan="4" className="barlow-semibold text-center">
+                  No pending students
                 </TableCell>
               </TableRow>
-            ))}
+            )}
+            {onePageTempStudent &&
+              Array.isArray(onePageTempStudent) &&
+              onePageTempStudent.map((tempStudent, index) => (
+                <TableRow key={index}>
+                  <TableCell className="barlow-regular">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        onChange={() => handleCheckboxChange(tempStudent.email)}
+                        checked={selectedEmails.includes(tempStudent.email)}
+                        className="transform scale-150"
+                      />
+                      {currentPage * pageSize + index + 1}
+                    </div>
+                  </TableCell>
+                  <TableCell className="barlow-semibold">
+                    {tempStudent.email}
+                  </TableCell>
+                  <TableCell className="barlow-regular">
+                    {tempStudent.verificationCode}
+                  </TableCell>
+                  <TableCell className="barlow-regular flex items-center gap-4">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button className="border-2 border-main rounded p-1">
+                          <Trash />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Are you absolutely sure?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently
+                            delete your account and remove your data from our
+                            servers.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() =>
+                              deleteTempStudentHandler(tempStudent.email)
+                            }
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button className="border-2 border-main rounded p-1">
+                          <Repeat />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Share the verification code again?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            The code will be sent to the shishya's email once
+                            you confirm the operation.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={(e) =>
+                              resendVerificationCode(
+                                e,
+                                tempStudent.email,
+                                tempStudent.verificationCode
+                              )
+                            }
+                          >
+                            Resend
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
-      </div>
-      {/* Pagination */}
-      <div className="flex justify-center items-center gap-4 mt-4">
-        <button
-          onClick={() => currentPage !== 0 && setCurrentPage(currentPage - 1)}
-          className="border-2 px-3 py-1 rounded border-black/50 hover:border-black disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-black/50"
-          disabled={currentPage === 0}
-        >
-          <ArrowLeft />
-        </button>
-        <div className="flex flex-wrap justify-center items-center max-w-[300px] lg:max-w-[600px] gap-4">
-          {new Array(pages).fill(0).map((_, index) => (
-            <button
-              key={index}
-              className={`border-2 px-3 py-1 rounded ${
-                index === currentPage
-                  ? "text-black border-main"
-                  : "border-black/50 hover:border-black"
-              }`}
-              onClick={() => setCurrentPage(index)}
-            >
-              {index + 1}
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={() =>
-            currentPage !== pages - 1 && setCurrentPage(currentPage + 1)
-          }
-          className="border-2 px-3 py-1 rounded border-black/50 hover:border-black disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-black/50"
-          disabled={currentPage === pages - 1}
-        >
-          <ArrowRight />
-        </button>
       </div>
     </div>
   );

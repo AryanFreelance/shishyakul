@@ -5,6 +5,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import DevelopmentMode from "@/components/shared/DevelopmentMode";
+import { PermissionProvider } from "@/app/context/PermissionContext";
 
 const Layout = ({ children }) => {
   const [authStatus, setAuthStatus] = useState(null);
@@ -27,13 +28,7 @@ const Layout = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        const uid = user.uid;
-        // console.log(user);
-        if (user.email !== "admin@shishyakul.in") {
-          router.push(`/student/user/${uid}`);
-        } else {
-          setAuthStatus(true);
-        }
+        setAuthStatus(true);
       } else {
         setAuthStatus(false);
         router.push("/login");
@@ -41,7 +36,7 @@ const Layout = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
   if (authStatus === null) {
     return (
@@ -72,7 +67,11 @@ const Layout = ({ children }) => {
   //   );
   // }
 
-  return <div>{children}</div>;
+  return (
+    <PermissionProvider>
+      <div>{children}</div>
+    </PermissionProvider>
+  );
 };
 
 export default Layout;

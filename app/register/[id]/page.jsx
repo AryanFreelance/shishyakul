@@ -131,8 +131,6 @@ function Page() {
       return;
     }
 
-    // TODO: Validate the AY
-
     // Check if the AY is valid using following testcases:
     // 1. AY should be 9 digit long including the hyphen (-) i.e. 2024-2025
     // 2. AY should be between 2008 and current year + 1

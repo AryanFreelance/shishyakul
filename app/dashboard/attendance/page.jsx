@@ -3,7 +3,12 @@ import Container from "@/components/shared/Container";
 import Navbar from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
 import { dashboardNavLinks } from "@/constants";
-import { ChevronDown } from "lucide-react";
+import {
+  ChevronDown,
+  RefreshCw,
+  SearchIcon,
+  Calendar as CalendarIcon,
+} from "lucide-react";
 import React, { useEffect, useState } from "react";
 import {
   DropdownMenu,
@@ -13,8 +18,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { format, set } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -46,8 +49,24 @@ import {
   GET_ACADEMIC_YEARS,
   GET_STUDENTS_FOR_ATTENDANCE,
 } from "@/graphql/queries/students.query";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getDoc, doc } from "firebase/firestore";
+import { checkMemberRoles, hasRole } from "@/utils/member-utils";
+import { auth, db } from "@/firebase";
 
 const Page = () => {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isFaculty, setIsFaculty] = useState(false);
+  const [memberRoles, setMemberRoles] = useState(null);
+  const [facultyId, setFacultyId] = useState(null);
+  const [facultyAssignments, setFacultyAssignments] = useState([]);
+  const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
+  const [hasAttendancePermission, setHasAttendancePermission] = useState(false);
+  const [user, setUser] = useState(null);
+
+  const [availableAcademicYears, setAvailableAcademicYears] = useState([]);
+  const [availableGrades, setAvailableGrades] = useState([]);
+
   const [present, setPresent] = useState([]);
   const [absent, setAbsent] = useState([]);
   const today = new Date();
@@ -55,12 +74,18 @@ const Page = () => {
   const [formattedDate, setFormattedDate] = useState("");
   const [absentEmails, setAbsentEmails] = useState([]);
   const [searchParameters, setSearchParameters] = useState({
-    ay: localStorage.getItem("a-ay") || "select-ay",
-    grade: localStorage.getItem("a-grade") || "select-grade",
+    ay: sessionStorage.getItem("a-ay") || "select-ay",
+    grade: sessionStorage.getItem("a-grade") || "select-grade",
   });
-  const [selectedBatch, setSelectedBatch] = useState("select-batch");
+  const [selectedBatch, setSelectedBatch] = useState(
+    sessionStorage.getItem("a-batch") || "select-batch"
+  );
+  const [studentName, setStudentName] = useState(
+    sessionStorage.getItem("a-studentName") || ""
+  );
   const [batches, setBatches] = useState(new Set());
   const [students, setStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
   const [isStudentDataLoading, setIsStudentDataLoading] = useState(false);
   const months = [
     "Jan",
@@ -85,14 +110,16 @@ const Page = () => {
       : today.getMonth() + 1
   }-${today.getFullYear()}`;
 
-  // Queries - Get Students, Get Attendance
   const [fetchStudents, { data: studentsData, loading: studDataLoading }] =
     useLazyQuery(GET_STUDENTS_FOR_ATTENDANCE, {
       fetchPolicy: "network-only",
-      variables: { ay: searchParameters.ay, grade: searchParameters.grade },
+      variables: {
+        ay: searchParameters.ay,
+        grade: searchParameters.grade,
+        facultyId: facultyId,
+      },
       onCompleted: (data) => {
         setStudents(data?.gStudents || []);
-        // console.log("DATA", data);
       },
     });
 
@@ -105,22 +132,17 @@ const Page = () => {
         grade: searchParameters.grade,
         timestamp: formattedDate.split("-").reverse().join("-"),
       },
-      onCompleted: (data) => {
-        // console.log("DATA", data);
-      },
+      onCompleted: (data) => {},
     }
   );
 
-  const { data: ay } = useSuspenseQuery(GET_ACADEMIC_YEARS);
+  const { data: ay, loading: ayLoading } = useSuspenseQuery(GET_ACADEMIC_YEARS);
 
-  // Mutations - Create Attendance, Update Attendance
   const [attendanceHandler] = useMutation(ATTENDANCE_HANDLER, {
     onCompleted: (data) => {
-      // console.log("Attendance Created: ", data);
       toast.success("Attendance Saved Successfully!");
     },
     onError: (error) => {
-      // console.log("Error creating attendance: ", error);
       toast.error("Error saving attendance.");
     },
     refetchQueries: [
@@ -145,37 +167,77 @@ const Page = () => {
   useEffect(() => {
     setStudents(studentsData?.gStudents || []);
     setIsStudentDataLoading(studDataLoading);
-    // console.log("STUDENTS", studentsData?.gStudents);
   }, [studentsData, studDataLoading]);
 
-  // Update the formattedDate whenever the date changes
+  useEffect(() => {
+    if (
+      searchParameters.ay !== "select-ay" &&
+      searchParameters.grade !== "select-grade"
+    ) {
+      fetchStudents({
+        variables: {
+          ay: searchParameters.ay,
+          grade: searchParameters.grade,
+          facultyId: facultyId,
+        },
+      });
+      sessionStorage.setItem("a-ay", searchParameters.ay);
+      sessionStorage.setItem("a-grade", searchParameters.grade);
+    }
+  }, [searchParameters.ay, searchParameters.grade, facultyId, fetchStudents]);
+
   useEffect(() => {
     const sDate = date && date.toString().split(" ");
-    const formattedDate =
-      date && `${sDate[2]}-${getMonthNumber(sDate[1])}-${sDate[3]}`;
-    setFormattedDate(date ? formattedDate : "(select a date)");
-    if (formattedDate) {
+    let formattedDateStr;
+
+    if (date) {
+      if (sDate && sDate.length >= 4) {
+        formattedDateStr = `${sDate[2]}-${getMonthNumber(sDate[1])}-${
+          sDate[3]
+        }`;
+      } else {
+        const day = date.getDate() < 10 ? "0" + date.getDate() : date.getDate();
+        const month =
+          date.getMonth() + 1 < 10
+            ? "0" + (date.getMonth() + 1)
+            : date.getMonth() + 1;
+        const year = date.getFullYear();
+        formattedDateStr = `${day}-${month}-${year}`;
+      }
+    } else {
+      formattedDateStr = "(select a date)";
+    }
+
+    setFormattedDate(formattedDateStr);
+
+    if (
+      formattedDateStr !== "(select a date)" &&
+      searchParameters.ay !== "select-ay" &&
+      searchParameters.grade !== "select-grade"
+    ) {
       fetchAttendance({
         variables: {
           ay: searchParameters.ay,
           grade: searchParameters.grade,
-          timestamp: formattedDate.split("-").reverse().join("-"),
+          timestamp: formattedDateStr.split("-").reverse().join("-"),
         },
       });
     }
-    // Set the batch value to select-batch
+
     if (selectedBatch && selectedBatch !== "select-batch") {
       setSelectedBatch("select-batch");
+      sessionStorage.setItem("a-batch", "select-batch");
     }
-  }, [date]);
+  }, [date, searchParameters.ay, searchParameters.grade, fetchAttendance]);
 
-  // Update the localStorage whenever the search parameters change
   useEffect(() => {
-    localStorage.setItem("a-grade", searchParameters.grade);
-    localStorage.setItem("a-ay", searchParameters.ay);
-  }, [searchParameters]);
+    sessionStorage.setItem("a-batch", selectedBatch);
+  }, [selectedBatch]);
 
-  // Update the students array whenever the search parameters change
+  useEffect(() => {
+    sessionStorage.setItem("a-studentName", studentName);
+  }, [studentName]);
+
   useEffect(() => {
     if (searchParameters.ay && searchParameters.ay !== "select-ay") {
       fetchAttendance({
@@ -187,11 +249,7 @@ const Page = () => {
               ? null
               : searchParameters.grade,
         },
-        onCompleted: (data) => {
-          // setStudents(data?.gStudents || []);
-          // setFilteredStudents(data.students || []);
-          // console.log("DATA", data);
-        },
+        onCompleted: (data) => {},
       });
 
       fetchStudents({
@@ -205,19 +263,14 @@ const Page = () => {
         },
         onCompleted: (data) => {
           setStudents(data.gStudents || []);
-          // setFilteredStudents(data.students || []);
-          // console.log("DATA", data);
         },
       });
     }
-    // if (searchParameters.ay === "select-ay") console.log("NO STUDENT");
-    // console.log("SEARCHPARAMS", searchParameters);
     setSelectedBatch("select-batch");
   }, [searchParameters]);
 
   useEffect(() => {
     if (selectedBatch && selectedBatch !== "select-batch") {
-      // console.log("BATCH MODIFIED", selectedBatch);
       setStudents(
         studentsData?.gStudents?.filter(
           (student) => student.batch === selectedBatch
@@ -226,30 +279,43 @@ const Page = () => {
     } else {
       setStudents(studentsData?.gStudents || []);
     }
-    // console.log("SELECTEDBATCH", selectedBatch);
   }, [selectedBatch]);
 
-  // Update the present and absent arrays whenever the attendanceData changes
+  useEffect(() => {
+    if (studentName && students?.length > 0) {
+      const filtered = students.filter((student) =>
+        `${student?.firstname || ""} ${student?.lastname || ""}`
+          .toLowerCase()
+          .includes(studentName.toLowerCase())
+      );
+      setFilteredStudents(filtered);
+    } else {
+      setFilteredStudents(students);
+    }
+  }, [studentName, students]);
+
   useEffect(() => {
     if (attendanceData?.attendance) {
-      setPresent(attendanceData.attendance.present);
-      setAbsent(attendanceData.attendance.absent);
+      setPresent(attendanceData.attendance.present || []);
+      setAbsent(attendanceData.attendance.absent || []);
 
-      // console.log("STUD DATA", studentsData);
-
-      setAbsentEmails(
-        students
-          .filter((student) =>
-            attendanceData.attendance.absent.includes(student.userId)
-          )
-          .map((student) => student.email)
-      );
-      // console.log("ATTENDANCE DATA", attendanceData);
+      if (students && students.length > 0) {
+        setAbsentEmails(
+          students
+            .filter((student) =>
+              attendanceData.attendance.absent?.includes(student.userId)
+            )
+            .map((student) => student.email)
+        );
+      } else {
+        setAbsentEmails([]);
+      }
     } else {
       setPresent([]);
       setAbsent([]);
+      setAbsentEmails([]);
     }
-  }, [attendanceData]);
+  }, [attendanceData, students]);
 
   useEffect(() => {
     if (studentsData?.gStudents?.length > 0) {
@@ -261,13 +327,11 @@ const Page = () => {
         )
       );
       setBatches(uniqueBatch);
-      // console.log("UNIQUE BATCH", uniqueBatch);
     } else {
       setBatches([]);
     }
   }, [studentsData]);
 
-  // Get the month number from the month name
   function getMonthNumber(monthName) {
     const monthIndex = months.indexOf(monthName);
     if (monthIndex === -1) {
@@ -276,7 +340,6 @@ const Page = () => {
     return monthIndex + 1 < 10 ? "0" + (monthIndex + 1) : monthIndex + 1;
   }
 
-  // Update the attendance data in the database
   const updateAttendanceHandler = async () => {
     const toastId = toast.loading("Updating Attendance...");
 
@@ -288,33 +351,12 @@ const Page = () => {
         present: present,
         absent: absent,
         date: formattedDate,
+        facultyId: facultyId,
       },
     });
-
-    // if (!attendanceData?.attendance) {
-    //   await createAttendance({
-    //     variables: {
-    //       ay: searchParameters.ay,
-    //       grade: searchParameters.grade,
-    //       timestamp: formattedDate.split("-").reverse().join("-"),
-    //       present: present,
-    //       absent: absent,
-    //       date: formattedDate,
-    //     },
-    //   });
-    // } else {
-    //   await updateAttendance({
-    //     variables: {
-    //       present: present,
-    //       absent: absent,
-    //       timestamp: formattedDate.split("-").reverse().join("-"),
-    //     },
-    //   });
-    // }
     toast.dismiss(toastId);
   };
 
-  // Send emails to absent students
   const sendEmailsHandler = async () => {
     const toastId = toast.loading("Sending Emails...");
 
@@ -337,7 +379,190 @@ const Page = () => {
     }
   };
 
-  // console.log("FORMATTEDDATE", formattedDate);
+  useEffect(() => {
+    if (
+      searchParameters.ay !== sessionStorage.getItem("a-ay") ||
+      searchParameters.grade !== sessionStorage.getItem("a-grade")
+    ) {
+      setStudentName("");
+      setSelectedBatch("select-batch");
+    }
+  }, [searchParameters.ay, searchParameters.grade]);
+
+  useEffect(() => {
+    if (selectedBatch !== sessionStorage.getItem("a-batch")) {
+      setStudentName("");
+    }
+  }, [selectedBatch]);
+
+  const handleRefreshStudents = () => {
+    if (
+      searchParameters.ay !== "select-ay" &&
+      searchParameters.grade !== "select-grade"
+    ) {
+      fetchStudents({
+        fetchPolicy: "network-only",
+        variables: {
+          ay: searchParameters.ay,
+          grade: searchParameters.grade,
+          facultyId: facultyId,
+        },
+        onCompleted: (data) => {
+          setStudents(data.gStudents || []);
+          setFilteredStudents(data.gStudents || []);
+          setStudentName("");
+          setSelectedBatch("select-batch");
+          sessionStorage.setItem("a-studentName", "");
+          sessionStorage.setItem("a-batch", "select-batch");
+          toast.success("Students Refreshed Successfully!");
+        },
+      });
+    } else {
+      toast.error("Please select Academic Year and Grade first!");
+    }
+  };
+
+  useEffect(() => {
+    if (isFaculty && facultyAssignments.length > 0) {
+      const uniqueAYs = [
+        ...new Set(
+          facultyAssignments.map((assignment) => assignment.academicYear)
+        ),
+      ];
+      setAvailableAcademicYears(uniqueAYs);
+
+      if (searchParameters.ay !== "select-ay") {
+        const gradesForSelectedAY = facultyAssignments
+          .filter(
+            (assignment) => assignment.academicYear === searchParameters.ay
+          )
+          .map((assignment) => assignment.grade)
+          .filter((grade) => grade && grade !== "all");
+
+        setAvailableGrades([...new Set(gradesForSelectedAY)]);
+      } else {
+        setAvailableGrades([]);
+      }
+    }
+  }, [isFaculty, facultyAssignments, searchParameters.ay]);
+
+  useEffect(() => {
+    if (isFaculty && searchParameters.ay !== "select-ay") {
+      const gradesForSelectedAY = facultyAssignments
+        .filter((assignment) => assignment.academicYear === searchParameters.ay)
+        .map((assignment) => assignment.grade)
+        .filter((grade) => grade && grade !== "all");
+
+      setAvailableGrades([...new Set(gradesForSelectedAY)]);
+
+      if (
+        searchParameters.grade !== "select-grade" &&
+        !gradesForSelectedAY.includes(searchParameters.grade)
+      ) {
+        setSearchParameters((prev) => ({ ...prev, grade: "select-grade" }));
+      }
+    }
+  }, [searchParameters.ay, isFaculty, facultyAssignments]);
+
+  useEffect(() => {
+    if (selectedBatch !== "select-batch" && students.length > 0) {
+      const batchFilteredStudents = students.filter(
+        (student) => student.batch === selectedBatch
+      );
+      setFilteredStudents(batchFilteredStudents);
+    } else {
+      setFilteredStudents(students);
+    }
+  }, [selectedBatch, students]);
+
+  const displayStudents = studentName
+    ? filteredStudents.filter((student) =>
+        `${student?.firstname || ""} ${student?.middlename || ""} ${
+          student?.lastname || ""
+        }`
+          .toLowerCase()
+          .includes(studentName.toLowerCase())
+      )
+    : filteredStudents;
+
+  useEffect(() => {
+    const checkUserRoles = async () => {
+      setIsLoadingPermissions(true);
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          setUser(currentUser);
+
+          const isAdminUser = currentUser.email === "admin@shishyakul.in";
+          setIsAdmin(isAdminUser);
+
+          const { roles, isFaculty: isFacultyMember } =
+            await checkMemberRoles();
+          setMemberRoles(roles || null);
+          setIsFaculty(isFacultyMember);
+
+          const hasAttendanceRole = roles && roles.Attendance === true;
+          setHasAttendancePermission(
+            isAdminUser || isFacultyMember || hasAttendanceRole
+          );
+
+          const isFacultyUser = isFacultyMember && !isAdminUser;
+          setFacultyId(isFacultyUser ? currentUser.uid : null);
+
+          if (isFacultyMember) {
+            const memberDoc = await getDoc(
+              doc(db, "faculties", currentUser.uid)
+            );
+            if (memberDoc.exists()) {
+              const memberData = memberDoc.data();
+              setFacultyAssignments(memberData.assignedStudents || []);
+              console.log("FACULTIESDATA", memberData);
+            }
+          }
+        } else {
+          window.location.href = "/login";
+        }
+      } catch (error) {
+        console.error("Error checking user roles:", error);
+      } finally {
+        setIsLoadingPermissions(false);
+      }
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        checkUserRoles();
+      } else {
+        window.location.href = "/login";
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (isLoadingPermissions) {
+    return (
+      <div className="flex justify-center items-center h-[100svh] text-2xl barlow-bold">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!hasAttendancePermission) {
+    return (
+      <Container>
+        <Navbar navLinks={dashboardNavLinks} isHome={false} />
+        <div className="flex flex-col justify-center items-center h-[70vh] gap-4">
+          <h2 className="text-2xl font-bold text-red-600">Access Denied</h2>
+          <p className="text-lg text-center max-w-md">
+            You don't have permission to access the attendance management page.
+            Only administrators, faculty members, and staff with the Attendance
+            role can access this page.
+          </p>
+        </div>
+      </Container>
+    );
+  }
 
   return (
     <Container>
@@ -393,7 +618,9 @@ const Page = () => {
                   <DropdownMenuContent>
                     <DropdownMenuItem
                       onClick={() => {
-                        setPresent(students?.map((student) => student.userId));
+                        setPresent(
+                          displayStudents?.map((student) => student.userId)
+                        );
                         setAbsent([]);
                       }}
                     >
@@ -401,7 +628,9 @@ const Page = () => {
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
-                        setAbsent(students?.map((student) => student.userId));
+                        setAbsent(
+                          displayStudents?.map((student) => student.userId)
+                        );
                         setPresent([]);
                       }}
                     >
@@ -421,13 +650,12 @@ const Page = () => {
             </div>
 
             <div className="my-4">
-              {/* Searchbar */}
               <div className="flex justify-between items-center flex-wrap w-full md:w-[60%] gap-2 mb-2">
-                {/* Academic Year Dropdown */}
                 <div className="w-full md:w-[30%]">
                   <Select
                     onValueChange={(value) => {
                       setSearchParameters({ ...searchParameters, ay: value });
+                      sessionStorage.setItem("a-ay", value);
                     }}
                     value={searchParameters.ay}
                     defaultValue="select-ay"
@@ -437,42 +665,65 @@ const Page = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="select-ay">Select A.Y.</SelectItem>
-                      {Array.from(ay?.academicYears)?.map((acay, index) => (
-                        <SelectItem key={index} value={acay}>
-                          {acay}
-                        </SelectItem>
-                      ))}
+                      {ayLoading ? (
+                        <SelectItem value="loading">Loading...</SelectItem>
+                      ) : isFaculty && facultyAssignments.length > 0 ? (
+                        availableAcademicYears.map((acay, index) => (
+                          <SelectItem key={index} value={acay}>
+                            {acay}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        Array.from(ay?.academicYears)?.map((acay, index) => (
+                          <SelectItem key={index} value={acay}>
+                            {acay}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
-                {/* Standard Dropdown */}
                 <div className="w-full md:w-[30%]">
                   <Select
-                    onValueChange={(value) =>
-                      setSearchParameters({ ...searchParameters, grade: value })
-                    }
+                    onValueChange={(value) => {
+                      setSearchParameters({
+                        ...searchParameters,
+                        grade: value,
+                      });
+                      sessionStorage.setItem("a-grade", value);
+                    }}
                     value={searchParameters.grade}
                     defaultValue="select-grade"
+                    disabled={searchParameters.ay === "select-ay"}
                   >
                     <SelectTrigger className="px-4 text-secondary barlow-regular rounded-full md:rounded-none border-main border-2 md:border-l-slate-600 md:border-r-slate-600 outline-none focus:border-none focus-outline-none bg-transparent w-full py-6">
                       <SelectValue placeholder="Grade" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="select-grade">Select Grade</SelectItem>
-                      {grades.map((grd, index) => (
-                        <SelectItem key={index} value={grd || index}>
-                          {grd}
-                        </SelectItem>
-                      ))}
+                      {isFaculty && facultyAssignments.length > 0
+                        ? availableGrades.map((grade, index) => (
+                            <SelectItem key={index} value={grade}>
+                              {grade}
+                            </SelectItem>
+                          ))
+                        : grades.map((grd, index) => (
+                            <SelectItem key={index} value={grd || index}>
+                              {grd}
+                            </SelectItem>
+                          ))}
                     </SelectContent>
                   </Select>
                 </div>
-                {/* Batch Dropdown */}
                 <div className="w-full md:w-[30%]">
                   <Select
-                    onValueChange={(value) => setSelectedBatch(value)}
+                    onValueChange={(value) => {
+                      setSelectedBatch(value);
+                      sessionStorage.setItem("a-batch", value);
+                    }}
                     value={selectedBatch}
                     defaultValue="select-batch"
+                    disabled={searchParameters.grade === "select-grade"}
                   >
                     <SelectTrigger className="px-4 text-secondary barlow-regular rounded-full md:rounded-none md:rounded-r-full border-main border-2 md:border-l-slate-600 outline-none focus:border-none focus-outline-none bg-transparent w-full py-6">
                       <SelectValue placeholder="Batch" />
@@ -488,16 +739,35 @@ const Page = () => {
                   </Select>
                 </div>
               </div>
+
+              <div className="flex justify-between items-center flex-wrap w-full md:w-[60%] gap-2 mt-4">
+                <div className="w-full">
+                  <div className="flex items-center gap-2 border-2 rounded-full px-4 py-2 border-main">
+                    <SearchIcon className="h-5 w-5 text-secondary" />
+                    <input
+                      type="text"
+                      placeholder="Search by Student Name..."
+                      className="w-full py-1 bg-transparent outline-none border-none text-secondary barlow-regular"
+                      value={studentName}
+                      onChange={(e) => setStudentName(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div>
-              <span>
-                {students?.length > 0 && students?.length} Students Found.
+              <span className="flex items-center gap-3">
+                {displayStudents?.length > 0 && displayStudents?.length}{" "}
+                Students Found.
+                <button onClick={handleRefreshStudents}>
+                  <RefreshCw className="h-5 w-5" />
+                </button>
               </span>
             </div>
 
             <div className="mt-6">
-              {students?.map((item, index) => (
+              {displayStudents?.map((item, index) => (
                 <div key={index}>
                   <div className="flex justify-between items-center rounded my-4">
                     <div>{item.firstname + " " + item.lastname}</div>
@@ -511,7 +781,7 @@ const Page = () => {
                           onChange={(e) =>
                             radioInputChangeHandler(e, item.userId)
                           }
-                          checked={present.includes(item.userId)}
+                          checked={present?.includes(item.userId)}
                         />
                         <label htmlFor={`present-${item.userId}`}>
                           Present
@@ -523,7 +793,7 @@ const Page = () => {
                           id={`absent-${item.userId}`}
                           name={item.userId}
                           value="absent"
-                          checked={absent.includes(item.userId)}
+                          checked={absent?.includes(item.userId)}
                           onChange={(e) =>
                             radioInputChangeHandler(e, item.userId)
                           }
@@ -549,7 +819,7 @@ const Page = () => {
                     Please select both Academic Year & Grade to view Students.
                   </span>
                 )}
-              {(students === null || students?.length == 0) &&
+              {(displayStudents === null || displayStudents?.length == 0) &&
                 !isStudentDataLoading &&
                 searchParameters.ay !== "select-ay" &&
                 searchParameters.grade !== "select-grade" && (
@@ -558,7 +828,7 @@ const Page = () => {
                     attendance!!
                   </span>
                 )}
-              {students !== null && students?.length > 0 && (
+              {displayStudents !== null && displayStudents?.length > 0 && (
                 <>
                   <div className="w-full md:w-[50%]">
                     <Button
@@ -575,8 +845,6 @@ const Page = () => {
                         <Button
                           className="w-full"
                           onClick={() => {
-                            // console.log("ABSENT", absent);
-                            // console.log("ABSENT EMAILS", absentEmails);
                             sendEmailsHandler();
                           }}
                         >

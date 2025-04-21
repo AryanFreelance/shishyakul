@@ -1,25 +1,25 @@
-import mentorsImg from "@/assets/banners/mentor.png";
-import Image from "next/image";
+"use client";
 
-const teachers = [
-  {
-    profileImg: mentorsImg,
-    name: "Demo Mentor 1",
-    subject: "Maths",
-  },
-  {
-    profileImg: mentorsImg,
-    name: "Demo Mentor 2",
-    subject: "Physics",
-  },
-  {
-    profileImg: mentorsImg,
-    name: "Demo Mentor",
-    subject: "Science",
-  },
-];
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { db } from "@/firebase";
+import { collection, onSnapshot } from "firebase/firestore";
 
 const OurTeachers = () => {
+  const [teachers, setTeachers] = useState([]);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "teachers"), (snapshot) => {
+      const teachersList = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setTeachers(teachersList);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   return (
     <div>
       <div
@@ -35,7 +35,7 @@ const OurTeachers = () => {
               className="border-2 border-secondary p-6 md:p-8 text-center rounded-2xl hover:border-main transition-all duration-300 ease-in-out"
             >
               <Image
-                src={teacher.profileImg}
+                src={teacher.profileUrl}
                 alt={teacher.name}
                 className="rounded-lg mb-4 border-2 border-main"
                 width={1000}

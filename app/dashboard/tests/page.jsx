@@ -73,7 +73,7 @@ const TestsPage = () => {
   }, [data]);
 
   const handleNewTestPaper = () => {
-    router.push("/dashboard/tests/new");
+    router.push("/dashboard/tests/add");
   };
 
   if (loading || queryLoading) {

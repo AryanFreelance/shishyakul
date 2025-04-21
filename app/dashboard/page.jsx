@@ -321,6 +321,10 @@ const DashboardPage = () => {
   };
 
   useEffect(() => {
+    console.log("DSTUDENTS", dStudents);
+  }, [dStudents]);
+
+  useEffect(() => {
     sessionStorage.setItem("grade", searchParameters.grade);
     sessionStorage.setItem("ay", searchParameters.ay);
     sessionStorage.setItem("school", searchParameters.school || "");
@@ -392,9 +396,11 @@ const DashboardPage = () => {
   useEffect(() => {
     if (isFaculty && !isAdmin && students.length > 0) {
       // Only show students that match faculty assignments
+      console.log("FACULTY ASSIGNMENT", facultyAssignments);
       const assignedStudents = students.filter((student) => {
         // Check if this student matches any of the faculty's assignments
         return facultyAssignments.some((assignment) => {
+          console.log("ASSIGNMENT", assignment);
           // Match academic year
           const matchesAY = assignment.academicYear === student.ay;
           if (!matchesAY) return false;
@@ -700,10 +706,11 @@ const DashboardPage = () => {
           // Get faculty assignments if user is faculty
           if (isFacultyMember) {
             // You may need to implement a proper function to fetch faculty assignments
-            const memberDoc = await getDoc(doc(db, "members", user.email));
+            const memberDoc = await getDoc(doc(db, "faculties", user.uid));
             if (memberDoc.exists()) {
               const memberData = memberDoc.data();
-              setFacultyAssignments(memberData.assignments || []);
+              setFacultyAssignments(memberData.assignedStudents || []);
+              console.log("MEMBERDATA", memberData);
             }
           }
         }
